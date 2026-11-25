@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M2-02 ADM（驗證紀錄見下方） |
+| 狀態 | development — LG-M2-03 CRM（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -16,6 +16,9 @@
 - [產品需求](docs/01_product/prd.md)
 - [MVP 與路線圖](docs/01_product/mvp-roadmap.md)
 - [開發工作包](docs/08_development/development-plan.md)
+- [CRM 工程交接](docs/08_development/m2-03-crm-handoff.md)
+- [CRM API 契約](docs/06_api/crm.md) · [獨立 OpenAPI](docs/06_api/crm-openapi.yaml)
+- [CRM 工程決策](docs/98_decisions/2026-11-25-crm-engineering.md)
 - [ADM 工程交接](docs/08_development/m2-02-adm-handoff.md)
 - [ADM API 契約](docs/06_api/adm.md) · [獨立 OpenAPI](docs/06_api/adm-openapi.yaml)
 - [ADM 工程決策](docs/98_decisions/2026-11-25-adm-engineering.md)
@@ -28,7 +31,7 @@
 
 需要 Node.js 24.22.3／npm 11.19.1、Java 21、Docker Engine 與 Compose v2。Maven Wrapper 固定 Maven 3.9.16；React 19.3.1、TypeScript 6.0.3、Vite 8.3.8、Spring Boot 4.1.3、PostgreSQL 17.12。精確相依、官方相容性與公司規範基準見 [M1 版本紀錄](docs/04_architecture/m1-versions.md)。
 
-Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分。未建立訂單等物流業務資料表。後續模組必須透過介面協作，不跨模組操作 repository。
+Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。未建立訂單等物流業務資料表。後續模組必須透過介面協作，不跨模組操作 repository。
 
 ## 啟動
 
@@ -40,7 +43,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核及 V3 ADM 結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM 及 V4 CRM 結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -114,8 +117,16 @@ V3 只初始化固定 `ORDER_TYPE`／`IMPORT`、`EXPORT`、`LOCAL` 的唯讀對�
 
 ADM 的資料庫、HTTP、前端與 E2E 證據見 [M2-02 驗證](docs/09_testing/m2-02-validation.md)；原 UPMS 測試與訂單契約保留。
 
+## CRM 客戶管理
+
+正常登入並完成首次改密的 ADMIN／DISPATCHER 可由「客戶管理」建立及維護本公司客戶、多位聯絡人與多組常用地址，使用分頁、搜尋、啟停與有效客戶選項。DRIVER 無客戶主檔權限；ADM 仍僅 ADMIN。客戶使用 UUID 及唯一、建立後不變的大寫代碼；更新須附 version，遇到 409 應重新載入後再操作。
+
+客戶名稱、聯絡人姓名與地址內容為必要文字；taxId 可空且非唯一，電話不限定單國格式，地址類型是可空描述文字，不是核准業務枚舉。沒有硬刪除。停用客戶仍保留歷史主檔與子項，從有效選項移除並拒絕新引用查核；CRM 主檔仍可維護。
+
+後續 TOM 須透過 `CrmQueries` 公開服務，在已授權的寫入交易中查核有效客戶並保存當時快照；本階段只驗證來源與鎖定介面，真正訂單寫入及競爭整合驗收留至 M2-04。客戶改名不得覆寫既有訂單 `customerName`。V4 不加入客戶或測試 seed。驗收證據見 [M2-03 驗證](docs/09_testing/m2-03-validation.md)。
+
 ## 範圍與部署
 
-UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15 交付；CRM、TOM、FMS、派工與照片未開發，後續工作包須獨立交辦。
+UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM、FMS、派工與照片未開發，後續工作包須獨立交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。

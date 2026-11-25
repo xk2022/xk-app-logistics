@@ -3,6 +3,9 @@ package com.xksystem.logistics.upms.internal;
 import com.xksystem.logistics.upms.*;
 import com.xksystem.logistics.upms.security.SessionPrincipal;
 import com.xksystem.logistics.upms.security.UpmsSessions;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Duration;
@@ -28,6 +31,7 @@ public class UpmsService {
     private final Clock clock;
     private final String dummyHash;
     private final Object[] loginStripes = new Object[128];
+    @PersistenceContext private EntityManager entityManager;
 
     public UpmsService(AccountRepository accounts, UpmsLockRepository locks, AuditRepository audit,
                        PasswordEncoder encoder, PasswordPolicy passwords, LoginThrottle throttle,
@@ -81,6 +85,14 @@ public class UpmsService {
         if (write) lock();
         var actor=active(principal, write);
         requireAdmin(actor);
+        return actor.dto();
+    }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeCustomerManager(SessionPrincipal principal, boolean write) {
+        if (write) lock();
+        var actor=active(principal, write);
+        if (actor.mustChangePassword || (actor.role!=AccountRole.ADMIN && actor.role!=AccountRole.DISPATCHER))
+            throw UpmsException.forbidden();
         return actor.dto();
     }
 
@@ -176,8 +188,8 @@ public class UpmsService {
 
     private AccountEntity active(SessionPrincipal principal, boolean write) {
         if (principal == null) throw UpmsException.unauthorized();
-        var account=(write ? accounts.findLockedById(principal.id()) : accounts.findById(principal.id()))
-                .orElseThrow(UpmsException::unauthorized);
+        var account=accounts.findById(principal.id()).orElseThrow(UpmsException::unauthorized);
+        if (write) entityManager.refresh(account, LockModeType.PESSIMISTIC_WRITE);
         if (!usable(account) || account.authVersion != principal.authVersion()) throw UpmsException.unauthorized();
         return account;
     }

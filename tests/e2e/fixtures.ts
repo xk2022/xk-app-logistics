@@ -9,11 +9,17 @@ interface AdmFixture {
   driver: Credential
   parameterKeys: { text: string; number: string; boolean: string }
 }
+interface CrmFixture {
+  admin: Credential
+  dispatcher: Credential
+  driver: Credential
+}
 interface ProjectFixture {
   admin: Credential
   dispatcher: Credential
   driver: Credential
   adm?: AdmFixture
+  crm?: CrmFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -38,6 +44,15 @@ export function admFixtureFor(project: string): AdmFixture {
   }) || !['text', 'number', 'boolean'].every((key) => typeof group.parameterKeys?.[key as keyof AdmFixture['parameterKeys']] === 'string')) {
     throw new Error('ADM test fixture is incomplete for this browser project.')
   }
+  return group
+}
+
+export function crmFixtureFor(project: string): CrmFixture {
+  const group = fixtureFor(project).crm
+  if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
+    const account = group[key as keyof CrmFixture]
+    return account && typeof account.username === 'string' && typeof account.password === 'string'
+  })) throw new Error('CRM test fixture is incomplete for this browser project.')
   return group
 }
 

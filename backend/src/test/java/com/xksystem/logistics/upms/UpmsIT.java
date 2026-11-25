@@ -78,7 +78,8 @@ class UpmsIT {
 
     @BeforeEach
     void isolateSyntheticAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
+        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+                + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         clock.reset();
     }
 
@@ -106,7 +107,8 @@ class UpmsIT {
         Browser anonymous = new Browser();
         assertThat(anonymous.get("/api/v1/upms/bootstrap").statusCode()).isIn(401, 404);
         assertThat(anonymous.post("/api/v1/upms/bootstrap", Map.of(), true).statusCode()).isIn(401, 403, 404);
-        jdbc.execute("TRUNCATE TABLE logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
+        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+                + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         account("DRIVER", false);
         assertThatThrownBy(() -> service.bootstrap(username(), "不得覆蓋非空庫", UpmsTestData.password(), "test", "synthetic"))
                 .isInstanceOf(RuntimeException.class);

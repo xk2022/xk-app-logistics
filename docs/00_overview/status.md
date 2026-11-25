@@ -5,6 +5,7 @@
 - 產品驗收：物流業務尚未實作，M0 首片契約案例未作產品執行驗收；M1 驗收工程基礎，M2-01 僅驗收 UPMS，不代表訂單產品功能通過。
 - LG-M2-01：[PR #4](https://github.com/xk2022/xk-app-logistics/pull/4) 依已合併 PR #3 決策交付 UPMS，首輪遠端四項品質檢查全通過；帳號、固定角色、Session／CSRF、受控初始化／復原、角色 UI 及 V2 migration 的結果見 [M2-01 驗證](../09_testing/m2-01-validation.md)。
 - LG-M2-02：[PR #6](https://github.com/xk2022/xk-app-logistics/pull/6) 依已合併 PR #5 及 Q11–Q15 交付 ADM 字典／核准參數框架，首輪四項遠端品質檢查全通過；結果見 [M2-02 驗證](../09_testing/m2-02-validation.md)。正式參數鍵及非 ADMIN 讀取分類仍未核准，維持關閉。
-- 下一工作：Q16–Q20 已核准；[LG-M2-03 CRM](../08_development/m2-03-crm-handoff.md) 待獨立交辦實作；本輪沒有開發 CRM、TOM 或 FMS，原訂單契約保持原樣。
+- LG-M2-03：依已合併 PR #7 及 Q16–Q20 交付 CRM 客戶、聯絡人、地址、角色介面與 V4；實際本機／遠端品質結果及交付追蹤見 [M2-03 驗證](../09_testing/m2-03-validation.md)。
+- 下一工作：LG-M2-04 TOM 尚待獨立交辦，包含真正訂單快照寫入與停用／新引用競爭整合驗收；本輪未開發 TOM、FMS 或派工，原訂單契約保持原樣。
 - 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
 - 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。

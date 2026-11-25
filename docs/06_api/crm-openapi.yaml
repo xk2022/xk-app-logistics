@@ -1,0 +1,1438 @@
+openapi: 3.1.0
+info:
+  title: XK Logistics CRM API
+  version: 0.1.0
+  description: LG-M2-03 獨立CRM契約；全部HTTP僅正常登入ADMIN／DISPATCHER、DRIVER拒絕。單公司，嚴格body/query白名單，無DELETE、無seed。taxId可空非unique，不套特定稅務規則；phone不限定單國。停用父客戶不供新引用，但仍可維護CRM歷史主檔。未實作TOM/FMS/派工，不修改既有訂單OpenAPI；真正訂單快照寫入在M2-04驗收。
+servers:
+- url: /api/v1
+tags:
+- name: CRM
+security:
+- sessionCookie: []
+paths:
+  /crm/customers:
+    get:
+      operationId: listCustomers
+      summary: ADMIN／DISPATCHER 本公司客戶分頁搜尋
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageCustomer'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC strip 後最多100 code points，literal contains，%/_ 不作 wildcard。
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - customerCode,asc
+          - customerCode,desc
+          - name,asc
+          - name,desc
+          - createdAt,asc
+          - createdAt,desc
+          - updatedAt,asc
+          - updatedAt,desc
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createCustomer
+      summary: 建立穩定代碼與客戶名稱；其他欄位可省略
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Customer'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomer'
+  /crm/customers/{id}:
+    get:
+      operationId: getCustomer
+      summary: 客戶明細，含停用歷史主檔
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Customer'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateCustomer
+      summary: 部分更新／啟停；version及至少一個mutable欄位
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Customer'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomer'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /crm/customers/{id}/contacts:
+    get:
+      operationId: listContacts
+      summary: 父客戶範圍內聯絡人分頁查詢
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageContact'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC strip 後最多100 code points，literal contains，%/_ 不作 wildcard。
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - name,asc
+          - name,desc
+          - title,asc
+          - title,desc
+          - createdAt,asc
+          - createdAt,desc
+          - updatedAt,asc
+          - updatedAt,desc
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createContact
+      summary: 新增聯絡人，父關聯由伺服器決定
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Contact'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContact'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /crm/customers/{id}/contacts/{contactId}:
+    patch:
+      operationId: updateContact
+      summary: 部分更新／啟停聯絡人，禁止父客戶移轉
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Contact'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContact'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: contactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /crm/customers/{id}/addresses:
+    get:
+      operationId: listAddresses
+      summary: 父客戶範圍內常用地址分頁查詢
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageAddress'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC strip 後最多100 code points，literal contains，%/_ 不作 wildcard。
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - label,asc
+          - label,desc
+          - addressType,asc
+          - addressType,desc
+          - createdAt,asc
+          - createdAt,desc
+          - updatedAt,asc
+          - updatedAt,desc
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createAddress
+      summary: 新增常用地址；用途僅描述文字，不是業務枚舉
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAddress'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /crm/customers/{id}/addresses/{addressId}:
+    patch:
+      operationId: updateAddress
+      summary: 部分更新／啟停地址，禁止父客戶移轉
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAddress'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: addressId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /crm/customer-options:
+    get:
+      operationId: activeCustomerOptions
+      summary: 有效客戶精簡選項；強制enabled，不接受enabled query
+      tags:
+      - CRM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageCustomerOption'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC strip 後最多100 code points，literal contains，%/_ 不作 wildcard。
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - customerCode,asc
+          - customerCode,desc
+          - name,asc
+          - name,desc
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: UPMS Secure/HttpOnly/SameSite=Lax Session，沿既有登入與強制改密。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: 從auth/csrf取得；所有POST/PATCH必驗證。
+  schemas:
+    Customer:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerCode:
+          type: string
+          pattern: ^[A-Z0-9][A-Z0-9_-]{0,63}$
+          minLength: 1
+          maxLength: 64
+          description: 穩定唯一大寫 ASCII 代碼，保留前導零；建立後不可修改。
+        name:
+          type: string
+          maxLength: 200
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          minLength: 1
+          pattern: \S
+        taxId:
+          type:
+          - string
+          - 'null'
+          maxLength: 50
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        phone:
+          type:
+          - string
+          - 'null'
+          maxLength: 50
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        email:
+          type:
+          - string
+          - 'null'
+          maxLength: 254
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          minLength: 1
+          pattern: \S
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+      required:
+      - id
+      - customerCode
+      - name
+      - taxId
+      - phone
+      - email
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - createdBy
+      - updatedBy
+    Contact:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 200
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          minLength: 1
+          pattern: \S
+        title:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        phone:
+          type:
+          - string
+          - 'null'
+          maxLength: 50
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        email:
+          type:
+          - string
+          - 'null'
+          maxLength: 254
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          minLength: 1
+          pattern: \S
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+      required:
+      - id
+      - customerId
+      - name
+      - title
+      - phone
+      - email
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - createdBy
+      - updatedBy
+    Address:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        label:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        address:
+          type: string
+          maxLength: 1000
+          description: NFC 並 strip 後最多 1000 Unicode code points；允許 LF，拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          minLength: 1
+          pattern: \S
+        addressType:
+          type:
+          - string
+          - 'null'
+          maxLength: 40
+          description: NFC 並 strip 後最多 40 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          minLength: 1
+          pattern: \S
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        updatedBy:
+          type: string
+          format: uuid
+      required:
+      - id
+      - customerId
+      - label
+      - address
+      - addressType
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - createdBy
+      - updatedBy
+    CustomerOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerCode:
+          type: string
+          pattern: ^[A-Z0-9][A-Z0-9_-]{0,63}$
+          minLength: 1
+          maxLength: 64
+          description: 穩定唯一大寫 ASCII 代碼，保留前導零；建立後不可修改。
+        name:
+          type: string
+          maxLength: 200
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          minLength: 1
+          pattern: \S
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - id
+      - customerCode
+      - name
+      - version
+    CreateCustomer:
+      type: object
+      additionalProperties: false
+      properties:
+        customerCode:
+          type: string
+          pattern: ^[A-Z0-9][A-Z0-9_-]{0,63}$
+          minLength: 1
+          maxLength: 64
+          description: 穩定唯一大寫 ASCII 代碼，保留前導零；建立後不可修改。
+        name:
+          type: string
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 200
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        taxId:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        phone:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        email:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          x-normalizedMaxLength: 254
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+          default: true
+      required:
+      - customerCode
+      - name
+    UpdateCustomer:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 200
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        taxId:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        phone:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        email:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          x-normalizedMaxLength: 254
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - version
+      minProperties: 2
+    CreateContact:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 200
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        title:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 100
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        phone:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        email:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          x-normalizedMaxLength: 254
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+          default: true
+      required:
+      - name
+    UpdateContact:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: NFC 並 strip 後最多 200 Unicode code points；拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 200
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        title:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 100
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        phone:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 50 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 50
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        email:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 254 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。 僅基本 email 格式檢查，不驗證存在、不發信。
+          x-normalizedMaxLength: 254
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - version
+      minProperties: 2
+    CreateAddress:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 100
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        address:
+          type: string
+          description: NFC 並 strip 後最多 1000 Unicode code points；允許 LF，拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 1000
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        addressType:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 40 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 40
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+          default: true
+      required:
+      - address
+    UpdateAddress:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 100 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 100
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        address:
+          type: string
+          description: NFC 並 strip 後最多 1000 Unicode code points；允許 LF，拒絕控制字元及不成對 surrogate。必要值不得全為空白（含 Unicode SpaceChar）。
+          x-normalizedMaxLength: 1000
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF)
+          x-normalizedMinLength: 1
+        addressType:
+          type:
+          - string
+          - 'null'
+          description: NFC 並 strip 後最多 40 Unicode code points；拒絕控制字元及不成對 surrogate。空白 optional 值轉 null。
+          x-normalizedMaxLength: 40
+          x-normalization: NFC then strip (Unicode whitespace/SpaceChar and FEFF); optional blank becomes null
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - version
+      minProperties: 2
+    PageCustomer:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+          format: int64
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageContact:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+          format: int64
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageAddress:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+          format: int64
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageCustomerOption:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerOption'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+          format: int64
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO8601 +08:00
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+  responses:
+    BadRequest:
+      description: 欄位、查詢、不可變欄位或空 PATCH 不符
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: 未登入或 Session 失效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 角色、CSRF、TLS 或強制改密拒絕
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 授權範圍內不存在；子項父客戶不符也回404
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: 唯一代碼或版本衝突
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: 安全的一般失敗
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: 服務／資料庫不可用
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
