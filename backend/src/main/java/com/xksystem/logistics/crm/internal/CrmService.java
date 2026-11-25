@@ -119,6 +119,7 @@ public class CrmService implements CrmQueries {
 
     @Override
     public Optional<Snapshot> findCurrent(UUID customerId) { return customers.findById(customerId).map(this::snapshot); }
+    @Override public boolean isEnabled(UUID customerId) { return customers.existsByIdAndEnabledTrue(customerId); }
     @Override
     @Transactional(propagation=Propagation.MANDATORY)
     public Snapshot requireEnabledForNewReference(UUID customerId) {

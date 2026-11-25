@@ -8,15 +8,19 @@ import java.io.IOException;
 import java.util.UUID;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestIdFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         // Generate our own ID: never put untrusted request headers into logs.
         String requestId = UUID.randomUUID().toString();
+        request.setAttribute("REQUEST_TRACE_ID", requestId);
         MDC.put("requestId", requestId);
         response.setHeader("X-Request-Id", requestId);
         try {

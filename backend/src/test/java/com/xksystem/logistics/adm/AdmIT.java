@@ -74,7 +74,9 @@ class AdmIT {
 
     @BeforeEach
     void arrangeOnlyIsolatedSyntheticData() throws Exception {
-        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+                + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
+                + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.adm_parameter, logistics.adm_parameter_definition, "
                 + "logistics.upms_audit, logistics.upms_account");
         jdbc.update("DELETE FROM logistics.adm_dict_item WHERE NOT read_only");

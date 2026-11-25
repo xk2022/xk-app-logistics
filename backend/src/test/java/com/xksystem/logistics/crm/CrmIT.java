@@ -79,7 +79,9 @@ class CrmIT {
 
     @BeforeEach
     void isolateSyntheticCrmAndAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+                + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
+                + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
     }
 
@@ -517,7 +519,7 @@ class CrmIT {
     }
 
     @Test
-    void crmUsesOnlyPublicOtherModuleBoundariesAndDoesNotIntroduceOrderPersistence() throws Exception {
+    void crmUsesOnlyPublicOtherModuleBoundariesAndKeepsOrderPersistenceOutsideCrm() throws Exception {
         try (var files = Files.walk(Path.of("target/classes/com/xksystem/logistics/crm"))) {
             var compiled = files.filter(path -> path.toString().endsWith(".class")).toList(); assertThat(compiled).isNotEmpty();
             for (Path file : compiled) {
@@ -526,9 +528,12 @@ class CrmIT {
                         .as("CRM depends on the public UPMS customer-manager boundary: " + file.getFileName()).isFalse();
                 assertThat(constants.contains("com/xksystem/logistics/adm/internal/"))
                         .as("CRM does not reach ADM repositories: " + file.getFileName()).isFalse();
+                assertThat(constants.contains("com/xksystem/logistics/tom/internal/"))
+                        .as("CRM does not reach TOM repositories: " + file.getFileName()).isFalse();
             }
         }
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics' AND (tablename LIKE 'tom_%' OR tablename LIKE '%order%')", Long.class))
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema='logistics' "
+                + "AND table_name IN ('crm_customer','crm_contact','crm_address') AND column_name IN ('order_id','order_no','snapshot')", Long.class))
                 .isZero();
     }
 

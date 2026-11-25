@@ -20,12 +20,13 @@ public class UpmsAccessFilter extends OncePerRequestFilter {
         String path=request.getServletPath();
         boolean upms=path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/upms/") || path.startsWith("/api/v1/adm/") || path.equals("/api/v1/adm")
                 || path.startsWith("/api/v1/crm/") || path.equals("/api/v1/crm");
+        upms=upms||path.equals("/api/v1/orders")||path.startsWith("/api/v1/orders/");
         if (upms && !request.isSecure()) {
-            responses.error(response, 403, "請使用 HTTPS 安全連線"); return;
+            responses.error(request,response,403,"FORBIDDEN","請使用 HTTPS 安全連線"); return;
         }
         var account=(AccountDto)request.getAttribute("UPMS_ACCOUNT");
         if (account != null && account.mustChangePassword() && upms && !LIMITED.contains(path)) {
-            responses.error(response, 403, "首次登入或帳號復原後須先變更密碼"); return;
+            responses.error(request,response,403,"FORBIDDEN","首次登入或帳號復原後須先變更密碼"); return;
         }
         chain.doFilter(request, response);
     }

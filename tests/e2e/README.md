@@ -1,8 +1,8 @@
 # Browser verification
 
-The suite has 10 cases: five each for desktop Chromium and Pixel 7. The
-original service, UPMS, and ADM checks remain, with one CRM scenario added per
-browser project.
+The suite has 12 cases: six each for desktop Chromium and Pixel 7. The
+original ten service, UPMS, ADM, and CRM cases remain. TOM adds one browser-context
+API scenario per project; the complete order interface remains a later work package.
 
 The desktop Chromium and Pixel 7 projects preserve the M1 service-state success,
 request failure, retry, and overflow checks. UPMS verification uses the same
@@ -18,10 +18,21 @@ project. Its scenarios create synthetic customers through the UI, verify real
 search and pagination with a five-row page, multiple contacts and addresses,
 stable codes and parent ownership, history-preserving disable/enable, active
 options, version conflict recovery, ADMIN/DISPATCHER management, and DRIVER
-refusal. No CRM records are inserted by the fixture runner.
+refusal. TOM requests run as same-origin HTTPS `fetch` calls in real browser
+contexts after protected login. They verify all five original order operations,
+the fifteen role/operation combinations, strict `OK`/`traceId` success and
+`fieldErrors` error envelopes, incomplete and complete acceptance checks without
+operational acceptance, stable child references, full replacement, optimistic
+versions, canonical-body replay, actor scoping, failed-write retry, customer-name
+snapshots, disabled-customer rules, and refusal to replay after revocation/logout.
+They also verify that `XKSESSION` and legacy `JSESSIONID` represent the same
+protected session, rotate on login, and support a real JSESSIONID-only browser
+read and CSRF-protected write. Cookie comparisons expose only boolean results;
+the suite never constructs a cookie with a real session value in action arguments.
+No CRM or TOM records are inserted by the fixture runner.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 18 synthetic login accounts: independent UPMS, ADM, and CRM
+runner creates 24 synthetic login accounts: independent UPMS, ADM, CRM, and TOM
 ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only that database on the local machine and refuses a populated
 account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
@@ -53,23 +64,45 @@ npm run test:e2e
 python3 tests/e2e/assert_report_privacy.py
 ```
 
+Validate the original order contract and captured HTTP responses with the
+test-only, hash-pinned CPython 3.12 Linux x86-64 tooling. No production or npm
+dependencies are added:
+
+```sh
+python3 -m venv /tmp/xk-order-contract-env
+/tmp/xk-order-contract-env/bin/python -m pip install --require-hashes -r tests/contracts/requirements.txt
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_order_contract.py \
+  --responses 'test-results/**/order-contract-responses.json'
+```
+
+The validator keeps format checking enabled and verifies the immutable source
+hashes, committed schema examples, graph fixtures, role matrix, and field
+dictionary before checking the actual response bodies. CI runs the same formal
+validation and scans the pinned Python requirements with OSV.
+
 Run the tests immediately after creating the fixture because UPMS initial passwords
 expire after 15 minutes. A full rerun requires a fresh isolated database and
 fixture; the scenarios intentionally change passwords and disable accounts.
 `E2E_BASE_URL` defaults to `https://localhost:8443`. Only localhost self-signed
 certificates bypass browser certificate validation; remote targets retain
-normal TLS checks.
+normal TLS checks. The test files never reset databases, seed accounts, or start
+the runtime automatically; preparation and cleanup are explicit operations.
 
 Authentication traces are disabled so passwords and session tokens stay out of
 artifacts. Password values are also kept out of Playwright action titles.
 Screenshots show the resulting workspace, account list, dictionaries, parameters,
-and synthetic customer details. Reports and
+and synthetic customer details. Each TOM project additionally writes
+`order-contract-responses.json` under its test output directory. It contains only
+`{schema, value}` entries with original synthetic order/error response bodies for
+independent validation against the unchanged OpenAPI 0.2.0 schemas. It excludes
+request context, credentials, cookies, headers, and CSRF tokens. This artifact is
+also covered by the existing privacy guard. Reports and
 screenshots are ignored by Git; inspect the HTML report with
 `npm run test:e2e:report`. Keep credential files out of report directories.
 
-CI validates health/status, Flyway V1–V4 on an empty database, exact UPMS/ADM/CRM
+CI validates health/status, Flyway V1–V5 on an empty database, exact UPMS/ADM/CRM/TOM
 tables, the fixed ORDER_TYPE enum and three empty configurable categories,
-absence of seeded accounts, parameter definitions/values, or CRM records, restart stability,
+absence of seeded accounts, parameter definitions/values, CRM records, or TOM records, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

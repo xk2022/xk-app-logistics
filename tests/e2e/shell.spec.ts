@@ -2,12 +2,18 @@ import { expect, test } from '@playwright/test'
 
 test('shell reads real backend status through the same-origin proxy', async ({ page }, testInfo) => {
   await page.goto('/')
-  const responsePromise = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === '/api/v1/status')
   await page.getByRole('button', { name: '系統狀態', exact: true }).click()
-  const response = await responsePromise
-  expect(response.ok()).toBeTruthy()
-  expect(await response.json()).toMatchObject({
+  await expect(page.getByRole('heading', { name: '系統總覽', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '系統服務已就緒' })).toBeVisible()
+  // The login page also checks status. Bind this assertion to a new shell
+  // refresh request so an aborted pre-navigation response cannot be selected.
+  const requestPromise = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/v1/status')
+  await page.getByRole('button', { name: '重新檢查' }).click()
+  const response = await (await requestPromise).response()
+  expect(response).not.toBeNull()
+  expect(response!.ok()).toBeTruthy()
+  expect(await response!.json()).toMatchObject({
     code: '0000',
     data: { service: 'xk-logistics', status: 'UP' },
     timestamp: expect.stringMatching(/\+08:00$/),

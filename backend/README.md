@@ -1,4 +1,4 @@
-# XK Logistics 後端｜LG-M1 / LG-M2-01 / LG-M2-02 / LG-M2-03
+# XK Logistics 後端｜LG-M1 / LG-M2-01–04
 
 Java 21、Spring Boot 4.1.3、Maven 3.9.16（Wrapper 3.3.4）。相依由 Spring Boot BOM 統一管理：Spring Security 7.1.3、Spring Data JPA 4.1.3、Hibernate 7.4.15.Final、Flyway 12.4.0、PostgreSQL JDBC 42.7.14、JUnit 6.0.3、Testcontainers 2.0.5。完整版本依據及專案啟動見[根目錄 README](../README.md)。
 
@@ -39,7 +39,9 @@ java -jar target/xk-logistics-0.1.0-SNAPSHOT.jar --upms.command=recover
 
 ## Session 與反向代理邊界
 
-Session 使用 `XKSESSION`，固定 Secure、HttpOnly、SameSite=Lax、Path=/；不允許透過環境或 profile 降級。每帳號最多三個 Session，超過時撤銷最早登入者；閒置 30 分鐘、登入後最長 8 小時，改密、復原、停用或角色異動使舊認證失效。POST／PATCH 含登入、改密與登出皆檢查 CSRF；登入與登出後重新取得 token。
+Session 使用 `XKSESSION`，並以 `JSESSIONID` 相容原訂單契約；兩名指向同一個 HttpSession，不建立第二套認證。兩個 cookie 值不同時拒絕認證並清除瀏覽器兩名 cookie，不選擇其中一方或撤銷其他人的 server Session。Cookie 固定 Secure、HttpOnly、SameSite=Lax、Path=/，只允許 COOKIE tracking；不允許透過環境或 profile 降級。每帳號最多三個 Session，超過時撤銷最早登入者；閒置 30 分鐘、登入後最長 8 小時，改密、復原、停用或角色異動使舊認證失效。寫入含登入、改密、登出與訂單 POST／PUT 皆檢查 CSRF；登入與登出後重新取得 token。
+
+每次請求重新查核帳號後建立當次 Authentication；框架採 `requireExplicitAuthenticationStrategy(true)`，只有既有登入控制器執行 Session／CSRF 輪換。不能把每次查核誤當新登入而自動更換 ID，造成同一 Session 的兩名 cookie 失配。
 
 開發 TLS gateway 覆寫轉送協定標頭，後端採 framework forwarded headers。此信任只適用於受控反向代理：不得將後端埠直接對外公開，正式環境必須限制可達代理並覆寫／清除用戶端轉送標頭。僅經 HTTPS 的請求可使用 UPMS。Session Registry 與登入限流為單 instance 記憶體實作，不支援多 instance；正式部署前須另驗證分散式撤銷、限流與信任邊界。
 
@@ -47,9 +49,9 @@ Session 使用 `XKSESSION`，固定 Secure、HttpOnly、SameSite=Lax、Path=/；
 
 ## 範圍與模組邊界
 
-`platform` 只提供 `/actuator/health`、`/api/v1/status` 及伺服器產生的請求識別碼。Health 僅公開狀態；status 依資料庫健康回傳 HTTP 200／503、繁中訊息與 `+08:00` timestamp。`upms` 提供固定角色、帳號管理與同源認證；`adm` 提供分類、字典項目、核准參數與異動紀錄；`crm` 提供客戶、聯絡人及常用地址主檔。尚未實作訂單或派工等物流流程。
+`platform` 只提供 `/actuator/health`、`/api/v1/status`、伺服器產生的請求識別碼及中性錯誤呈現介面。Health 僅公開狀態；status 依資料庫健康回傳 HTTP 200／503、繁中訊息與 `+08:00` timestamp。`upms` 提供固定角色、帳號管理與同源認證；`adm` 提供分類、字典項目、核准參數與異動紀錄；`crm` 提供客戶、聯絡人及常用地址主檔；`tom` 提供原首片訂單草稿與只讀完整性檢查，尚無受理、派工或資源占用動作。
 
-Flyway 是唯一結構來源，建立 `logistics` schema 與歷程表；V1 保留原空庫基線，V2 增加帳號、audit 與單一協調鎖資料列，V3 增加 ADM 五表，V4 增加 CRM 三表。Migration 不建立使用者帳號或客戶種子。Hibernate 採 `validate`，禁止以自動 DDL 取代 migration。已套用的 migration 不可修改，未來以新版本遞增。
+Flyway 是唯一結構來源，建立 `logistics` schema 與歷程表；V1 保留原空庫基線，V2 增加帳號、audit 與單一協調鎖資料列，V3 增加 ADM 五表，V4 增加 CRM 三表，V5 增加訂單聚合及技術歷程七表。Migration 不建立使用者帳號、客戶或訂單種子。Hibernate 採 `validate`，禁止以自動 DDL 取代 migration。已套用的 migration 不可修改，未來以新版本遞增。
 
 未來業務模組依領域建立套件，僅透過明確的公開介面協作，不跨模組存取 repository。M2 業務與安全設定須另依既有契約及已核准決議實作。
 
@@ -79,4 +81,18 @@ ADM 寫入先經 UPMS 公開授權 facade，在同一交易取得既有 canonica
 
 `findCurrent` 回傳目前主檔來源，包含停用客戶；它不是既有訂單的歷史快照儲存。`requireEnabledForNewReference` 必須由呼叫者的可寫交易執行，呼叫者應先取得自己的 UPMS 授權／canonical 鎖，再由 CRM 鎖住客戶列。鎖後重新載入資料，避免持久化上下文快取使停用或改名檢查失真；傳回不可變 `Snapshot(id, code, name, version)`，並持鎖到呼叫者提交，以協調停用及改名競爭。
 
-本階段只驗證這項引用介面與鎖定契約，不建立 TOM 表、訂單端點或實際訂單快照，不宣稱訂單流程已通過驗收。後續 TOM 必須在同一交易使用來源並保存快照；客戶改名不能回寫既有訂單快照。全部正常 V4 migration 不含客戶個資或合成測試紀錄。
+LG-M2-03 只驗證這項引用介面與鎖定契約；LG-M2-04 由 TOM 在同一交易使用來源並保存名稱快照，客戶改名不回寫舊訂單。同客戶草稿替換保留既有名稱，明確換客戶才重新取得有效來源。`isEnabled` 是只讀完整性檢查介面，不能取代新增引用的鎖定查核。正常 migration 不含客戶個資或合成測試紀錄。
+
+## TOM 首片訂單草稿
+
+五項操作依[原 OpenAPI 0.2.0](../docs/06_api/openapi.yaml)：POST／GET `/api/v1/orders`、GET／PUT `/api/v1/orders/{orderId}`、GET `/api/v1/orders/{orderId}/acceptance-check`。僅正常登入 ADMIN、DISPATCHER 可操作本公司資料。原成功 `OK/message/data/traceId` 及錯誤 `fieldErrors` 格式保留，包括安全 filter、CSRF、資料庫失敗及路由錯誤；不套用 UPMS 的 `0000/timestamp` envelope。
+
+V5 的 OrderCore 與 TOM 是同一個持久化聚合：`order_core`、`tom_order`、`cargo_item`、`transport_task`、`task_dependency`、`order_draft_revision`、`api_idempotency`。Spring Data 的 TOM 專屬 repository fragment 以原生 SQL 處理聚合差異更新、延後唯一性檢查及可逆型別，參與同一個 JpaTransactionManager 交易；沒有跨 UPMS／CRM repository。OrderCore 是共用識別與生命週期模型，表的本片寫入責任仍由此聚合擁有，不建立空殼模組再跨寫其 repository。
+
+建立只有 type 與有效 customerId 必填；PUT 為完整替換，未提供的可選純量為 null、集合為空。當前相同 clientRef 保留 UUID／taskNo，移除後另次新增則產生新身份；保存陣列順序，不把順序當作依賴。序號交換可在同一交易完成；失聯、自指、循環或逆向時間整筆拒絕。受保護外鍵阻止移除時回 409，版本、歷程及重送紀錄皆回滾。此包不建立派工、執行或資產表。
+
+TOM 文字與 hash 保留原字串、null、欄位省略及陣列順序，不沿用 CRM 的 trim／NFC 或空白轉 null。原契約容許的 U+0000 使用 UTF-8 bytea 自由文字欄與 textual JSON 歷程可逆保存；不無聲刪除或替換。日期時間先嚴格驗證最多六位小數及原契約 ±23:59 offset，typed timestamptz(6) 以 JDBC 4.2 OffsetDateTime 保存瞬間，避免舊 Timestamp／Calendar 在 1582 年前偏移；wire 欄保留合法讀回表示，系統時間明確截至微秒。重量／體積以 BigDecimal／numeric 保存，讀回允許去除尾零。
+
+POST／PUT 需有效 CSRF 與單一 Idempotency-Key。先檢查目前權限，再以公司範圍、操作者、method、canonical path、key 嘗試 transaction advisory lock；同 key 處理中立即回 409，不先等待全域寫入鎖。成功命中先重驗授權再重播原業務結果與狀態，traceId 每次更新；不先驗舊 expectedVersion 或客戶目前啟用性。新寫入取得 UPMS canonical／操作者鎖、必要的 CRM 客戶鎖及訂單根鎖，與聚合、不可變版本快照、成功重送紀錄原子提交。D10 保存及清理政策尚未核准，沒有自動到期或重用 key，也不宣稱已核准永久保存。
+
+GET 明細、清單及完整性檢查使用同一 repeatable-read snapshot，避免版本、子項或 count 混版。原 page 無上界，採 BigInteger 並先 count；超出資料範圍直接回合法空頁，不把任意上限塞入契約。只讀檢查固定回 ORD-P01–P03、未決政策及 `NOT_GRANTED`，不更動狀態、不授予受理或占用資源。細節見 [TOM 工程決策](../docs/98_decisions/2026-11-25-tom-engineering.md)與[資料模型](../docs/05_database/tom-model.md)。

@@ -26,6 +26,7 @@ server:
   servlet:
     session:
       timeout: 30m
+      tracking-modes: cookie
       cookie:
         name: XKSESSION
         secure: true

@@ -32,6 +32,10 @@ public class UpmsAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+        if(SessionCookieAliases.hasConflictingCookies(request)) {
+            SessionCookieAliases.clearConflictingCookies(response);
+            responses.error(request,response,401,"UNAUTHENTICATED","登入識別不一致，請重新登入");return;
+        }
         var session=request.getSession(false);
         if (session != null) {
             try {
@@ -56,7 +60,7 @@ public class UpmsAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
             } catch (DataAccessException | CannotCreateTransactionException unavailable) {
                 SecurityContextHolder.clearContext();
-                responses.error(response, 503, "服務暫時無法使用，請稍後重試");
+                responses.error(request,response,503,"INTERNAL_ERROR","服務暫時無法使用，請稍後重試");
                 return;
             }
         }

@@ -78,7 +78,9 @@ class UpmsIT {
 
     @BeforeEach
     void isolateSyntheticAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+                + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
+                + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         clock.reset();
     }
@@ -107,7 +109,9 @@ class UpmsIT {
         Browser anonymous = new Browser();
         assertThat(anonymous.get("/api/v1/upms/bootstrap").statusCode()).isIn(401, 404);
         assertThat(anonymous.post("/api/v1/upms/bootstrap", Map.of(), true).statusCode()).isIn(401, 403, 404);
-        jdbc.execute("TRUNCATE TABLE logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+                + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
+                + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         account("DRIVER", false);
         assertThatThrownBy(() -> service.bootstrap(username(), "不得覆蓋非空庫", UpmsTestData.password(), "test", "synthetic"))
@@ -292,8 +296,10 @@ class UpmsIT {
         assertThat(roles.size()).isEqualTo(3);
         assertThat(List.of(roles.get(0).asString(), roles.get(1).asString(), roles.get(2).asString()))
                 .containsExactly("ADMIN", "DISPATCHER", "DRIVER");
-        // Preserve the M1 assertion under the authenticated M2 boundary: no business API exists yet.
-        assertThat(admin.get("/api/v1/orders").statusCode()).isEqualTo(404);
+        // The M1 absence check evolves with the now-authorized TOM slice; the UPMS role checks remain intact.
+        HttpResponse<String> orders = admin.get("/api/v1/orders");
+        assertThat(orders.statusCode()).isEqualTo(200);
+        com.xksystem.logistics.support.TomContract.assertSchema("OrderPageEnvelope", json.readTree(orders.body()));
         Map<String, Object> create = createBody("DRIVER");
         HttpResponse<String> created = admin.post("/api/v1/upms/accounts", create, true);
         assertStatus(created, 201, "0000");
