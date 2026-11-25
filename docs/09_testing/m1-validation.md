@@ -27,6 +27,11 @@ Cloud 預裝 Java 21.0.13 為 JRE，本機 verify 使用 Maven 映像內 JDK 21.
 
 ## CI 與交付追蹤
 
+- 交付 PR：[PR #2](https://github.com/xk2022/xk-app-logistics/pull/2)，目標 `main`。
+- 工程實作受測 commit：`fb85e79d0cd9e7a34d4a11e5e3e298390908f6d4`。
+- 首輪 [GitHub Actions run #1](https://github.com/xk2022/xk-app-logistics/actions/runs/45540816190)：四項 job 全部 **success**，包含原始 Dockerfile 完整建置、PostgreSQL 空庫與重啟、Maven verify、桌面／手機 4 項 E2E、依賴與新提交秘密掃描。
+- 本次補錄僅更新交付文件；最終文件提交及合併後 main 的 CI 由同一 workflow 自動執行，最新狀態與 merge SHA 以 PR／run 紀錄為準。合併前仍須核對最新 head 的全部品質 job。
+
 [M1 quality workflow](https://github.com/xk2022/xk-app-logistics/actions/workflows/ci.yml) 設有四個不可忽略的品質 job：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke。PR 與 main push 都執行；無部署步驟。PR 合併前必須核對受測 head、四個 job 的實際結果與 diff。
 
 JUnit、SBOM、OSV／Gitleaks、Playwright 與 Compose 診斷作為 CI artifacts 保存 14 天。精確受測 SHA、run、PR 與合併結果由 GitHub 不可變執行紀錄及交付回報追蹤；尚未執行的 run 不列為通過。
