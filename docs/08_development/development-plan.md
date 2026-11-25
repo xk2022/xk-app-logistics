@@ -15,7 +15,7 @@ M1 已完成。M2 分為五個工作包，逐一交付：
 
 | 工作包 | 範圍 |
 | --- | --- |
-| LG-M2-01 | [UPMS 帳號與權限](m2-01-upms-handoff.md) |
+| LG-M2-01 | [UPMS 帳號與權限](m2-01-upms-handoff.md)；本輪實作／[驗證紀錄](../09_testing/m2-01-validation.md) |
 | LG-M2-02 | ADM 字典與參數（具體契約待確認） |
 | LG-M2-03 | CRM 客戶主檔（具體契約待確認） |
 | LG-M2-04 | TOM 訂單草稿與五項 API |

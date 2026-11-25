@@ -1,4 +1,4 @@
-name: M1 quality
+name: Application quality
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: m1-quality-${{ github.workflow }}-${{ github.ref }}
+  group: application-quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -132,6 +132,7 @@ jobs:
     timeout-minutes: 20
     env:
       COMPOSE_FILE: compose.yaml:compose.dev.yaml
+      E2E_BASE_URL: https://localhost:8443
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -140,12 +141,20 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '21.0.13'
+          cache: maven
       - name: Configure isolated disposable development database
         run: |
           test_password=$(openssl rand -hex 24)
           echo "::add-mask::$test_password"
           cp .env.example .env
           sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$test_password/" .env
+          sed -i 's/^POSTGRES_DB=.*/POSTGRES_DB=xk_logistics_e2e/' .env
+          echo "E2E_FIXTURE_PATH=$RUNNER_TEMP/xk-m2-e2e-fixture.json" >> "$GITHUB_ENV"
+          ./infrastructure/generate-dev-tls.sh
       - run: npm ci && npx playwright install --with-deps chromium
       - name: Start full development stack
         run: docker compose up --build --detach --wait --wait-timeout 180
@@ -154,11 +163,24 @@ jobs:
           curl --fail --silent http://127.0.0.1:8084/actuator/health | jq --exit-status '.status == "UP" and keys == ["status"]'
           curl --fail --silent --retry 15 --retry-connrefused --retry-delay 2 http://127.0.0.1:5173/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP" and .data.service == "xk-logistics" and (.timestamp | endswith("+08:00"))'
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM pg_tables WHERE schemaname = '\''logistics'\'' AND tablename <> '\''flyway_schema_history'\''"')" = 0
+          curl --fail --silent --cacert infrastructure/dev-tls/localhost.crt https://localhost:8443/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP"'
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''2'\'' AND success"')" = 1
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = flyway_schema_history,upms_account,upms_audit,upms_lock
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.upms_account"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.upms_audit"')" = 0
           docker compose restart backend
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-      - name: Browser success, failure, and retry on desktop and mobile
+      - name: Create isolated synthetic UPMS fixture with test-only runner
+        working-directory: backend
+        run: |
+          ./mvnw --batch-mode --no-transfer-progress test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
+          set -a
+          source ../.env
+          set +a
+          DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
+            java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
+      - name: TLS browser authentication, permissions, and service smoke on desktop and mobile
         run: npm run test:e2e
       - name: Collect service diagnostics
         if: always()
@@ -176,6 +198,8 @@ jobs:
             test-results/
             artifacts/
           retention-days: 14
-      - name: Remove disposable containers and database
+      - name: Remove disposable credentials, containers, and database
         if: always()
-        run: docker compose down --volumes --remove-orphans
+        run: |
+          rm -f "$E2E_FIXTURE_PATH"
+          docker compose down --volumes --remove-orphans

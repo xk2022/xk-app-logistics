@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
 
 test('shell reads real backend status through the same-origin proxy', async ({ page }, testInfo) => {
+  await page.goto('/')
   const responsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname === '/api/v1/status')
-  await page.goto('/')
+  await page.getByRole('button', { name: '系統狀態', exact: true }).click()
   const response = await responsePromise
   expect(response.ok()).toBeTruthy()
   expect(await response.json()).toMatchObject({
@@ -22,6 +23,7 @@ test('shell reads real backend status through the same-origin proxy', async ({ p
 test('a failed status request is visible and can be retried', async ({ page }) => {
   await page.route('**/api/v1/status', (route) => route.abort('failed'))
   await page.goto('/')
+  await page.getByRole('button', { name: '系統狀態', exact: true }).click()
   await expect(page.getByRole('heading', { name: '暫時無法取得服務狀態' })).toBeVisible()
   await expect(page.getByRole('heading', { name: '系統服務已就緒' })).toHaveCount(0)
   await page.unroute('**/api/v1/status')
