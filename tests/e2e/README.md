@@ -1,8 +1,9 @@
 # Browser verification
 
-The suite has 12 cases: six each for desktop Chromium and Pixel 7. The
-original ten service, UPMS, ADM, and CRM cases remain. TOM adds one browser-context
-API scenario per project; the complete order interface remains a later work package.
+The suite has 18 cases: nine each for desktop Chromium and Pixel 7. The
+original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
+`order-ui.spec.ts` adds three order-interface scenarios per project, using a
+separate synthetic account group.
 
 The desktop Chromium and Pixel 7 projects preserve the M1 service-state success,
 request failure, retry, and overflow checks. UPMS verification uses the same
@@ -29,12 +30,28 @@ They also verify that `XKSESSION` and legacy `JSESSIONID` represent the same
 protected session, rotate on login, and support a real JSESSIONID-only browser
 read and CSRF-protected write. Cookie comparisons expose only boolean results;
 the suite never constructs a cookie with a real session value in action arguments.
+The order-interface scenarios use the real application, backend and PostgreSQL.
+They cover both management roles, all three order types, multiple items/tasks and
+dependencies, completeness checks without operational acceptance, effective
+customer selection and disabled-customer history, preserved local drafts on
+version conflicts, and explicit replay after a committed response is lost. The
+fault injector validates TLS with the generated local DEV public certificate
+(system trust for remote hosts). It lets the original request finish at the real
+backend before aborting delivery to the browser, compares retry key/body only in memory
+and verifies the same persisted order/version. A first retry is also sent to the
+real backend with an invalid synthetic CSRF token; its 403 must keep the original
+uncertain operation frozen until a later explicit replay confirms that result.
+DRIVER has neither the order
+navigation nor order API access. Both viewports check accessible field labels,
+keyboard operation and horizontal overflow. The three cases run sequentially
+within each viewport so they cannot evict one another's sessions; other suites
+and viewports retain independent credentials and can run concurrently.
 No CRM or TOM records are inserted by the fixture runner.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 24 synthetic login accounts: independent UPMS, ADM, CRM, and TOM
-ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only that database on the local machine and refuses a populated
-account table. It lives under `backend/src/test`, is absent from the production
+runner creates 30 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+and order UI ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
+that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
 TEXT/NUMBER/BOOLEAN set per browser project. These exist only in the test runner;
@@ -44,6 +61,8 @@ the production parameter-definition catalog remains empty.
 umask 077
 cp .env.example /tmp/xk-e2e.env
 # In /tmp/xk-e2e.env set POSTGRES_DB=xk_logistics_e2e and a local-only password.
+# Optional separate ports: POSTGRES_PORT=5433, BACKEND_PORT=8086,
+# FRONTEND_PORT=5174, HTTPS_PORT=8444. Defaults remain supported.
 export COMPOSE_FILE=compose.yaml:compose.dev.yaml
 export COMPOSE_PROJECT_NAME=xk-logistics-e2e
 ./infrastructure/generate-dev-tls.sh
@@ -57,7 +76,8 @@ set -a
 source /tmp/xk-e2e.env
 set +a
 export E2E_FIXTURE_PATH=/tmp/xk-m2-e2e-fixture.json
-DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
+export E2E_BASE_URL="https://localhost:${HTTPS_PORT:-8443}"
+DB_URL="jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:-5432}/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
   java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
 cd ..
 npm run test:e2e
@@ -91,11 +111,14 @@ the runtime automatically; preparation and cleanup are explicit operations.
 Authentication traces are disabled so passwords and session tokens stay out of
 artifacts. Password values are also kept out of Playwright action titles.
 Screenshots show the resulting workspace, account list, dictionaries, parameters,
-and synthetic customer details. Each TOM project additionally writes
+synthetic customer details, and synthetic order screens. The order UI tests do
+not attach intercepted requests, headers, keys, cookies or CSRF values. Each TOM API case and each order UI case additionally writes
 `order-contract-responses.json` under its test output directory. It contains only
 `{schema, value}` entries with original synthetic order/error response bodies for
 independent validation against the unchanged OpenAPI 0.2.0 schemas. It excludes
-request context, credentials, cookies, headers, and CSRF tokens. This artifact is
+request context, credentials, cookies, headers, and CSRF tokens. Only actual JSON bodies from the five order routes are collected; aborted or
+unreadable responses are skipped and are not claimed as validated. The original
+TOM API artifacts remain unchanged. These artifacts are
 also covered by the existing privacy guard. Reports and
 screenshots are ignored by Git; inspect the HTML report with
 `npm run test:e2e:report`. Keep credential files out of report directories.

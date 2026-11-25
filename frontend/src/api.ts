@@ -66,13 +66,18 @@ export async function request(path: string, method = 'GET', body?: unknown, sign
   } finally { window.clearTimeout(timeout); signal?.removeEventListener('abort', abort) }
 }
 
-export async function refreshCsrf(): Promise<void> {
+export async function refreshCsrf(signal?: AbortSignal): Promise<void> {
   csrf = null
-  const data = await request('/auth/csrf')
+  const data = await request('/auth/csrf', 'GET', undefined, signal)
   if (!record(data) || typeof data.token !== 'string' || !data.token || data.headerName !== 'X-CSRF-TOKEN') {
     throw new ApiError(0, '無法取得安全驗證，請重新操作。')
   }
   csrf = { token: data.token, headerName: data.headerName }
+}
+export async function getCsrfHeaders(signal?: AbortSignal): Promise<Record<string, string>> {
+  if (!csrf) await refreshCsrf(signal)
+  if (!csrf) throw new ApiError(0, '無法取得安全驗證，請重新操作。')
+  return { [csrf.headerName]: csrf.token }
 }
 export async function write(path: string, method: string, body?: unknown): Promise<unknown> {
   if (!csrf) await refreshCsrf()
