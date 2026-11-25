@@ -1,11 +1,13 @@
 # Browser verification
 
-The suite has 20 cases: ten each for desktop Chromium and Pixel 7. The
+The suite has 22 cases: eleven each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
 `vehicle.spec.ts` adds one independent FMS scenario per viewport; the original
 18 cases remain unchanged.
+`driver.spec.ts` adds one independent driver scenario per viewport; the previous
+20 cases and their order/vehicle response collectors remain unchanged.
 
 The desktop Chromium and Pixel 7 projects preserve the M1 service-state success,
 request failure, retry, and overflow checks. UPMS verification uses the same
@@ -56,10 +58,20 @@ available master-data options, real version conflicts, inactive-type history,
 decimal and date boundaries, and all six DRIVER API refusals. AVAILABLE describes
 the master record; no test treats it as proof of dispatch availability or creates
 an IN_USE state. Both viewports check labels, keyboard access, and overflow.
-No CRM, TOM, or vehicle records are inserted by the fixture runner.
+The driver scenario uses separate management accounts, three normal DRIVER
+accounts, and one valid temporary DRIVER account per viewport. It verifies
+management and literal searches, filters and pagination, independent employment
+and duty states, terminal LEFT behavior, archived license types, real version
+conflicts, paged binding candidates and their boolean bound flag, optional
+binding, unbinding and reassignment, exact minimal self responses, cross-person
+refusal, and the temporary-password barrier. Administrative options require only
+ACTIVE and ON_DUTY; expired licenses, archived types, and absent accounts do not
+silently add dispatch or legal-eligibility rules. License references and account
+metadata stay out of self responses. No CRM, TOM, vehicle, or driver records are
+inserted by the fixture runner.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 36 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 48 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, and FMS ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
@@ -70,6 +82,11 @@ It also inserts six synthetic ADM `VEHICLE_TYPE` items, three per viewport, sole
 for these isolated tests, with clearly synthetic tractor, trailer, and truck
 labels. General application startup still has no approved
 vehicle-type items or vehicle seed records.
+The driver group adds ADMIN/DISPATCHER, three normal DRIVER users and one
+temporary DRIVER user per viewport, with a distinct username search prefix for
+isolated candidate pagination. Four synthetic `DRIVER_LICENSE_TYPE` items, two
+per viewport, exist only in this private arrangement. V7 itself initializes only
+the empty category and never inserts accounts, drivers, or formal license types.
 
 ```sh
 umask 077
@@ -107,6 +124,10 @@ python3 -m venv /tmp/xk-order-contract-env
 /tmp/xk-order-contract-env/bin/python -m pip install --require-hashes -r tests/contracts/requirements.txt
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_order_contract.py \
   --responses 'test-results/**/order-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_vehicle_contract.py \
+  --responses 'test-results/**/vehicle-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_driver_contract.py \
+  --responses 'test-results/**/driver-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -115,6 +136,7 @@ dictionary before checking the actual response bodies. CI runs the same formal
 validation and scans the pinned Python requirements with OSV.
 
 Run the tests immediately after creating the fixture because UPMS initial passwords
+and the driver's temporary fixture credential
 expire after 15 minutes. A full rerun requires a fresh isolated database and
 fixture; the scenarios intentionally change passwords and disable accounts.
 `E2E_BASE_URL` defaults to `https://localhost:8443`. Only localhost self-signed
@@ -140,11 +162,15 @@ Each FMS case separately writes `vehicle-contract-responses.json`, using the sam
 body-only `{schema, value}` format for its independent FMS OpenAPI schemas. It
 includes real permission, validation, uniqueness, and version-conflict responses;
 no authentication response or request metadata is captured.
+Each driver case writes `driver-contract-responses.json` with the seven
+independent driver envelope schemas in the same body-only format. The separate
+driver validator checks this evidence; the order and vehicle validators and
+their artifacts are preserved.
 
-CI validates health/status, Flyway V1–V6 on an empty database, exact UPMS/ADM/CRM/TOM/FMS
-tables, the fixed ORDER_TYPE enum and three empty configurable categories,
+CI validates health/status, Flyway V1–V7 on an empty database, exact UPMS/ADM/CRM/TOM/FMS
+tables, the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
-or vehicles, restart stability,
+vehicles, or drivers, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

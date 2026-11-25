@@ -91,7 +91,7 @@ class TomIT {
 
     @BeforeEach
     void isolateSyntheticAccountsCustomersAndOrders() throws Exception {
-        jdbc.execute("TRUNCATE TABLE logistics.fms_vehicle, " + TABLES.stream().map(table -> "logistics." + table).collect(java.util.stream.Collectors.joining(","))
+        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle, " + TABLES.stream().map(table -> "logistics." + table).collect(java.util.stream.Collectors.joining(","))
                 + ", logistics.crm_contact, logistics.crm_address, logistics.crm_customer, logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         clock.reset(); actor = account("ADMIN", false); admin = new Browser(); login(admin, actor);
         int index = 0;

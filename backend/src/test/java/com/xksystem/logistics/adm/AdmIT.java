@@ -74,13 +74,13 @@ class AdmIT {
 
     @BeforeEach
     void arrangeOnlyIsolatedSyntheticData() throws Exception {
-        jdbc.execute("TRUNCATE TABLE logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
                 + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
                 + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.adm_parameter, logistics.adm_parameter_definition, "
                 + "logistics.upms_audit, logistics.upms_account");
         jdbc.update("DELETE FROM logistics.adm_dict_item WHERE NOT read_only");
-        jdbc.update("DELETE FROM logistics.adm_dict_category WHERE code NOT IN ('ORDER_TYPE','CONTAINER_TYPE','TASK_KIND','VEHICLE_TYPE')");
+        jdbc.update("DELETE FROM logistics.adm_dict_category WHERE code NOT IN ('ORDER_TYPE','CONTAINER_TYPE','TASK_KIND','VEHICLE_TYPE','DRIVER_LICENSE_TYPE')");
         jdbc.update("UPDATE logistics.adm_dict_category SET enabled=true, version=0 WHERE NOT read_only");
         try (var connection = dataSource.getConnection()) {
             keys = AdmTestData.insertDefinitions(connection, "IT");
@@ -117,7 +117,7 @@ class AdmIT {
     void fixedOrderTypesAreReadOnlyAndOtherInitialCategoriesHaveNoInventedBusinessItems() throws Exception {
         Browser admin = login("ADMIN", false);
         JsonNode categories = page(admin.get("/adm/categories"));
-        assertThat(codes(categories)).containsExactly("ORDER_TYPE", "CONTAINER_TYPE", "TASK_KIND", "VEHICLE_TYPE");
+        assertThat(codes(categories)).containsExactly("ORDER_TYPE", "CONTAINER_TYPE", "TASK_KIND", "VEHICLE_TYPE", "DRIVER_LICENSE_TYPE");
         JsonNode orderType = categories.get(0);
         assertThat(orderType.get("readOnly").asBoolean()).isTrue();
         JsonNode items = page(admin.get("/adm/categories/" + orderType.get("id").asString() + "/items"));
@@ -400,10 +400,11 @@ class AdmIT {
         JsonNode result = data(admin.get("/adm/categories?page=0&size=2"));
         assertThat(result.get("page").asInt()).isZero();
         assertThat(result.get("size").asInt()).isEqualTo(2);
-        assertThat(result.get("totalElements").asLong()).isEqualTo(4);
-        assertThat(result.get("totalPages").asInt()).isEqualTo(2);
+        assertThat(result.get("totalElements").asLong()).isEqualTo(5);
+        assertThat(result.get("totalPages").asInt()).isEqualTo(3);
         assertThat(result.get("content").size()).isEqualTo(2);
-        assertThat(page(admin.get("/adm/categories?page=2&size=2")).size()).isZero();
+        assertThat(page(admin.get("/adm/categories?page=2&size=2")).size()).isEqualTo(1);
+        assertThat(page(admin.get("/adm/categories?page=3&size=2")).size()).isZero();
     }
 
     @Test

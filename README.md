@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M3-01 FMS 車輛主檔（驗證紀錄見下方） |
+| 狀態 | development — LG-M3-02 FMS 司機主檔（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,8 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [FMS 司機交接](docs/08_development/m3-02-fms-driver-handoff.md) · [司機 API／OpenAPI](docs/06_api/fms-drivers.md)
+- [司機工程決策](docs/98_decisions/2026-11-25-fms-driver-engineering.md) · [M3-02 驗證](docs/09_testing/m3-02-validation.md)
 - [FMS 車輛交接](docs/08_development/m3-01-fms-vehicle-handoff.md) · [車輛 API／OpenAPI](docs/06_api/fms-vehicles.md)
 - [車輛工程決策](docs/98_decisions/2026-11-25-fms-vehicle-engineering.md) · [M3-01 驗證](docs/09_testing/m3-01-validation.md)
 - [產品需求](docs/01_product/prd.md)
@@ -38,7 +40,7 @@
 
 需要 Node.js 24.22.3／npm 11.19.1、Java 21、Docker Engine 與 Compose v2。Maven Wrapper 固定 Maven 3.9.16；React 19.3.1、TypeScript 6.0.3、Vite 8.3.8、Spring Boot 4.1.3、PostgreSQL 17.12。精確相依、官方相容性與公司規範基準見 [M1 版本紀錄](docs/04_architecture/m1-versions.md)。
 
-Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，僅開原五項 API。`fms` 提供車輛主檔、受控車種選項與後續模組可使用的行政狀態查詢；不處理派工或車輛占用。後續模組必須透過介面協作，不跨模組操作 repository。
+Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，僅開原五項 API。`fms` 提供車輛與司機主檔、受控分類選項、DRIVER 本人唯讀介面及後續模組可使用的行政狀態查詢；不處理派工或資源占用。後續模組必須透過介面協作，不跨模組操作 repository。
 
 ## 啟動
 
@@ -50,7 +52,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM 及 V6 FMS 車輛主檔結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛及 V7 FMS 司機主檔結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -166,8 +168,20 @@ ADMIN／DISPATCHER 登入後由「車輛管理」查詢、新增及維護本公�
 
 `/fms/vehicle-options` 與 `VehicleQueries.requireAdministrativelyAvailable` 只表示主檔行政狀態為 AVAILABLE，仍回傳車種目前啟用資訊；不把檢驗日期、停用字典或未實作的占用當成自訂派車資格。未來 TMS 呼叫者仍須自行授權及執行經核准的占用／派車政策。實際 API、模型與驗收見上述 FMS 文件，V6 不種車輛或正式車種資料。
 
+## FMS 司機管理
+
+正常 ADMIN／DISPATCHER 可由「司機管理」查詢、新增及維護本公司司機主檔。UUID 由伺服器產生；司機編號經 NFC、邊界空白移除與大寫正規化後唯一，建立後不可修改，停用／離職也不重用。姓名必填，聯絡方式、駕照類別／工作參考及期限、UPMS 帳號均可空；沒有預設司機或正式證照類別資料。
+
+V7 只新增空的 ADM `DRIVER_LICENSE_TYPE` 分類框架。ADMIN 可配置經核准的選項；DISPATCHER 透過 FMS 窄查詢使用有效項目，不取得一般 ADM 管理權。歷史停用分類仍可原值維護，日期只記錄與提示，不代表法規資格。
+
+司機主檔與登入帳號分開，可選擇性綁定唯一、目前有效的 DRIVER 帳號。候選只顯示帳號／名稱摘要與已綁定標記，不提供其他帳號資料或 UPMS 管理操作。有效臨時帳號可先綁定，首次改密限制仍照常生效。停用或換角色後的舊關聯保留並提示失效，可解綁或更換；新綁定仍須由伺服器重新驗證與資料庫唯一約束保護。
+
+在職（ACTIVE）、停用（INACTIVE）、離職（LEFT）與行政在勤／不在勤分開記錄，不自動變更另一欄或帳號生命週期。離職可維護既有資料；復職流程尚未核准，本階段不提供離職轉回在職／停用。行政可用選項及 `DriverQueries.requireAdministrativelyAvailable` 只檢查 ACTIVE 且 ON_DUTY，不以帳號、分類啟用或駕照日期自訂派車資格，也不建立占用或車輛配對。
+
+DRIVER 由「本人司機資料」唯讀查詢目前帳號綁定的必要資料。伺服器每次由目前身分推導，不接受其他司機 ID，不回證照參考、帳號關聯或管理稽核欄位。帳號失效或解綁後不得繼續查到原關聯資料；司機主檔行政狀態本身不會自動停用登入帳號。管理保存沿用版本衝突、未知結果與未儲存／保存中離開保護。實際契約、交易與驗收見上述 FMS 司機文件。
+
 ## 範圍與部署
 
-UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 交付；FMS 車輛依 Q21–Q25 交付。司機管理、正式受理、派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
+UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。正式受理、派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。

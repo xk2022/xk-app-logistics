@@ -120,7 +120,7 @@ describe('vehicle workspace', () => {
     complete(vehicle({ registrationNo: '保存中的合成內容', version: 3 }))
     await screen.findByText('車輛資料已儲存。')
     expect(updateVehicle).toHaveBeenCalledOnce()
-    expect(discard).not.toBeInTheDocument()
+    await waitFor(() => expect(discard).not.toBeInTheDocument())
     expect(onBusy).toHaveBeenLastCalledWith(false)
     rendered.unmount()
     expect(onBusy).toHaveBeenLastCalledWith(false)

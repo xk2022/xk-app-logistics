@@ -23,6 +23,18 @@ interface FmsFixture extends TomFixture {
   vehicleTypeCategoryId: string
   vehicleTypes: Record<'a' | 'b' | 'c', { id: string; code: string; label: string }>
 }
+interface DriverCredential extends Credential { id: string }
+interface DriverFixture {
+  admin: DriverCredential
+  dispatcher: DriverCredential
+  driverA: DriverCredential
+  driverB: DriverCredential
+  driverC: DriverCredential
+  temporary: DriverCredential
+  accountSearchPrefix: string
+  licenseTypeCategoryId: string
+  licenseTypes: Record<'a' | 'b', { id: string; code: string; label: string }>
+}
 interface ProjectFixture {
   admin: Credential
   dispatcher: Credential
@@ -32,6 +44,7 @@ interface ProjectFixture {
   tom?: TomFixture
   orderUi?: TomFixture
   fms?: FmsFixture
+  driverFlow?: DriverFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -95,6 +108,18 @@ export function fmsFixtureFor(project: string): FmsFixture {
     const type = group.vehicleTypes?.[key as 'a' | 'b' | 'c']
     return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
   })) throw new Error('FMS test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function driverFixtureFor(project: string): DriverFixture {
+  const group = fixtureFor(project).driverFlow
+  if (!group || !['admin', 'dispatcher', 'driverA', 'driverB', 'driverC', 'temporary'].every((key) => {
+    const account = group[key as 'admin' | 'dispatcher' | 'driverA' | 'driverB' | 'driverC' | 'temporary']
+    return account && ['id', 'username', 'password'].every((field) => typeof account[field as keyof DriverCredential] === 'string')
+  }) || typeof group.accountSearchPrefix !== 'string' || typeof group.licenseTypeCategoryId !== 'string' || !['a', 'b'].every((key) => {
+    const type = group.licenseTypes?.[key as 'a' | 'b']
+    return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
+  })) throw new Error('Driver test fixture is incomplete for this browser project.')
   return group
 }
 
