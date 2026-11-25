@@ -47,7 +47,7 @@ jobs:
           java-version: '21.0.13'
           cache: maven
       - name: Verify with real PostgreSQL Testcontainers
-        run: ./mvnw --batch-mode --no-transfer-progress verify
+        run: ./mvnw --settings ../.github/maven-central-settings.xml --strict-checksums --batch-mode --no-transfer-progress verify
         working-directory: backend
       - name: Retain JUnit reports
         if: always()

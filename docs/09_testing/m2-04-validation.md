@@ -40,11 +40,12 @@
 
 - 工程受測 commit：`4cbe2cecafdbf9d645dd68dca884dccff121dd6e`，交付 [PR #9](https://github.com/xk2022/xk-app-logistics/pull/9)。
 - 首輪 [Application quality run 45583679300](https://github.com/xk2022/xk-app-logistics/actions/runs/45583679300) 四項全部 success、attempt 1：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke。使用儲存庫原始 Dockerfile，前端 77／後端 211／E2E 12／實際 HTTP schema 120 全部通過。
+- 證據提交 `d88295d` 的 [run 45584771058](https://github.com/xk2022/xk-app-logistics/actions/runs/45584771058) 三次 Backend verify 均在測試前下載 Boot Maven plugin 4.1.3 POM 遇官方 Central HTTP 429；另外三項成功。後端 verify 改用另一官方 HTTPS 端點 `repo1.maven.org/maven2` 並啟用 strict checksums，固定版本、完整 211 項與測試門檻不變。已用獨立空白倉庫驗證同 plugin 可解析；兩個端點仍屬同一 Central 服務，此可回滾路由調整不保證消除日後限流。最終 head 仍須四項全成功。
 - GitHub ubuntu-24.04 的 CPython 3.12.3 以相同 wheel hash 成功安裝七個套件並通過全部固定／實際契約檢查，與本機 CPython 3.12.14 的同 3.12 ABI 相容性已實測，不以假定代替記錄。
 - 本機完整 16 commits 的 gitleaks 無洩漏；正式 JAR 不含 fixture、測試資料或診斷入口。秘密掃描曾把公有契約 digest 誤認為 key，已改用標準 sha256sum manifest 表示，同一組 digest／掃描規則保持原樣，沒有關閉或排除安全檢查。
 - 隔離 TOM E2E 資料卷及私有 0600 fixture 憑證已清理。一般 DEV 的原 V4 資料庫升級 V5、十九表及可信本機 TLS 狀態通過；帳號／CRM 客戶／TOM 七表／參數定義與參數仍全 0，未混入測試資料。
 - 本機 Cloud 最終 backend image 為 `sha256:730f00df6c83f384a6ca5707c3cfc0a6befb3ab28e8d3690f890813e83a0ed39`，只作 DEV 驗收。Cloud 的暫存 Dockerfile／Compose overlay 用 BuildKit secret 掛載專用 Maven 代理與 CA，設定不入庫或映像層；遠端 CI 使用原始 Dockerfile。沒有發佈或正式部署映像。
-- 本次文件提交只補錄證據；最終 head 及合併後 main 仍執行相同四項檢查。最新 head／run／merge SHA 以 PR 與 GitHub 執行紀錄為準，四項全成功才合併，未略過測試或降低門檻。
+- 證據提交只補錄證據，後續 CI 修復僅調整上述官方下載端點及 checksum；最終 head 及合併後 main 仍執行相同四項檢查。最新 head／run／merge SHA 以 PR 與 GitHub 執行紀錄為準，四項全成功才合併，未略過測試或降低門檻。
 
 ## 可重現
 
