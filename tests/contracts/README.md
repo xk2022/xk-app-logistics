@@ -83,3 +83,54 @@ an empty evidence file/array, an unknown schema, extra capture metadata or a fai
 schema all fail the command; they cannot be reported as successful HTTP validation.
 `--static-only` and `--responses` are mutually exclusive. Static fixture success is
 tooling evidence, not proof that the product or an HTTP flow has run.
+
+## Independent FMS driver contract checks
+
+`validate_driver_contract.py` independently reads
+`docs/06_api/fms-drivers-openapi.yaml`. It requires exactly eight operations and
+28 component schemas, checks each schema's metadata, manager versus DRIVER-self
+role bindings and Session/CSRF declarations, and validates 27 positive / 40 negative
+static fixtures plus three external-reference rejection self-checks. The existing
+TOM and vehicle validators, source contracts and hashed requirements remain unchanged.
+
+The fixtures cover the distinct 22-field detail, 17-field summary, 12-field self,
+and nine-field option DTOs. Extra account, license-reference, audit or authentication
+fields fail the privacy-specific schemas. Nullable metadata, historical disabled
+license types, independent employment/duty combinations, minimal account candidates,
+partial PATCH, safe-integer versions, descriptive contact text and Gregorian dates
+including 1500/0001 are exercised. Raw padded/NFD input is intentionally permitted
+by the schema: `x-normalizedMinLength` / `x-normalizedMaxLength` describe canonical
+limits, not raw-string limits. The tool does not execute Java normalization, verify
+UPMS binding eligibility, status transitions against stored state, database locks,
+permissions or dispatch/legal eligibility; product tests own those checks.
+
+The tool reuses the existing hash-pinned test-only packages, an in-memory registry,
+a retrieval-denying handler and explicit date/date-time checks. All `$ref` and
+`$dynamicRef` must point into the same OpenAPI document; resource-ID overrides and
+network/file retrieval are forbidden. Evidence JSON rejects duplicate keys,
+non-JSON constants, invalid Unicode and unknown response schemas. Decimal parsing
+and exact mathematical-integer validation prevent fractional values near the safe
+version boundary from passing through binary-float rounding. Diagnostics print
+schema/pointer/keyword, without submitted values or parser exception messages.
+
+The isolated browser collector writes `driver-contract-responses.json` as a
+nonempty array of body-only `{schema,value}` records. Accepted schema names are
+`DriverEnvelope`, `PageDriverSummaryEnvelope`, `DriverSelfEnvelope`,
+`PageDriverOptionEnvelope`, `DriverLicenseTypesEnvelope`,
+`PageDriverAccountOptionEnvelope` and `ErrorEnvelope`. No cookie, CSRF token,
+request body, credential, authentication header or trace is captured. Existing
+artifact privacy checks remain applicable.
+
+```sh
+# Static tooling only; explicitly reports HTTP acceptance as not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_driver_contract.py --static-only
+# After the isolated real HTTPS browser run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_driver_contract.py \
+  --responses 'test-results/**/driver-contract-responses.json'
+```
+
+Without arguments the driver response glob above is mandatory by default. Missing
+matches, empty files/arrays, extra capture metadata or a schema error fail. Static
+success alone cannot be reported as actual HTTP validation; `--static-only` and
+`--responses` are mutually exclusive. Commands use the same temporary virtual
+environment and hashed install documented above.

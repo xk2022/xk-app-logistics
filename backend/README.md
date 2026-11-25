@@ -1,4 +1,4 @@
-# XK Logistics 後端｜LG-M1 / LG-M2-01–04
+# XK Logistics 後端｜LG-M1 / M2 / M3-01–02
 
 Java 21、Spring Boot 4.1.3、Maven 3.9.16（Wrapper 3.3.4）。相依由 Spring Boot BOM 統一管理：Spring Security 7.1.3、Spring Data JPA 4.1.3、Hibernate 7.4.15.Final、Flyway 12.4.0、PostgreSQL JDBC 42.7.14、JUnit 6.0.3、Testcontainers 2.0.5。完整版本依據及專案啟動見[根目錄 README](../README.md)。
 
@@ -105,4 +105,14 @@ GET 明細、清單及完整性檢查使用同一 repeatable-read snapshot，避
 
 可信 `VehicleQueries.findCurrent` 回不可變參照快照；`requireAdministrativelyAvailable` 需 caller writable transaction、先授權與 canonical 鎖，刷新並鎖住車輛直到提交，只檢管理狀態 AVAILABLE。它不檢查占用、法定車籍／檢驗或派車資格，也不擴充任何 DRIVER HTTP 權限。
 
-正常 Flyway 升級不種車輛或正式車種碼，不建立司機、派工、占用、配對或額外歷史表。API 詳見 [FMS 契約](../docs/06_api/fms-vehicles.md)，空庫／V5→V6／交易／HTTP 的實際結果見 [M3-01 驗證](../docs/09_testing/m3-01-validation.md)。
+V6 不種車輛或正式車種碼，也不建立司機、派工、占用、配對或額外歷史表。API 詳見 [FMS 契約](../docs/06_api/fms-vehicles.md)，空庫／V5→V6／交易／HTTP 的實際結果見 [M3-01 驗證](../docs/09_testing/m3-01-validation.md)。
+
+## FMS 司機主檔（M3-02）
+
+V7 新增 `fms_driver` 與空 `DRIVER_LICENSE_TYPE` 分類，保留 V1–V6；司機編號不可變且唯一，nullable `account_id` 以 FK／UNIQUE 保護選擇性一對一。完整管理明細、列表摘要、行政選項與本人資料使用不同 DTO，避免列表／本人外洩證照工作參考與 audit。
+
+帳號候選與綁定只透過 UPMS 窄介面；FMS 不讀 UPMS repository。候選由 UPMS 分頁，再由 FMS 對該頁標記是否已綁，不在分頁後過濾而破壞 totals。新綁定與寫入依 canonical → fresh actor → driver/version → target account → ADM 分類／項目鎖協調，已失效的相同關聯可保留維護。UPMS 角色／停用／復原仍使用既有 canonical，不新增生命週期副作用。
+
+GET `/fms/drivers/me` 僅 DRIVER，安全 matcher 優先於 FMS 管理路徑。以可鎖定但無業務寫入的交易，canonical → fresh actor → 目前綁定 driver，與解綁／角色異動協調；不快取 driverId，不接受外部識別或查詢。正常身分即使主檔 INACTIVE／LEFT 仍可讀必要本人資料；停帳、撤銷、改角色或解綁依當前授權拒絕。
+
+可信 `DriverQueries` 只提供目前主檔來源與 ACTIVE＋ON_DUTY 的 writable MANDATORY 鎖定查核，不回證照參考或 credential、不判定法規／派車或占用。LEFT 暫不轉回其他 employment；duty 與 employment 不互相自動變更。詳細規則見 [FMS 司機契約](../docs/06_api/fms-drivers.md)、[工程決策](../docs/98_decisions/2026-11-25-fms-driver-engineering.md)及 [M3-02 驗證](../docs/09_testing/m3-02-validation.md)。

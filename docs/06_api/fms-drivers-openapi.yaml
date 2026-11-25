@@ -1,0 +1,1337 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics FMS Driver API
+  version: 0.1.0
+  description: LG-M3-02獨立工程契約，依Q26–Q30及root工程定稿。保留M2/M3-01契約；管理端ADMIN/DISPATCHER，本人端正常DRIVER。DTO最小化，無派工/占用/配對/法規資格/UPMS生命週期自動化/正式seed或部署。規格不代表實際驗收已執行。
+servers:
+- url: /api/v1
+tags:
+- name: FMSDriver
+security:
+- sessionCookie: []
+paths:
+  /fms/drivers:
+    get:
+      operationId: listDrivers
+      tags:
+      - FMSDriver
+      summary: 本公司最小化司機列表
+      description: 固定driverCode ASC,id ASC；不接受sort。summary排除licenseReference與四個audit欄。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      - $ref: '#/components/parameters/EmploymentFilter'
+      - $ref: '#/components/parameters/DutyFilter'
+      - $ref: '#/components/parameters/LicenseFilter'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDriverSummaryEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    post:
+      operationId: createDriver
+      tags:
+      - FMSDriver
+      summary: 建立獨立司機主檔
+      description: 必填driverCode/name，無account/license/contact亦可管理；預設ACTIVE/OFF_DUTY。建立可記錄任一employment/duty enum組合。無query。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDriverRequest'
+  /fms/drivers/{id}:
+    get:
+      operationId: getDriver
+      tags:
+      - FMSDriver
+      summary: 管理端完整司機主檔
+      description: 只有管理端detail可回licenseReference與audit，無query。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/DriverId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    patch:
+      operationId: patchDriver
+      tags:
+      - FMSDriver
+      summary: 版本化部分維護及帳號綁定
+      description: 同舊invalid account或archived licenseType可保留；新/換非null引用須fresh guard。LEFT不可轉ACTIVE/INACTIVE，duty完全獨立。不自動建帳/改role/停用/解綁/撤銷。每成功PATCH+1，固定clock或同值亦保存，updatedAt=max(now,old+1micro)。無query。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/DriverId'
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchDriverRequest'
+  /fms/drivers/me:
+    get:
+      operationId: getMyDriver
+      tags:
+      - FMSDriver
+      summary: DRIVER本人目前綁定必要摘要
+      description: 精確DRIVER matcher先於/fms/**。由目前actor推導，不接受外部id或任何query；canonical→fresh actor/authVersion→目前binding→fresh
+        locked driver。無業務寫入。無綁定404/失效401/管理角色403；非ACTIVE仍可讀本人，不回account/ref/version/audit。
+      x-allowedRoles:
+      - DRIVER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverSelfEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fms/driver-options:
+    get:
+      operationId: listDriverOptions
+      tags:
+      - FMSDriver
+      summary: 行政ACTIVE且ON_DUTY司機選項
+      description: 僅ACTIVE&&ON_DUTY，不因unbound account、archived licenseType或到期日額外排除。不保證可派工/法規資格或未占用；固定driverCode,id升序，無sort/status
+        filter。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      - $ref: '#/components/parameters/LicenseFilter'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDriverOptionEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fms/driver-license-types:
+    get:
+      operationId: listDriverLicenseTypes
+      tags:
+      - FMSDriver
+      summary: DRIVER_LICENSE_TYPE有效窄選項
+      description: 無query。父分類/項目皆啟用才回；V7只建空分類，沒有正式item seed。不新增DRIVER或DISPATCHER一般ADM權限。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverLicenseTypesEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fms/driver-account-options:
+    get:
+      operationId: listDriverAccountOptions
+      tags:
+      - FMSDriver
+      summary: 已授權的UPMS綁定候選摘要
+      description: UPMS-owned eligible DRIVER/enabled/usable候選，含有效temporary mustChange帳號但不含已過期temporary。UPMS先完整page/count，FMS只對page
+        IDs加boundbool不後過濾。固定username,id升序；已bound仍回、不揭另一driver身份。無driverId/currentDriverId參數。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/AccountSearch'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDriverAccountOptionEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 沿既有同一HttpSession，Secure/HttpOnly/SameSite=Lax。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 100000
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Search:
+      name: q
+      in: query
+      schema:
+        type: string
+        x-normalizedMaxLength: 100
+        description: NFC/Unicode strip後最多100 code points，保持原case；driverCode分支ROOTupper+NFC後literal搜尋，不套code40字上限；name/phone/email採DB
+          lower兩邊。不查licenseReference/帳號資訊，%/_/反斜線皆literal。
+    AccountSearch:
+      name: q
+      in: query
+      schema:
+        type: string
+        x-normalizedMaxLength: 100
+        description: UPMS-owned username/displayName字面不分大小寫搜尋，NFC/strip後最多100 code points；不暴露一般帳號列表，%/_/反斜線皆literal。
+    EmploymentFilter:
+      name: employmentStatus
+      in: query
+      schema:
+        $ref: '#/components/schemas/EmploymentStatus'
+    DutyFilter:
+      name: dutyStatus
+      in: query
+      schema:
+        $ref: '#/components/schemas/DutyStatus'
+    LicenseFilter:
+      name: licenseType
+      in: query
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    DriverId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    BadRequest:
+      description: E0400格式/目標帳號或licenseType不合格；欄位map。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: E0401未登入、失效或撤銷。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: E0403角色、強制改密、TLS/CSRF拒絕。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: E0404授權範圍查無主檔，或本人目前沒有綁定。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: E0409唯一編號/帳號綁定、版本/上限、LEFT復職衝突。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServerError:
+      description: E0500安全摘要，交易回滾。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unavailable:
+      description: E0503服務暫時不可用。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+    NaturalDate:
+      type: string
+      format: date
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$
+      description: 可空欄位的有效Gregorian自然日，0001–9999。不轉UTC、不判定法規資格或依到期阻擋行政選項。
+    EmploymentStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - INACTIVE
+      - LEFT
+      description: 與出勤獨立。ACTIVE/INACTIVE可互轉或轉LEFT；LEFT只可維持LEFT，不能復職（409 employmentStatus）。建立可記錄任一enum。
+    DutyStatus:
+      type: string
+      enum:
+      - ON_DUTY
+      - OFF_DUTY
+      description: 行政出勤紀錄，不是任務占用；允許與任何employmentStatus組合，不自動改值。
+    DriverCodeInput:
+      type: string
+      x-normalizedMinLength: 1
+      x-normalizedMaxLength: 40
+      description: NFC→Unicode邊界strip（含U+FEFF）→Locale.ROOT大寫→NFC後1–40 code points；拒控制字元/不成對surrogate，保留內部空白與連字號，不定國別pattern。長度是canonical後界線，不是raw
+        maxLength。建立後不可改，全就業狀態唯一。
+    NameInput:
+      type: string
+      x-normalizedMaxLength: 200
+      x-normalizedMinLength: 1
+      description: NFC及Unicode邊界strip（Character.isWhitespace/isSpaceChar/U+FEFF）後1–200 code points；拒控制字元/不成對surrogate。不可空白。
+    PhoneInput:
+      type: string
+      x-normalizedMaxLength: 50
+      description: NFC及Unicode邊界strip（Character.isWhitespace/isSpaceChar/U+FEFF）後最多50 code points；拒控制字元/不成對surrogate。空白結果轉null；不加國別/可送達性規則。
+    EmailInput:
+      type: string
+      x-normalizedMaxLength: 254
+      description: NFC及Unicode邊界strip（Character.isWhitespace/isSpaceChar/U+FEFF）後最多254 code points；拒控制字元/不成對surrogate。空白結果轉null；不加國別/可送達性規則。
+    LicenseReferenceInput:
+      type: string
+      x-normalizedMaxLength: 100
+      description: 可空內部工作參考/說明；NFC與Unicode邊界strip後最多100 code points，空白轉null，拒控制/不成對surrogate。不要求完整證件號碼、身分證號或影像，列表/本人/選項均不回此欄。
+    Driver:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        driverCode:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        phone:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 50
+            pattern: \S
+          - type: 'null'
+        email:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 254
+            pattern: \S
+          - type: 'null'
+        accountId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        accountUsername:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+            pattern: \S
+          - type: 'null'
+        accountDisplayName:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        accountBindingValid:
+          type: boolean
+          description: 目前DRIVER角色、enabled及UPMS usable；有效臨時mustChange帳號可綁，首次改密守衛仍阻擋本人業務讀取。
+        employmentStatus:
+          $ref: '#/components/schemas/EmploymentStatus'
+        dutyStatus:
+          $ref: '#/components/schemas/DutyStatus'
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseTypeCode:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 64
+            pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          - type: 'null'
+        licenseTypeLabel:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        licenseTypeEnabled:
+          type: boolean
+          description: DRIVER_LICENSE_TYPE父分類與項目皆啟用。無licenseType時false，停用不阻擋同值維護或行政選項。
+        licenseReference:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+            pattern: \S
+          - type: 'null'
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        version:
+          $ref: '#/components/schemas/Version'
+        createdAt:
+          type: string
+          format: date-time
+          description: 伺服器產生，不接受用戶端寫入。
+        createdBy:
+          $ref: '#/components/schemas/Uuid'
+        updatedAt:
+          type: string
+          format: date-time
+          description: 伺服器產生，不接受用戶端寫入。
+        updatedBy:
+          $ref: '#/components/schemas/Uuid'
+      required:
+      - id
+      - driverCode
+      - name
+      - phone
+      - email
+      - accountId
+      - accountUsername
+      - accountDisplayName
+      - accountBindingValid
+      - employmentStatus
+      - dutyStatus
+      - licenseType
+      - licenseTypeCode
+      - licenseTypeLabel
+      - licenseTypeEnabled
+      - licenseReference
+      - licenseDueDate
+      - version
+      - createdAt
+      - createdBy
+      - updatedAt
+      - updatedBy
+      allOf:
+      - if:
+          properties:
+            licenseType:
+              type: 'null'
+        then:
+          properties:
+            licenseTypeCode:
+              type: 'null'
+            licenseTypeLabel:
+              type: 'null'
+            licenseTypeEnabled:
+              const: false
+        else:
+          properties:
+            licenseTypeCode:
+              type: string
+            licenseTypeLabel:
+              type: string
+      - if:
+          properties:
+            accountId:
+              type: 'null'
+        then:
+          properties:
+            accountUsername:
+              type: 'null'
+            accountDisplayName:
+              type: 'null'
+            accountBindingValid:
+              const: false
+        else:
+          properties:
+            accountUsername:
+              type: string
+            accountDisplayName:
+              type: string
+    DriverSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        driverCode:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        phone:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 50
+            pattern: \S
+          - type: 'null'
+        email:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 254
+            pattern: \S
+          - type: 'null'
+        accountId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        accountUsername:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+            pattern: \S
+          - type: 'null'
+        accountDisplayName:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        accountBindingValid:
+          type: boolean
+          description: 目前DRIVER角色、enabled及UPMS usable；有效臨時mustChange帳號可綁，首次改密守衛仍阻擋本人業務讀取。
+        employmentStatus:
+          $ref: '#/components/schemas/EmploymentStatus'
+        dutyStatus:
+          $ref: '#/components/schemas/DutyStatus'
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseTypeCode:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 64
+            pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          - type: 'null'
+        licenseTypeLabel:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        licenseTypeEnabled:
+          type: boolean
+          description: DRIVER_LICENSE_TYPE父分類與項目皆啟用。無licenseType時false，停用不阻擋同值維護或行政選項。
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - id
+      - driverCode
+      - name
+      - phone
+      - email
+      - accountId
+      - accountUsername
+      - accountDisplayName
+      - accountBindingValid
+      - employmentStatus
+      - dutyStatus
+      - licenseType
+      - licenseTypeCode
+      - licenseTypeLabel
+      - licenseTypeEnabled
+      - licenseDueDate
+      - version
+      allOf:
+      - if:
+          properties:
+            licenseType:
+              type: 'null'
+        then:
+          properties:
+            licenseTypeCode:
+              type: 'null'
+            licenseTypeLabel:
+              type: 'null'
+            licenseTypeEnabled:
+              const: false
+        else:
+          properties:
+            licenseTypeCode:
+              type: string
+            licenseTypeLabel:
+              type: string
+      - if:
+          properties:
+            accountId:
+              type: 'null'
+        then:
+          properties:
+            accountUsername:
+              type: 'null'
+            accountDisplayName:
+              type: 'null'
+            accountBindingValid:
+              const: false
+        else:
+          properties:
+            accountUsername:
+              type: string
+            accountDisplayName:
+              type: string
+    DriverSelf:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        driverCode:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        phone:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 50
+            pattern: \S
+          - type: 'null'
+        email:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 254
+            pattern: \S
+          - type: 'null'
+        employmentStatus:
+          $ref: '#/components/schemas/EmploymentStatus'
+        dutyStatus:
+          $ref: '#/components/schemas/DutyStatus'
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseTypeCode:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 64
+            pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          - type: 'null'
+        licenseTypeLabel:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        licenseTypeEnabled:
+          type: boolean
+          description: DRIVER_LICENSE_TYPE父分類與項目皆啟用。無licenseType時false，停用不阻擋同值維護或行政選項。
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+      required:
+      - id
+      - driverCode
+      - name
+      - phone
+      - email
+      - employmentStatus
+      - dutyStatus
+      - licenseType
+      - licenseTypeCode
+      - licenseTypeLabel
+      - licenseTypeEnabled
+      - licenseDueDate
+      allOf:
+      - if:
+          properties:
+            licenseType:
+              type: 'null'
+        then:
+          properties:
+            licenseTypeCode:
+              type: 'null'
+            licenseTypeLabel:
+              type: 'null'
+            licenseTypeEnabled:
+              const: false
+        else:
+          properties:
+            licenseTypeCode:
+              type: string
+            licenseTypeLabel:
+              type: string
+    DriverOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        driverCode:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: \S
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseTypeCode:
+          anyOf:
+          - type: string
+            minLength: 2
+            maxLength: 64
+            pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          - type: 'null'
+        licenseTypeLabel:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 80
+            pattern: \S
+          - type: 'null'
+        licenseTypeEnabled:
+          type: boolean
+          description: DRIVER_LICENSE_TYPE父分類與項目皆啟用。無licenseType時false，停用不阻擋同值維護或行政選項。
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - id
+      - driverCode
+      - name
+      - licenseType
+      - licenseTypeCode
+      - licenseTypeLabel
+      - licenseTypeEnabled
+      - licenseDueDate
+      - version
+      allOf:
+      - if:
+          properties:
+            licenseType:
+              type: 'null'
+        then:
+          properties:
+            licenseTypeCode:
+              type: 'null'
+            licenseTypeLabel:
+              type: 'null'
+            licenseTypeEnabled:
+              const: false
+        else:
+          properties:
+            licenseTypeCode:
+              type: string
+            licenseTypeLabel:
+              type: string
+    DriverLicenseType:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+      required:
+      - id
+      - code
+      - label
+    DriverAccountOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: \S
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        bound:
+          type: boolean
+          description: 只說明候選已綁定，不揭露另一driver身份。
+      required:
+      - id
+      - username
+      - displayName
+      - bound
+    CreateDriverRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        driverCode:
+          $ref: '#/components/schemas/DriverCodeInput'
+        name:
+          $ref: '#/components/schemas/NameInput'
+        phone:
+          anyOf:
+          - $ref: '#/components/schemas/PhoneInput'
+          - type: 'null'
+        email:
+          anyOf:
+          - $ref: '#/components/schemas/EmailInput'
+          - type: 'null'
+        accountId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        employmentStatus:
+          $ref: '#/components/schemas/EmploymentStatus'
+          default: ACTIVE
+        dutyStatus:
+          $ref: '#/components/schemas/DutyStatus'
+          default: OFF_DUTY
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseReference:
+          anyOf:
+          - $ref: '#/components/schemas/LicenseReferenceInput'
+          - type: 'null'
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+      required:
+      - driverCode
+      - name
+    PatchDriverRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          $ref: '#/components/schemas/Version'
+        name:
+          $ref: '#/components/schemas/NameInput'
+        phone:
+          anyOf:
+          - $ref: '#/components/schemas/PhoneInput'
+          - type: 'null'
+        email:
+          anyOf:
+          - $ref: '#/components/schemas/EmailInput'
+          - type: 'null'
+        accountId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        employmentStatus:
+          $ref: '#/components/schemas/EmploymentStatus'
+        dutyStatus:
+          $ref: '#/components/schemas/DutyStatus'
+        licenseType:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        licenseReference:
+          anyOf:
+          - $ref: '#/components/schemas/LicenseReferenceInput'
+          - type: 'null'
+        licenseDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+      required:
+      - version
+      anyOf:
+      - required:
+        - name
+      - required:
+        - phone
+      - required:
+        - email
+      - required:
+        - accountId
+      - required:
+        - employmentStatus
+      - required:
+        - dutyStatus
+      - required:
+        - licenseType
+      - required:
+        - licenseReference
+      - required:
+        - licenseDueDate
+      description: 真正partial，version+至少一個mutable。driverCode/id/audit/derived拒絕；name/status/duty不可null，其餘optional可null清。
+    PageDriverSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverSummary'
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageDriverOption:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverOption'
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageDriverAccountOption:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverAccountOption'
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    DriverEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Driver'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageDriverSummaryEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageDriverSummary'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    DriverSelfEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DriverSelf'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageDriverOptionEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageDriverOption'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageDriverAccountOptionEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageDriverAccountOption'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    DriverLicenseTypesEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverLicenseType'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0409
+          - E0500
+          - E0503
+        message:
+          type: string
+        data:
+          anyOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - type: 'null'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+      required:
+      - code
+      - message
+      - data
+      - timestamp

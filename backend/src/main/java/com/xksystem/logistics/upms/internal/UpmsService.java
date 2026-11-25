@@ -103,6 +103,18 @@ public class UpmsService {
     public AccountDto authorizeVehicleManager(SessionPrincipal principal, boolean write) {
         return authorizeCustomerManager(principal, write);
     }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeDriverManager(SessionPrincipal principal, boolean write) {
+        return authorizeCustomerManager(principal, write);
+    }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeDriverSelfWithLocks(SessionPrincipal principal) {
+        if(TransactionSynchronizationManager.isCurrentTransactionReadOnly())
+            throw new org.springframework.transaction.IllegalTransactionStateException("Driver self reads require a lock-capable caller transaction");
+        lock();var actor=active(principal,true);
+        if(actor.mustChangePassword||actor.role!=AccountRole.DRIVER)throw UpmsException.forbidden();
+        return actor.dto();
+    }
 
     @Transactional(readOnly=true)
     public List<AccountDto> list(SessionPrincipal principal) {

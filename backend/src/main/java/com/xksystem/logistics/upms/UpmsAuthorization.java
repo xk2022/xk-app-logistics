@@ -28,4 +28,11 @@ public class UpmsAuthorization {
     public AccountDto requireVehicleManager(SessionPrincipal principal) { return service.authorizeVehicleManager(principal, false); }
     @Transactional(propagation=Propagation.MANDATORY)
     public AccountDto requireVehicleManagerForWrite(SessionPrincipal principal) { return service.authorizeVehicleManager(principal, true); }
+    @Transactional(readOnly=true)
+    public AccountDto requireDriverManager(SessionPrincipal principal) { return service.authorizeDriverManager(principal, false); }
+    @Transactional(propagation=Propagation.MANDATORY)
+    public AccountDto requireDriverManagerForWrite(SessionPrincipal principal) { return service.authorizeDriverManager(principal, true); }
+    /** A lock-capable read: coordinates the caller's own binding lookup with account lifecycle changes. */
+    @Transactional(propagation=Propagation.MANDATORY)
+    public AccountDto requireDriverSelfWithLocks(SessionPrincipal principal) { return service.authorizeDriverSelfWithLocks(principal); }
 }

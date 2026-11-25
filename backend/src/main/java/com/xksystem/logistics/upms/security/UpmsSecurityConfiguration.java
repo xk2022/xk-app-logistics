@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
@@ -55,6 +56,7 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers("/api/v1/upms/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/crm/**").hasAnyRole("ADMIN","DISPATCHER")
+                .requestMatchers(HttpMethod.GET,"/api/v1/fms/drivers/me").hasRole("DRIVER")
                 .requestMatchers("/api/v1/fms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/orders","/api/v1/orders/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()

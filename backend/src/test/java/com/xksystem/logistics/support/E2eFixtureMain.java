@@ -50,6 +50,15 @@ public final class E2eFixtureMain {
                 }
                 vehicleTypeCategoryId = category.getObject(1, UUID.class);
             }
+            UUID driverLicenseTypeCategoryId;
+            try (var statement = connection.prepareStatement(
+                    "SELECT id FROM logistics.adm_dict_category WHERE code='DRIVER_LICENSE_TYPE' AND enabled=true");
+                    var category = statement.executeQuery()) {
+                if (!category.next()) {
+                    throw new IllegalStateException("Synthetic license types require an enabled DRIVER_LICENSE_TYPE category");
+                }
+                driverLicenseTypeCategoryId = category.getObject(1, UUID.class);
+            }
             for (String project : new String[] {"chromium", "mobile-chromium"}) {
                 Map<String, Object> accounts = new LinkedHashMap<>();
                 for (String name : new String[] {"admin", "dispatcher", "driver"}) {
@@ -109,6 +118,26 @@ public final class E2eFixtureMain {
                 fms.put("vehicleTypes", insertVehicleTypes(connection, vehicleTypeCategoryId,
                         project.equals("chromium") ? "DESKTOP" : "MOBILE"));
                 accounts.put("fms", fms);
+                Map<String, Object> driverFlow = new LinkedHashMap<>();
+                String driverAccountPrefix = "driver-" + (project.equals("chromium") ? "d-" : "m-")
+                        + UUID.randomUUID().toString().substring(0, 8) + "-";
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB", "driverC", "temporary"}) {
+                    String username = driverAccountPrefix + name.toLowerCase(java.util.Locale.ROOT);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, name.equals("temporary"), Instant.now());
+                    driverFlow.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                driverFlow.put("accountSearchPrefix", driverAccountPrefix);
+                driverFlow.put("licenseTypeCategoryId", driverLicenseTypeCategoryId.toString());
+                driverFlow.put("licenseTypes", insertDriverLicenseTypes(connection, driverLicenseTypeCategoryId,
+                        project.equals("chromium") ? "DESKTOP" : "MOBILE"));
+                accounts.put("driverFlow", driverFlow);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();
@@ -157,5 +186,29 @@ public final class E2eFixtureMain {
             vehicleTypes.put(name, Map.of("id", id.toString(), "code", code, "label", label));
         }
         return vehicleTypes;
+    }
+
+    private static Map<String, Map<String, String>> insertDriverLicenseTypes(Connection connection,
+            UUID categoryId, String suffix) throws Exception {
+        Map<String, Map<String, String>> licenseTypes = new LinkedHashMap<>();
+        for (String name : new String[] {"a", "b"}) {
+            UUID id = UUID.randomUUID();
+            String code = "DRIVER_" + suffix + "_" + name.toUpperCase(java.util.Locale.ROOT);
+            String label = "合成測試駕照類別 " + suffix + " " + name.toUpperCase(java.util.Locale.ROOT);
+            try (var statement = connection.prepareStatement("""
+                    INSERT INTO logistics.adm_dict_item
+                        (id,category_id,code,label,enabled,sort_order,read_only,created_at,updated_at)
+                    VALUES (?,?,?,?,true,?,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                    """)) {
+                statement.setObject(1, id);
+                statement.setObject(2, categoryId);
+                statement.setString(3, code);
+                statement.setString(4, label);
+                statement.setInt(5, name.equals("a") ? 10 : 20);
+                statement.executeUpdate();
+            }
+            licenseTypes.put(name, Map.of("id", id.toString(), "code", code, "label", label));
+        }
+        return licenseTypes;
     }
 }
