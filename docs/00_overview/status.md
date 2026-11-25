@@ -2,7 +2,7 @@
 
 - M0：PR #1 已驗收並合併，merge commit `3f86a25c7b8311d753a53754a4b5898113d92ea4`。靜態規格、契約及 Q01–Q05 保留。
 - LG-M1：[PR #2](https://github.com/xk2022/xk-app-logistics/pull/2) 交付前後端工程基礎、Flyway 空庫基線、DEV Compose、測試與 CI；首輪 GitHub CI 四項全通過。實測、受測 SHA 與最終 CI／合併追蹤見 [M1 驗證](../09_testing/m1-validation.md)。
-- 產品驗收：物流業務尚未實作，M0 首片契約案例未作產品執行驗收；M1 驗收工程基礎，M2-01 僅驗收 UPMS，不代表訂單產品功能通過。
+- 產品驗收：M1 驗收工程基礎，M2-01／02／03 分別驗收 UPMS／ADM／CRM；M2-04 已執行原首片訂單草稿契約及真實 HTTP schema 驗證。完整性檢查仍為 `NOT_GRANTED`，不代表正式受理或運輸執行功能通過。
 - LG-M2-01：[PR #4](https://github.com/xk2022/xk-app-logistics/pull/4) 依已合併 PR #3 決策交付 UPMS，首輪遠端四項品質檢查全通過；帳號、固定角色、Session／CSRF、受控初始化／復原、角色 UI 及 V2 migration 的結果見 [M2-01 驗證](../09_testing/m2-01-validation.md)。
 - LG-M2-02：[PR #6](https://github.com/xk2022/xk-app-logistics/pull/6) 依已合併 PR #5 及 Q11–Q15 交付 ADM 字典／核准參數框架，首輪四項遠端品質檢查全通過；結果見 [M2-02 驗證](../09_testing/m2-02-validation.md)。正式參數鍵及非 ADMIN 讀取分類仍未核准，維持關閉。
 - LG-M2-03：[PR #8](https://github.com/xk2022/xk-app-logistics/pull/8) 依已合併 PR #7 及 Q16–Q20 交付 CRM 客戶、聯絡人、地址、角色介面與 V4，首輪四項遠端品質檢查全通過；實際本機／遠端品質結果及交付追蹤見 [M2-03 驗證](../09_testing/m2-03-validation.md)。
