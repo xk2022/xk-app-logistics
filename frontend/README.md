@@ -1,6 +1,6 @@
 # Frontend
 
-React + TypeScript + Vite 的同源工作空間。M1 服務狀態頁保留於登入頁「系統狀態」入口；M2-01 提供 Session 登入、登出、本人狀態、強制改密、三角色工作台及 ADMIN 帳號管理。
+React + TypeScript + Vite 的同源工作空間。M1 服務狀態頁保留於登入頁「系統狀態」入口；M2-01 提供 Session 登入、登出、本人狀態、強制改密、三角色工作台及 ADMIN 帳號管理；M2-02 加入 ADMIN 系統管理。
 
 ```sh
 npm ci
@@ -18,5 +18,11 @@ npm run build
 API 位於 `/api/v1/auth/{csrf,login,logout,me,password}` 與 `/api/v1/upms/{roles,accounts}`；帳號編輯使用 `/api/v1/upms/accounts/{id}`。寫入一律帶同源憑證與記憶體中的 `X-CSRF-TOKEN`。登入、登出及改密後重新取得 token；403 更新 token 並顯示錯誤，不自動重送寫入。讀寫逾時為 10 秒，錯誤不顯示原始網路例外。密碼僅留在表單狀態，提交後清空，不寫入 storage、URL 或日誌。
 
 角色固定為 ADMIN、DISPATCHER、DRIVER，一帳號一角色。ADMIN 可建立與編輯帳號，版本衝突提示重新載入。帳號復原僅顯示受控離線流程指引；不存在公開註冊、匿名重設、動態權限或物流業務功能。前端選單僅提供操作導覽，授權由後端強制執行。DEV/CI 的 Secure Session 端到端驗證須使用根目錄文件指定的 HTTPS gateway。
+
+ADMIN 從「系統管理」進入字典管理、系統參數與異動紀錄。ADM API 為 `/api/v1/adm/{categories,items,parameters,parameter-definitions,options,change-logs}`，使用相同 Session/CSRF transport。列表採每頁 20 筆；代碼、參數鍵及型別建立後唯讀，無刪除操作。409 顯示明確衝突提示，手動重新載入會清除編輯草稿，以列表的新版本重新編輯；不自動重送。
+
+`ORDER_TYPE` 與其 IMPORT／EXPORT／LOCAL 項目僅供固定枚舉對照。停用分類會顯示歷史項目仍在、不可供新引用的提示，並讀取實際可用選項。其他三個種子分類的正式項目由核准需求建立，不以合成案例作正式種子。
+
+系統參數鍵只能從後端核准定義選擇，不能自由輸入鍵或型別。正常定義為空時顯示「尚無核准參數」，不提供建立表單。隔離測試定義驗證 TEXT／NUMBER／BOOLEAN 全流程；API 的 `valueText` 一律為字串，數字保留十進位精度並依定義驗證範圍，布林值限定 `true`／`false`。異動前後值以 React 文字及 JSON 顯示，不插入 HTML。
 
 `public/xk-logo-monogram.svg` 與 `public/favicon.svg` 原樣取自公司 `xk2022/xplore-kaleidoscope` commit `ae9bce5a95d1565d76e76a0414fde7d29a1ed881` 的 `assets/brand/logo/svg/xk-logo-monogram.svg`、`assets/brand/logo/favicon/icon.svg`。字體沿用公司備援順序，不向第三方載入字體。

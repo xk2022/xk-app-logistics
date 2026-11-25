@@ -117,6 +117,7 @@ test('three roles use protected TLS sessions, first-password changes, and admini
     await expect(driver.getByRole('heading', { name: '登入工作空間', exact: true })).toBeVisible()
     expect((await api(driver, '/auth/me')).status).toBe(401)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    await page.evaluate(() => window.scrollTo(0, 0))
     await page.screenshot({ path: testInfo.outputPath('upms-accounts.png'), fullPage: true })
     await page.getByRole('button', { name: '登出', exact: true }).click()
     await expect(page.getByRole('heading', { name: '登入工作空間', exact: true })).toBeVisible()

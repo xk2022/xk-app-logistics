@@ -1,0 +1,1450 @@
+openapi: 3.1.0
+info:
+  title: XK Logistics ADM API
+  version: 0.1.0
+  description: LG-M2-02 新契約；不修改訂單 OpenAPI 0.2.0。所有 ADM API 目前僅 ADMIN；未核准非管理員分類授權預設拒絕。無 DELETE。所有 JSON body 與 query 未知欄位拒絕
+    400。固定 ORDER_TYPE 與 IMPORT/EXPORT/LOCAL 唯讀；正式參數 catalog 初始空，不接受任意鍵、機密或安全政策。
+servers:
+- url: /api/v1
+tags:
+- name: ADM
+security:
+- sessionCookie: []
+paths:
+  /adm/categories:
+    get:
+      operationId: listCategories
+      summary: ADMIN 分頁字典分類
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageCategory'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - sortOrder,asc
+          - sortOrder,desc
+          - code,asc
+          - code,desc
+          - name,asc
+          - name,desc
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC trim 後最多 100 code points；literal contains，% 與 _ 非 wildcard
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createCategory
+      summary: ADMIN 新增可配置分類
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategory'
+  /adm/categories/{id}:
+    patch:
+      operationId: updateCategory
+      summary: 更新名稱、啟停、排序及 version；拒絕代碼或系統欄位
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategory'
+  /adm/categories/{id}/items:
+    get:
+      operationId: listItems
+      summary: ADMIN 分類項目列表（含歷史停用項目）
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageItem'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - sortOrder,asc
+          - sortOrder,desc
+          - code,asc
+          - code,desc
+          - label,asc
+          - label,desc
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC trim 後最多 100 code points；literal contains，% 與 _ 非 wildcard
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createItem
+      summary: ADMIN 新增項目
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Item'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateItem'
+  /adm/items/{id}:
+    patch:
+      operationId: updateItem
+      summary: ADMIN 更新可配置項目
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Item'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItem'
+  /adm/parameter-definitions:
+    get:
+      operationId: listParameterDefinitions
+      summary: 核准 catalog 唯讀查詢；正常初始為空，無寫入 API
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParameterDefinition'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /adm/parameters:
+    get:
+      operationId: listParameters
+      summary: ADMIN 核准參數列表
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageParameter'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - key,asc
+          - key,desc
+          - name,asc
+          - name,desc
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          description: NFC trim 後最多 100 code points；literal contains，% 與 _ 非 wildcard
+      - name: enabled
+        in: query
+        required: false
+        schema:
+          type: boolean
+    post:
+      operationId: createParameter
+      summary: 只可建立 catalog 核准的鍵／型別／用途
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Parameter'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateParameter'
+  /adm/parameters/{id}:
+    patch:
+      operationId: updateParameter
+      summary: 更新核准值；key/valueType 不可改
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Parameter'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParameter'
+  /adm/options/{categoryCode}:
+    get:
+      operationId: enabledOptions
+      summary: ADMIN 啟用選項，sortOrder/code/id 穩定排序；停用父分類回 []
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: categoryCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+  /adm/change-logs:
+    get:
+      operationId: listChangeLogs
+      summary: ADMIN 分頁異動紀錄，預設新到舊
+      tags:
+      - ADM
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  code:
+                    type: string
+                    const: '0000'
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/PageChangeLog'
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: +08:00
+                required:
+                - code
+                - message
+                - data
+                - timestamp
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - occurredAt,asc
+          - occurredAt,desc
+      - name: targetType
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - CATEGORY
+          - ITEM
+          - PARAMETER
+      - name: targetId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: UPMS Secure/HttpOnly/SameSite=Lax Session；經既有登入與強制改密流程。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+      description: 從 UPMS auth/csrf 取得；登入／登出後更新。
+  schemas:
+    Category:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        readOnly:
+          type: boolean
+      required:
+      - id
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - code
+      - name
+      - sortOrder
+      - readOnly
+    Item:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        categoryId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        readOnly:
+          type: boolean
+      required:
+      - id
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - categoryId
+      - code
+      - label
+      - sortOrder
+      - readOnly
+    ValueType:
+      type: string
+      enum:
+      - TEXT
+      - NUMBER
+      - BOOLEAN
+    Parameter:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        key:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+        valueType:
+          $ref: '#/components/schemas/ValueType'
+        valueText:
+          type: string
+          maxLength: 2000
+          description: NFC、不 trim；依核准 definition 驗型別／允許值／界限。NUMBER 不接受 exponent 並以 stripTrailingZeros/toPlainString 正規化，BOOLEAN
+            僅 true/false 字串。
+        description:
+          type: string
+          maxLength: 500
+          description: NFC 並 trim，允許 LF，拒絕其他控制字元及不成對 surrogate。
+      required:
+      - id
+      - enabled
+      - version
+      - createdAt
+      - updatedAt
+      - key
+      - name
+      - valueType
+      - valueText
+      - description
+    ParameterDefinition:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+        valueType:
+          $ref: '#/components/schemas/ValueType'
+        description:
+          type: string
+          maxLength: 500
+          description: NFC 並 trim，允許 LF，拒絕其他控制字元及不成對 surrogate。
+        minLength:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 2000
+        maxLength:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 2000
+        allowedValues:
+          type: array
+          items:
+            type: string
+        minValue:
+          type:
+          - string
+          - 'null'
+        maxValue:
+          type:
+          - string
+          - 'null'
+        decimalScale:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 12
+      required:
+      - key
+      - name
+      - valueType
+      - description
+      - minLength
+      - maxLength
+      - allowedValues
+      - minValue
+      - maxValue
+      - decimalScale
+    CreateCategory:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        name:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      required:
+      - code
+      - name
+      - enabled
+      - sortOrder
+    UpdateCategory:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - name
+      - enabled
+      - sortOrder
+      - version
+    CreateItem:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        label:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      required:
+      - code
+      - label
+      - enabled
+      - sortOrder
+    UpdateItem:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+        sortOrder:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - label
+      - enabled
+      - sortOrder
+      - version
+    CreateParameter:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+          minLength: 2
+          maxLength: 64
+          description: ASCII 大寫穩定識別，建立後不可改；不 trim 或改大小寫。
+        name:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        valueType:
+          $ref: '#/components/schemas/ValueType'
+        valueText:
+          type: string
+          description: NFC、不 trim；依核准 definition 驗型別／允許值／界限。NUMBER 不接受 exponent 並以 stripTrailingZeros/toPlainString 正規化，BOOLEAN
+            僅 true/false 字串。
+          x-normalizedMaxLength: 2000
+          x-normalization: NFC
+        description:
+          type: string
+          description: NFC 並 trim，允許 LF，拒絕其他控制字元及不成對 surrogate。
+          x-normalizedMaxLength: 500
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+      required:
+      - key
+      - name
+      - valueType
+      - valueText
+      - description
+      - enabled
+    UpdateParameter:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          description: NFC 並 trim 後 1–80 code points，拒絕控制字元及不成對 surrogate。
+          x-normalizedMinLength: 1
+          x-normalizedMaxLength: 80
+          x-normalization: NFC then trim
+        valueText:
+          type: string
+          description: NFC、不 trim；依核准 definition 驗型別／允許值／界限。NUMBER 不接受 exponent 並以 stripTrailingZeros/toPlainString 正規化，BOOLEAN
+            僅 true/false 字串。
+          x-normalizedMaxLength: 2000
+          x-normalization: NFC
+        description:
+          type: string
+          description: NFC 並 trim，允許 LF，拒絕其他控制字元及不成對 surrogate。
+          x-normalizedMaxLength: 500
+          x-normalization: NFC then trim
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - name
+      - valueText
+      - description
+      - enabled
+      - version
+    ChangeLog:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        targetType:
+          type: string
+          enum:
+          - CATEGORY
+          - ITEM
+          - PARAMETER
+        targetId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum:
+          - CREATE
+          - UPDATE
+        actorId:
+          type: string
+          format: uuid
+        actorUsername:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        before:
+          type:
+          - object
+          - 'null'
+          additionalProperties: true
+        after:
+          type: object
+          additionalProperties: true
+      required:
+      - id
+      - targetType
+      - targetId
+      - action
+      - actorId
+      - actorUsername
+      - occurredAt
+      - before
+      - after
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          oneOf:
+          - type: 'null'
+          - type: object
+            additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO8601，固定 +08:00 offset
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageCategory:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageItem:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageParameter:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Parameter'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageChangeLog:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeLog'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+  responses:
+    BadRequest:
+      description: 欄位／查詢錯誤、未核准鍵、不可變或固定唯讀資料的變更
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthenticated:
+      description: 未登入或認證失效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 角色、CSRF、TLS 或強制改密守衛
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: 目標不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: 重複／版本衝突
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: 安全的一般失敗
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: 服務或資料庫不可用
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

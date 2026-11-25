@@ -13,10 +13,10 @@
 | 06_api | [ADM 契約](06_api/adm.md)、[UPMS 契約](06_api/upms.md)、[首片 API](06_api/first-slice.md)、[OpenAPI](06_api/openapi.yaml)、[角色契約](06_api/order-draft-access-policy.json)、[合成案例](06_api/order-draft-contract-examples.json) |
 | 07_ui-ux | [頁面規劃](07_ui-ux/sitemap.md) |
 | 08_development | [開發工作包](08_development/development-plan.md)、[M1 交接](08_development/m1-bootstrap-handoff.md)、[M2-01 交接](08_development/m2-01-upms-handoff.md)、[M2-02 交接](08_development/m2-02-adm-handoff.md) |
-| 09_testing | [驗收計畫](09_testing/acceptance-plan.md)、[首片驗收案例](09_testing/first-slice-acceptance.md)、[M1 驗證](09_testing/m1-validation.md)、[M2-01 驗證](09_testing/m2-01-validation.md) |
+| 09_testing | [驗收計畫](09_testing/acceptance-plan.md)、[首片驗收案例](09_testing/first-slice-acceptance.md)、[M1 驗證](09_testing/m1-validation.md)、[M2-01 驗證](09_testing/m2-01-validation.md)、[M2-02 驗證](09_testing/m2-02-validation.md) |
 | 10_deployment | [環境策略](10_deployment/environments.md) |
 | 11_operations | [營運及商業化](11_operations/operations.md) |
 | 12_migration | [舊庫盤點與移轉](12_migration/legacy-assessment.md) |
-| 98_decisions | [產品基準與待決](98_decisions/2026-11-25-foundation.md)、[M2 帳號與權限決策](98_decisions/2026-11-25-m2-access.md)、[UPMS 工程決策](98_decisions/2026-11-25-upms-engineering.md)、[ADM 採用決策](98_decisions/2026-11-25-adm.md) |
+| 98_decisions | [產品基準與待決](98_decisions/2026-11-25-foundation.md)、[M2 帳號與權限決策](98_decisions/2026-11-25-m2-access.md)、[UPMS 工程決策](98_decisions/2026-11-25-upms-engineering.md)、[ADM 採用決策](98_decisions/2026-11-25-adm.md)、[ADM 工程決策](98_decisions/2026-11-25-adm-engineering.md) |
 
 99_archive 按需要建立。引用的舊規格固定至來源 commit；確認有變更時以新決策記錄差異。

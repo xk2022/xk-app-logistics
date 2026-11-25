@@ -49,16 +49,27 @@ class PlatformIT {
     private final JsonMapper json = JsonMapper.builder().build();
 
     @Test
-    void initializesEmptyPostgresWithOnlyPlatformAndUpmsTablesAndNoSeedAccounts() {
+    void initializesEmptyPostgresWithPlatformUpmsAndAdmAndNoSeedAccountsOrParameters() {
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '1'", String.class))
                 .isEqualTo("1");
         assertThat(jdbc.queryForList("select tablename from pg_tables where schemaname = 'logistics'", String.class))
-                .containsExactlyInAnyOrder("flyway_schema_history", "upms_lock", "upms_account", "upms_audit");
+                .containsExactlyInAnyOrder("flyway_schema_history", "upms_lock", "upms_account", "upms_audit",
+                        "adm_dict_category", "adm_dict_item", "adm_parameter_definition", "adm_parameter", "adm_change_log");
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_account", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_audit", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_lock where id=1", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '2'", String.class))
                 .isEqualTo("2");
+        assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '3'", String.class))
+                .isEqualTo("3");
+        assertThat(jdbc.queryForList("select code from logistics.adm_dict_category order by sort_order", String.class))
+                .containsExactly("ORDER_TYPE", "CONTAINER_TYPE", "TASK_KIND", "VEHICLE_TYPE");
+        assertThat(jdbc.queryForList("select code from logistics.adm_dict_item order by sort_order", String.class))
+                .containsExactly("IMPORT", "EXPORT", "LOCAL");
+        assertThat(jdbc.queryForObject("select count(*) from logistics.adm_dict_item where not read_only", Long.class)).isZero();
+        for (String table : new String[] {"adm_parameter_definition", "adm_parameter", "adm_change_log"}) {
+            assertThat(jdbc.queryForObject("select count(*) from logistics." + table, Long.class)).isZero();
+        }
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
@@ -92,7 +103,7 @@ class PlatformIT {
                     .schemas("logistics").defaultSchema("logistics").target("1").load();
             assertThat(oldVersion.migrate().migrationsExecuted).isEqualTo(1);
             Flyway upgraded = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
-                    .schemas("logistics").defaultSchema("logistics").load();
+                    .schemas("logistics").defaultSchema("logistics").target("2").load();
             assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(1);
             assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
             var database = new org.springframework.jdbc.core.JdbcTemplate(
@@ -101,6 +112,45 @@ class PlatformIT {
             assertThat(database.queryForObject("select count(*) from logistics.upms_audit", Long.class)).isZero();
             assertThat(database.queryForList("select version from logistics.flyway_schema_history where success and version is not null order by installed_rank", String.class))
                     .containsExactly("1", "2");
+        } finally {
+            jdbc.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
+        }
+    }
+
+    @Test
+    void upgradesV2ToV3PreservingExistingUpmsAccountsAndPasswordHashes() throws Exception {
+        String databaseName = "xk_adm_upgrade_test";
+        jdbc.execute("CREATE DATABASE " + databaseName);
+        String url = postgres.getJdbcUrl().replace("/" + postgres.getDatabaseName(), "/" + databaseName);
+        try {
+            Flyway previous = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("2").load();
+            assertThat(previous.migrate().migrationsExecuted).isEqualTo(2);
+            java.util.UUID account;
+            try (var connection = java.sql.DriverManager.getConnection(url, postgres.getUsername(), postgres.getPassword())) {
+                account = com.xksystem.logistics.support.UpmsTestData.insert(connection,
+                        new com.xksystem.logistics.upms.UpmsConfiguration().passwordEncoder(),
+                        "synthetic-upgrade-admin", "ADMIN", com.xksystem.logistics.support.UpmsTestData.password(),
+                        false, java.time.Instant.now());
+            }
+            var database = new org.springframework.jdbc.core.JdbcTemplate(
+                    new org.springframework.jdbc.datasource.DriverManagerDataSource(url, postgres.getUsername(), postgres.getPassword()));
+            String hash = database.queryForObject("select password_hash from logistics.upms_account where id=?", String.class, account);
+            Flyway upgraded = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").load();
+            assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(1);
+            assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
+            assertThat(upgraded.migrate().migrationsExecuted).isZero();
+            assertThat(database.queryForObject("select password_hash from logistics.upms_account where id=?", String.class, account))
+                    .isEqualTo(hash);
+            assertThat(database.queryForObject("select username from logistics.upms_account where id=?", String.class, account))
+                    .isEqualTo("synthetic-upgrade-admin");
+            assertThat(database.queryForObject("select count(*) from logistics.upms_account", Long.class)).isEqualTo(1);
+            assertThat(database.queryForObject("select count(*) from logistics.adm_dict_category", Long.class)).isEqualTo(4);
+            assertThat(database.queryForObject("select count(*) from logistics.adm_dict_item", Long.class)).isEqualTo(3);
+            assertThat(database.queryForObject("select count(*) from logistics.adm_parameter_definition", Long.class)).isZero();
+            assertThat(database.queryForObject("select count(*) from logistics.adm_parameter", Long.class)).isZero();
+            assertThat(database.queryForObject("select count(*) from logistics.adm_change_log", Long.class)).isZero();
         } finally {
             jdbc.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
         }
