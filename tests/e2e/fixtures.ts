@@ -19,6 +19,10 @@ interface TomFixture {
   dispatcher: Credential
   driver: Credential
 }
+interface FmsFixture extends TomFixture {
+  vehicleTypeCategoryId: string
+  vehicleTypes: Record<'a' | 'b' | 'c', { id: string; code: string; label: string }>
+}
 interface ProjectFixture {
   admin: Credential
   dispatcher: Credential
@@ -27,6 +31,7 @@ interface ProjectFixture {
   crm?: CrmFixture
   tom?: TomFixture
   orderUi?: TomFixture
+  fms?: FmsFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -78,6 +83,18 @@ export function orderUiFixtureFor(project: string): TomFixture {
     const account = group[key as keyof TomFixture]
     return account && typeof account.username === 'string' && typeof account.password === 'string'
   })) throw new Error('Order UI test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function fmsFixtureFor(project: string): FmsFixture {
+  const group = fixtureFor(project).fms
+  if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
+    const account = group[key as keyof TomFixture]
+    return account && typeof account.username === 'string' && typeof account.password === 'string'
+  }) || typeof group.vehicleTypeCategoryId !== 'string' || !['a', 'b', 'c'].every((key) => {
+    const type = group.vehicleTypes?.[key as 'a' | 'b' | 'c']
+    return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
+  })) throw new Error('FMS test fixture is incomplete for this browser project.')
   return group
 }
 

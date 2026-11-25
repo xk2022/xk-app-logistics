@@ -99,6 +99,10 @@ public class UpmsService {
     public AccountDto authorizeOrderManager(SessionPrincipal principal, boolean write) {
         return authorizeCustomerManager(principal, write);
     }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeVehicleManager(SessionPrincipal principal, boolean write) {
+        return authorizeCustomerManager(principal, write);
+    }
 
     @Transactional(readOnly=true)
     public List<AccountDto> list(SessionPrincipal principal) {

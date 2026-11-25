@@ -96,3 +96,13 @@ TOM 文字與 hash 保留原字串、null、欄位省略及陣列順序，不沿
 POST／PUT 需有效 CSRF 與單一 Idempotency-Key。先檢查目前權限，再以公司範圍、操作者、method、canonical path、key 嘗試 transaction advisory lock；同 key 處理中立即回 409，不先等待全域寫入鎖。成功命中先重驗授權再重播原業務結果與狀態，traceId 每次更新；不先驗舊 expectedVersion 或客戶目前啟用性。新寫入取得 UPMS canonical／操作者鎖、必要的 CRM 客戶鎖及訂單根鎖，與聚合、不可變版本快照、成功重送紀錄原子提交。D10 保存及清理政策尚未核准，沒有自動到期或重用 key，也不宣稱已核准永久保存。
 
 GET 明細、清單及完整性檢查使用同一 repeatable-read snapshot，避免版本、子項或 count 混版。原 page 無上界，採 BigInteger 並先 count；超出資料範圍直接回合法空頁，不把任意上限塞入契約。只讀檢查固定回 ORD-P01–P03、未決政策及 `NOT_GRANTED`，不更動狀態、不授予受理或占用資源。細節見 [TOM 工程決策](../docs/98_decisions/2026-11-25-tom-engineering.md)與[資料模型](../docs/05_database/tom-model.md)。
+
+## FMS 車輛主檔（M3-01）
+
+`fms` 擁有 V6 的 `fms_vehicle`，沿公司 envelope、UPMS Session／CSRF 與 ADMIN／DISPATCHER 本公司授權；DRIVER 全拒絕。新增／更換車種只透過 ADM 的限定歷史查詢及 writable MANDATORY 來源鎖介面，檢查 VEHICLE_TYPE 分類與父子啟用；同車種停用後仍可維護舊主檔。鎖序為 canonical／fresh actor → vehicle → ADM category／item，不跨 repository。
+
+車牌 canonical 後唯一，包含 INACTIVE；PATCH 真部分更新、版本安全整數及單調修改時間確保同值／只改十進位 scale 仍保存一次。`capacity_ton` 是無固定 scale 的 numeric，額外檢查有限、非負及 wire 32 字元，不 round；兩個 LocalDate 欄位局部使用 JDBC 4.2，避免 Gregorian cutover，未更動舊模組映射。
+
+可信 `VehicleQueries.findCurrent` 回不可變參照快照；`requireAdministrativelyAvailable` 需 caller writable transaction、先授權與 canonical 鎖，刷新並鎖住車輛直到提交，只檢管理狀態 AVAILABLE。它不檢查占用、法定車籍／檢驗或派車資格，也不擴充任何 DRIVER HTTP 權限。
+
+正常 Flyway 升級不種車輛或正式車種碼，不建立司機、派工、占用、配對或額外歷史表。API 詳見 [FMS 契約](../docs/06_api/fms-vehicles.md)，空庫／V5→V6／交易／HTTP 的實際結果見 [M3-01 驗證](../docs/09_testing/m3-01-validation.md)。

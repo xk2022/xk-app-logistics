@@ -1,0 +1,788 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics FMS Vehicle API
+  version: 0.1.0
+  description: LG-M3-01獨立工程契約，依Q21–Q25及工程定稿；不修改M2契約。單公司ADMIN/DISPATCHER正常登入、HTTPS Session+CSRF，DRIVER全部拒絕。無DELETE、IN_USE、派工、占用、配對或法規阻擋。契約不代表測試或部署已完成。
+servers:
+- url: /api/v1
+tags:
+- name: FMS
+security:
+- sessionCookie: []
+paths:
+  /fms/vehicles:
+    get:
+      operationId: listVehicles
+      tags:
+      - FMS
+      summary: 查詢本公司車輛主檔
+      description: 固定plateNo ASC,id ASC。只接受列出的查詢，不接受sort；停用資料仍可查。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      - $ref: '#/components/parameters/VehicleTypeFilter'
+      - $ref: '#/components/parameters/StatusFilter'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageVehicleEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    post:
+      operationId: createVehicle
+      tags:
+      - FMS
+      summary: 新增本公司車輛主檔
+      description: plateNo/vehicleType必填。新引用須VEHICLE_TYPE分類父子皆啟用；其餘optional，行政狀態預設AVAILABLE。無query參數。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVehicleRequest'
+  /fms/vehicles/{id}:
+    get:
+      operationId: getVehicle
+      tags:
+      - FMS
+      summary: 讀取車輛與車種歷史來源metadata
+      description: 全行政狀態皆可讀。車種停用仍保留UUID/code/label並回vehicleTypeEnabled=false。無query參數。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    patch:
+      operationId: patchVehicle
+      tags:
+      - FMS
+      summary: 版本化部分更新車輛主檔
+      description: 同stored vehicleType即使停用仍可維護其他欄位；明確換vehicleType才重驗有效分類。UUID不變，車牌更正仍受全表唯一性與version保護。無query參數。
+        每次成功PATCH加一版並更新audit，同值或只改decimal scale亦真正保存。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchVehicleRequest'
+  /fms/vehicle-types:
+    get:
+      operationId: listVehicleTypes
+      tags:
+      - FMS
+      summary: FMS限定VEHICLE_TYPE有效選項
+      description: 僅既有ADM公開服務的窄代理。沒有query，父分類停用或空目錄回[]；不擴大DISPATCHER的其他ADM HTTP權限。不含任何正式seed假設。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VehicleTypesEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /fms/vehicle-options:
+    get:
+      operationId: listVehicleOptions
+      tags:
+      - FMS
+      summary: 行政AVAILABLE主檔分頁選項
+      description: 只以administrativeStatus=AVAILABLE過濾。車種停用、檢驗日期或車籍資訊均不增加排除條件，回vehicleTypeEnabled供資訊呈現。不接受status或sort；不是可派工、占用或法規資格判定。固定plateNo
+        ASC,id ASC。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      - $ref: '#/components/parameters/VehicleTypeFilter'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageVehicleOptionEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 沿用既有同一HttpSession；Secure/HttpOnly/SameSite=Lax。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 100000
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Search:
+      name: q
+      in: query
+      schema:
+        type: string
+        x-normalizedMaxLength: 100
+        description: 先NFC及Unicode邊界strip（含U+FEFF）後最多100 code points；plateNo分支再NFC/Locale.ROOT大寫/NFC後literal LIKE（不套車牌40字上限）；registrationNo分支DB
+          lower(field)對DB lower(raw pattern)。%/_/反斜線皆literal，不是SQL wildcard。
+    VehicleTypeFilter:
+      name: vehicleType
+      in: query
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    StatusFilter:
+      name: administrativeStatus
+      in: query
+      schema:
+        $ref: '#/components/schemas/AdministrativeStatus'
+    VehicleId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+      description: 由既有同源登入流程取得；不在log或測試報告保存。
+  responses:
+    BadRequest:
+      description: E0400：格式、未知欄位/query、車種不合格或欄位驗證失敗。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: E0401：未登入或Session失效。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: E0403：角色、強制改密、HTTPS或CSRF守衛拒絕。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: E0404：本公司授權範圍內查無資料。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: E0409：重複canonical車牌data為plateNo文字map，版本衝突／上限data為version文字map；一般DB競爭衝突可為null。不提供TOM actualVersion/traceId。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServerError:
+      description: E0500：未預期錯誤，安全摘要且交易回滾。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unavailable:
+      description: E0503：資料庫服務暫時不可用。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+    NaturalDate:
+      type: string
+      format: date
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}$
+      description: 有效 Gregorian 自然日，年份0001–9999；不轉UTC午夜，不據此判定法規合規或阻擋新引用。
+    CapacityTon:
+      type: string
+      maxLength: 32
+      pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+      not:
+        pattern: '[^0-9.]'
+      description: 精確非負十進位噸數；不用JSON number、指數、前置零或固定scale捨入；以toPlainString保留scale與全部digits。0是已知零，null是未知。
+    AdministrativeStatus:
+      type: string
+      enum:
+      - AVAILABLE
+      - MAINTENANCE
+      - INACTIVE
+      description: 行政主檔狀態，不包含IN_USE、不代表派工占用或法規合規。
+    PlateInput:
+      type: string
+      description: NFC→去除邊界Unicode空白（Character.isWhitespace或isSpaceChar或U+FEFF）→Locale.ROOT大寫→NFC。正規化後1–40 code
+        points且非空白；拒control/unpaired surrogate，保留內部空白與連字號。非特定國別車牌格式。x-normalized限制不能當原字串maxLength。
+      x-normalizedMinLength: 1
+      x-normalizedMaxLength: 40
+    RegistrationInput:
+      type: string
+      description: NFC及邊界Unicode空白strip後最多100 code points；空白結果轉null。拒control/unpaired surrogate，不施加國別車籍格式。
+      x-normalizedMaxLength: 100
+    Vehicle:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        plateNo:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+          description: canonical車牌；含INACTIVE在內全表唯一。
+        vehicleType:
+          $ref: '#/components/schemas/Uuid'
+        vehicleTypeCode:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        vehicleTypeLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        vehicleTypeEnabled:
+          type: boolean
+          description: 目前VEHICLE_TYPE父分類與此項目皆啟用；false不自動改車輛行政狀態或排除AVAILABLE選項。
+        capacityTon:
+          anyOf:
+          - $ref: '#/components/schemas/CapacityTon'
+          - type: 'null'
+        registrationNo:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+            pattern: \S
+          - type: 'null'
+        registrationDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        inspectionDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        administrativeStatus:
+          $ref: '#/components/schemas/AdministrativeStatus'
+        version:
+          $ref: '#/components/schemas/Version'
+        createdAt:
+          type: string
+          format: date-time
+          description: 伺服器產生的時間；不接受用戶端寫入。
+        createdBy:
+          $ref: '#/components/schemas/Uuid'
+        updatedAt:
+          type: string
+          format: date-time
+          description: 伺服器產生的時間；不接受用戶端寫入。
+        updatedBy:
+          $ref: '#/components/schemas/Uuid'
+      required:
+      - id
+      - plateNo
+      - vehicleType
+      - vehicleTypeCode
+      - vehicleTypeLabel
+      - vehicleTypeEnabled
+      - capacityTon
+      - registrationNo
+      - registrationDate
+      - inspectionDueDate
+      - administrativeStatus
+      - version
+      - createdAt
+      - createdBy
+      - updatedAt
+      - updatedBy
+    VehicleOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        plateNo:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: \S
+          description: canonical車牌；含INACTIVE在內全表唯一。
+        vehicleType:
+          $ref: '#/components/schemas/Uuid'
+        vehicleTypeCode:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        vehicleTypeLabel:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+        vehicleTypeEnabled:
+          type: boolean
+          description: 目前VEHICLE_TYPE父分類與此項目皆啟用；false不自動改車輛行政狀態或排除AVAILABLE選項。
+        capacityTon:
+          anyOf:
+          - $ref: '#/components/schemas/CapacityTon'
+          - type: 'null'
+        version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - id
+      - plateNo
+      - vehicleType
+      - vehicleTypeCode
+      - vehicleTypeLabel
+      - vehicleTypeEnabled
+      - capacityTon
+      - version
+    VehicleType:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+          minLength: 2
+          maxLength: 64
+          pattern: ^[A-Z][A-Z0-9_]{1,63}$
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: \S
+      required:
+      - id
+      - code
+      - label
+    CreateVehicleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        plateNo:
+          $ref: '#/components/schemas/PlateInput'
+        vehicleType:
+          $ref: '#/components/schemas/Uuid'
+        capacityTon:
+          anyOf:
+          - $ref: '#/components/schemas/CapacityTon'
+          - type: 'null'
+        registrationNo:
+          anyOf:
+          - $ref: '#/components/schemas/RegistrationInput'
+          - type: 'null'
+        registrationDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        inspectionDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        administrativeStatus:
+          $ref: '#/components/schemas/AdministrativeStatus'
+          default: AVAILABLE
+      required:
+      - plateNo
+      - vehicleType
+    PatchVehicleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          $ref: '#/components/schemas/Version'
+        plateNo:
+          $ref: '#/components/schemas/PlateInput'
+        vehicleType:
+          $ref: '#/components/schemas/Uuid'
+        capacityTon:
+          anyOf:
+          - $ref: '#/components/schemas/CapacityTon'
+          - type: 'null'
+        registrationNo:
+          anyOf:
+          - $ref: '#/components/schemas/RegistrationInput'
+          - type: 'null'
+        registrationDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        inspectionDueDate:
+          anyOf:
+          - $ref: '#/components/schemas/NaturalDate'
+          - type: 'null'
+        administrativeStatus:
+          $ref: '#/components/schemas/AdministrativeStatus'
+      required:
+      - version
+      anyOf:
+      - required:
+        - plateNo
+      - required:
+        - vehicleType
+      - required:
+        - capacityTon
+      - required:
+        - registrationNo
+      - required:
+        - registrationDate
+      - required:
+        - inspectionDueDate
+      - required:
+        - administrativeStatus
+      description: 真正partial PATCH：version及至少一個可變欄位。省略保留原值；明確null只清optional欄。plateNo/vehicleType/administrativeStatus不可null。
+    PageVehicle:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vehicle'
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    PageVehicleOption:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleOption'
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    VehicleEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Vehicle'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+          description: 既有ApiEnvelope，ISO8601且offset +08:00。
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageVehicleEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageVehicle'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+          description: 既有ApiEnvelope，ISO8601且offset +08:00。
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    PageVehicleOptionEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PageVehicleOption'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+          description: 既有ApiEnvelope，ISO8601且offset +08:00。
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    VehicleTypesEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: '0000'
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehicleType'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+          description: 既有ApiEnvelope，ISO8601且offset +08:00。
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0409
+          - E0500
+          - E0503
+        message:
+          type: string
+        data:
+          anyOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - type: 'null'
+        timestamp:
+          type: string
+          format: date-time
+          pattern: \+08:00$
+          description: 既有ApiEnvelope，ISO8601且offset +08:00。
+      required:
+      - code
+      - message
+      - data
+      - timestamp

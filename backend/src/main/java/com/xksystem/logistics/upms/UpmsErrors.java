@@ -13,7 +13,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 
-@RestControllerAdvice(basePackages={"com.xksystem.logistics.upms", "com.xksystem.logistics.adm", "com.xksystem.logistics.crm"})
+@RestControllerAdvice(basePackages={"com.xksystem.logistics.upms", "com.xksystem.logistics.adm", "com.xksystem.logistics.crm", "com.xksystem.logistics.fms"})
 public class UpmsErrors {
     private static final org.slf4j.Logger log=org.slf4j.LoggerFactory.getLogger(UpmsErrors.class);
     @ExceptionHandler(UpmsException.class)

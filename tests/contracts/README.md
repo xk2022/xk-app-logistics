@@ -36,3 +36,50 @@ both the preserved examples and actual HTTP responses, and includes the pinned
 Python requirements in the dependency vulnerability scan. The wheels deliberately
 match the CPython 3.12 / Linux x86_64 acceptance environment. Other interpreter or
 platform wheels require a separately verified lock update.
+
+## Independent FMS vehicle contract checks
+
+`validate_vehicle_contract.py` is separate from the preserved TOM checker. It reads
+`docs/06_api/fms-vehicles-openapi.yaml`, requires the exact six FMS operations and
+nineteen component schemas, checks schema metadata and local references, and runs
+20 positive / 25 negative static fixtures plus three external-reference rejection
+self-checks. These fixtures exercise response envelopes, nullable fields, precise
+decimal strings, Gregorian dates including 1500/0001, partial PATCH, version bounds,
+read-only metadata, and the exclusion of IN_USE.
+
+Input `x-normalizedMinLength` / `x-normalizedMaxLength` are engineering annotations,
+not raw-string length rules. The static positives deliberately include padded/NFD
+plate input and blank registration text that may become canonical values; the tool
+does not pretend to execute Java normalization or validate vehicle classification,
+uniqueness, permissions, database locks, or dispatch eligibility. Product tests own
+those checks. Output schemas enforce the canonical response bounds.
+
+The tool uses the same existing pinned PyYAML/jsonschema/referencing packages,
+an in-memory registry with a retrieval-denying handler, and explicit date/date-time
+format checks. It rejects non-local references or resource-ID overrides before
+validation. Evidence JSON rejects duplicates, non-JSON constants, invalid Unicode,
+and unknown envelope names. Decimal parsing keeps fractional version violations
+exact instead of allowing binary-float rounding through a safe-integer boundary.
+Failure output prints schema/pointer/keyword, never response values or parser
+diagnostics containing submitted data.
+
+The desktop/mobile collector writes `vehicle-contract-responses.json` as a
+nonempty array of `{schema,value}` records containing only public synthetic FMS
+response bodies. Accepted schema names are `VehicleEnvelope`, `PageVehicleEnvelope`,
+`VehicleTypesEnvelope`, `PageVehicleOptionEnvelope`, and `ErrorEnvelope`. No request
+body, cookie, CSRF token, authentication header, credential or trace is captured.
+The existing artifact privacy check still runs before upload.
+
+```sh
+# Static tooling checks only; explicitly reports HTTP acceptance as not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_vehicle_contract.py --static-only
+# After the isolated real HTTPS browser run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_vehicle_contract.py \
+  --responses 'test-results/**/vehicle-contract-responses.json'
+```
+
+Without arguments the response glob above is required by default. Missing matches,
+an empty evidence file/array, an unknown schema, extra capture metadata or a failed
+schema all fail the command; they cannot be reported as successful HTTP validation.
+`--static-only` and `--responses` are mutually exclusive. Static fixture success is
+tooling evidence, not proof that the product or an HTTP flow has run.
