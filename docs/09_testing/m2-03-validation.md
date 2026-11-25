@@ -14,7 +14,7 @@
 | Maven verify | 65 項全過：單元 7、ADM 整合 16、Platform 5、CRM 20、UPMS 17；0 失敗／錯誤／略過 |
 | 同源 HTTPS E2E | 最終乾淨隔離環境單次 10／10 通過（30.2 秒）；保留原 8 項，新增 CRM 桌面／Pixel 7 各 1 項 |
 | PostgreSQL 空庫／升級 | 隔離 Compose 空庫 V1–V4、精確 12 表／CRM 3 表與帳號／參數均 0、原 ADM 4 分類與 3 固定唯讀項目通過；V3→V4 保留既有帳號／密碼 hash／認證版本、ADM 定義／參數及異動通過 |
-| 依賴與機密 | root／frontend npm audit 均 0 vulnerabilities；最終重產 Maven BOM 144 components，鎖定依賴共 402 筆套件紀錄、OSV 0 已知漏洞；staged gitleaks 無洩漏 |
+| 依賴與機密 | root／frontend npm audit 均 0 vulnerabilities；最終重產 Maven BOM 144 components，鎖定依賴共 402 筆套件紀錄、OSV 0 已知漏洞；staged 及完整 14 commits gitleaks 無洩漏 |
 | OpenAPI | 11 操作、105 個本地引用、17 個 DTO 結構正反例通過；輸入 NFC 後長度由服務驗證，沒有誤用 raw maxLength |
 | 靜態 | actionlint 與 diff whitespace 通過；171 個相對連結無缺漏；E2E TypeScript（bundler）與 19 段 CI shell 語法通過 |
 | 報告隱私 | 認證 trace 關閉、trace 檔 0；fixture 密碼及報告隱私檢查通過，CI 仍保留失敗拒絕上傳門檻 |
@@ -30,7 +30,11 @@
 
 ## CI 與交付追蹤
 
-本機驗收已完成，四項必要遠端品質檢查全部成功才合併。此處尚未宣稱遠端 CI 通過，實際受測 SHA、PR、run 與合併結果於執行後補錄。
+- 交付 [PR #8](https://github.com/xk2022/xk-app-logistics/pull/8)，目標 `main`。
+- 工程受測 commit：`6fc61bddd4febf2960eb380fc0f49c6f2c0cf3ff`。
+- 首輪 [Application quality run](https://github.com/xk2022/xk-app-logistics/actions/runs/45562788996)：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke 四項全部 **success**。GitHub 使用原始 Dockerfile，77 項前端、65 項後端及 10 項同源 HTTPS E2E 通過。
+- 本次只補錄實際交付證據；最終文件 head 及合併後 main 仍由同一 workflow 驗證，最新 head／run／merge SHA 以 PR 與 GitHub 執行紀錄為準。四項全部成功才合併，不略過或降低品質門檻。
+- 隔離 CRM E2E 資料卷與私有 fixture 憑證已清理。一般 DEV 的原 V3 資料庫升級至 V4，精確 12 表；帳號、客戶、聯絡人、地址、參數定義與參數仍為 0，HTTPS 狀態通過，沒有測試 fixture 混入。
 
 ## 可重現與風險
 
