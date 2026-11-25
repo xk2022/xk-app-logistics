@@ -11,4 +11,14 @@
 
 M1 應依中央 APP Repo 結構建立 frontend/、backend/、infrastructure/、tests/e2e/、.github/workflows/、compose.yaml、compose.dev.yaml、compose.prod.yaml、.env.example。M1 已建立工程骨架；後續業務功能另行交辦。每工作包需獨立 PR、驗收證據，實作與部署另行交辦。
 
-[M1 工程初始化交接](m1-bootstrap-handoff.md) 為下一工作入口。M1 不含業務 API 或正式部署。
+M1 已完成。M2 分為五個工作包，逐一交付：
+
+| 工作包 | 範圍 |
+| --- | --- |
+| LG-M2-01 | [UPMS 帳號與權限](m2-01-upms-handoff.md) |
+| LG-M2-02 | ADM 字典與參數（具體契約待確認） |
+| LG-M2-03 | CRM 客戶主檔（具體契約待確認） |
+| LG-M2-04 | TOM 訂單草稿與五項 API |
+| LG-M2-05 | 訂單 UI 與首片整合驗收 |
+
+全部沿用 M1 技術基準，逐包獨立交辦。
