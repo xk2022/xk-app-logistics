@@ -34,6 +34,14 @@
 - 架構邊界驗證 ADM 不直接引用其他模組 repository；`AdmQueries` 為可信 server 內部介面，HTTP 仍必須經明確角色授權，不能把共用查詢當成非管理員讀取許可。
 - UI 字典及參數流程、唯讀／空狀態、版本 409 後重讀再操作、401／403、分類切換競爭與異動 JSON 文字安全；正常空 catalog 不提供任意鍵／型別輸入。
 
+## CI 與交付追蹤
+
+- 交付 [PR #6](https://github.com/xk2022/xk-app-logistics/pull/6)，目標 `main`。
+- 工程受測 commit：`946a16006a80141dedafe69b6a1c421055da6f0f`。
+- 首輪 [Application quality run](https://github.com/xk2022/xk-app-logistics/actions/runs/45556660019)：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke 四項全部 **success**；原始 Dockerfile、44 項後端測試、58 項前端測試與 8 項 HTTPS E2E 通過。
+- 本次補錄僅更新交付證據；最終文件提交及合併後 main 仍由同一 workflow 執行，最新 head／run／merge SHA 以 PR 及 GitHub 執行紀錄為準，四項品質檢查全成功才合併。
+- 本機隔離 E2E 資料卷與暫存憑證已清理；一般 DEV 原 V2 升級 V3 成功，帳號、參數目錄與參數仍為空，沒有 fixture 混入。
+
 ## 可重現與交付證據
 
 一般啟動見 [README](../../README.md)，隔離 E2E 準備見 [tests/e2e/README](../../tests/e2e/README.md)。不可直接在一般 DEV DB 執行 fixture。test-only runner 只接受 localhost 的 `xk_logistics_e2e` 空帳號資料庫；12 個合成帳號與 6 個分 viewport 的合成參數定義僅在隔離測試建立，產品 jar 沒有 seed 入口或可由環境旗標啟用的 fixture。
