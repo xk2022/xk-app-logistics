@@ -56,7 +56,7 @@ class PlatformIT {
                 .containsExactlyInAnyOrder("flyway_schema_history", "upms_lock", "upms_account", "upms_audit",
                         "adm_dict_category", "adm_dict_item", "adm_parameter_definition", "adm_parameter", "adm_change_log",
                         "crm_customer", "crm_contact", "crm_address", "order_core", "tom_order", "cargo_item", "transport_task",
-                        "task_dependency", "order_draft_revision", "api_idempotency");
+                        "task_dependency", "order_draft_revision", "api_idempotency", "fms_vehicle");
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_account", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_audit", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_lock where id=1", Long.class)).isEqualTo(1);
@@ -68,13 +68,15 @@ class PlatformIT {
                 .isEqualTo("4");
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '5'", String.class))
                 .isEqualTo("5");
+        assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '6'", String.class))
+                .isEqualTo("6");
         assertThat(jdbc.queryForList("select code from logistics.adm_dict_category order by sort_order", String.class))
                 .containsExactly("ORDER_TYPE", "CONTAINER_TYPE", "TASK_KIND", "VEHICLE_TYPE");
         assertThat(jdbc.queryForList("select code from logistics.adm_dict_item order by sort_order", String.class))
                 .containsExactly("IMPORT", "EXPORT", "LOCAL");
         assertThat(jdbc.queryForObject("select count(*) from logistics.adm_dict_item where not read_only", Long.class)).isZero();
         for (String table : new String[] {"adm_parameter_definition", "adm_parameter", "adm_change_log", "crm_customer", "crm_contact", "crm_address",
-                "order_core", "tom_order", "cargo_item", "transport_task", "task_dependency", "order_draft_revision", "api_idempotency"}) {
+                "order_core", "tom_order", "cargo_item", "transport_task", "task_dependency", "order_draft_revision", "api_idempotency", "fms_vehicle"}) {
             assertThat(jdbc.queryForObject("select count(*) from logistics." + table, Long.class)).isZero();
         }
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
@@ -264,7 +266,7 @@ class PlatformIT {
                     VALUES (?,?,'合成待升級參數','TEXT','upgrade','Synthetic upgrade fixture',true,0,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
                     """, java.util.UUID.randomUUID(), definitions.get("text"));
             Flyway upgraded = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
-                    .schemas("logistics").defaultSchema("logistics").load();
+                    .schemas("logistics").defaultSchema("logistics").target("5").load();
             assertThat(upgraded.migrate().migrationsExecuted).isEqualTo(1);
             assertThat(upgraded.validateWithResult().validationSuccessful).isTrue();
             assertThat(upgraded.migrate().migrationsExecuted).isZero();
@@ -282,4 +284,66 @@ class PlatformIT {
             jdbc.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
         }
     }
+    @Test
+    void upgradesV5ToV6PreservingEveryM2AggregateRevisionReplayAndMasterRecordWithoutVehicleSeeds() throws Exception {
+        String databaseName="xk_fms_upgrade_test";
+        jdbc.execute("CREATE DATABASE "+databaseName);
+        String url=postgres.getJdbcUrl().replace("/"+postgres.getDatabaseName(),"/"+databaseName);
+        try{
+            Flyway old=Flyway.configure().dataSource(url,postgres.getUsername(),postgres.getPassword()).schemas("logistics").defaultSchema("logistics").target("5").load();
+            assertThat(old.migrate().migrationsExecuted).isEqualTo(5);
+            var database=new JdbcTemplate(new org.springframework.jdbc.datasource.DriverManagerDataSource(url,postgres.getUsername(),postgres.getPassword()));
+            java.util.UUID actor;java.util.Map<String,String> definitions;
+            try(var connection=java.sql.DriverManager.getConnection(url,postgres.getUsername(),postgres.getPassword())){
+                actor=com.xksystem.logistics.support.UpmsTestData.insert(connection,new com.xksystem.logistics.upms.UpmsConfiguration().passwordEncoder(),"synthetic-fms-upgrade","ADMIN",com.xksystem.logistics.support.UpmsTestData.password(),false,java.time.Instant.now());
+                definitions=com.xksystem.logistics.support.AdmTestData.insertDefinitions(connection,"FMS_UPGRADE");
+            }
+            var snapshot=(tools.jackson.databind.node.ObjectNode)com.xksystem.logistics.support.TomContract.example("schemaPositive","DEMO-LOCAL-CONTRACT-response").get("value").get("data");
+            snapshot.put("createdBy",actor.toString()).put("updatedBy",actor.toString()).put("createdAt","2026-11-17T08:00:00Z").put("updatedAt","2026-11-17T08:00:00Z").put("remark","合成\u0000V5升級資料");
+            ((tools.jackson.databind.node.ObjectNode)snapshot.get("items").get(0)).put("grossWeight","1200");
+            com.xksystem.logistics.support.TomContract.assertSchema("OrderDraftRead",snapshot);
+            java.util.UUID customer=java.util.UUID.fromString(snapshot.get("customerId").asString()),order=java.util.UUID.fromString(snapshot.get("id").asString());
+            var at=java.time.OffsetDateTime.parse("2026-11-17T08:00:00Z");
+            database.update("INSERT INTO logistics.upms_audit(id,actor,target_id,action,reason,occurred_at) VALUES (?,?,?,'LOGIN_SUCCESS','Synthetic V5 upgrade fixture',?)",java.util.UUID.randomUUID(),"synthetic-fms-upgrade",actor,at);
+            java.util.UUID category=java.util.UUID.randomUUID(),item=java.util.UUID.randomUUID();
+            database.update("INSERT INTO logistics.adm_dict_category(id,code,name,enabled,sort_order,read_only,version,created_at,updated_at) VALUES (?,'SYNTHETIC_V5_CATALOG','合成升級分類',true,99,false,0,?,?)",category,at,at);
+            database.update("INSERT INTO logistics.adm_dict_item(id,category_id,code,label,enabled,sort_order,read_only,version,created_at,updated_at) VALUES (?,?,'SYNTHETIC_V5_ITEM','合成升級項目',false,0,false,0,?,?)",item,category,at,at);
+            database.update("INSERT INTO logistics.adm_parameter(id,parameter_key,name,value_type,value_text,description,enabled,version,created_at,updated_at) VALUES (?,?,'合成升級參數','TEXT','upgrade','Synthetic fixture',true,0,?,?)",java.util.UUID.randomUUID(),definitions.get("text"),at,at);
+            database.update("INSERT INTO logistics.adm_change_log(id,target_type,target_id,action,actor_id,actor_username,occurred_at,before_value,after_value) VALUES (?,'CATEGORY',?,'CREATE',?,'synthetic-fms-upgrade',?,NULL,'{\"code\":\"SYNTHETIC_V5_CATALOG\"}'::jsonb)",java.util.UUID.randomUUID(),category,actor,at);
+            database.update("INSERT INTO logistics.crm_customer(id,customer_code,name,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,'SYNTHETIC_FMS_UPGRADE',?,true,0,?,?,?,?)",customer,snapshot.get("customerName").asString(),at,at,actor,actor);
+            database.update("INSERT INTO logistics.crm_contact(id,customer_id,name,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,'合成升級聯絡人',true,0,?,?,?,?)",java.util.UUID.randomUUID(),customer,at,at,actor,actor);
+            database.update("INSERT INTO logistics.crm_address(id,customer_id,address,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,'合成升級地址',true,0,?,?,?,?)",java.util.UUID.randomUUID(),customer,at,at,actor,actor);
+            database.update("INSERT INTO logistics.order_core(id,company_scope,order_no,lifecycle_status,created_at,updated_at,created_by,updated_by) VALUES (?,'SINGLE_COMPANY',?,'OPEN',?,?,?,?)",order,snapshot.get("orderNo").asString(),at,at,actor,actor);
+            database.update("INSERT INTO logistics.tom_order(order_id,order_type,customer_id,customer_name,acceptance_status,version,remark,shipping_present,created_at,updated_at,created_by,updated_by) VALUES (?,'LOCAL',?,?,'DRAFT',0,?,false,?,?,?,?)",order,customer,snapshot.get("customerName").asString(),snapshot.get("remark").asString().getBytes(java.nio.charset.StandardCharsets.UTF_8),at,at,actor,actor);
+            for(JsonNode cargo:snapshot.get("items"))database.update("INSERT INTO logistics.cargo_item(id,order_id,client_ref,input_position,sequence,item_kind,package_qty,gross_weight,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,0,1,'CARGO',10,1200,?,?,?,?)",java.util.UUID.fromString(cargo.get("id").asString()),order,cargo.get("clientRef").asString(),at,at,actor,actor);
+            int position=0;
+            for(JsonNode task:snapshot.get("tasks")){
+                database.update("INSERT INTO logistics.transport_task(id,task_no,order_id,item_id,client_ref,input_position,task_kind,pickup_name,pickup_address,delivery_name,delivery_address,contact_present,planned_start_at,planned_end_at,planned_start_wire,planned_end_wire,required_task,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,false,?,?,?,?,true,?,?,?,?)",java.util.UUID.fromString(task.get("id").asString()),task.get("taskNo").asString(),order,java.util.UUID.fromString(task.get("itemId").asString()),task.get("clientRef").asString(),position++,bytes(task,"taskKind"),bytes(task,"pickupName"),bytes(task,"pickupAddress"),bytes(task,"deliveryName"),bytes(task,"deliveryAddress"),java.time.OffsetDateTime.parse(task.get("plannedStartAt").asString()),java.time.OffsetDateTime.parse(task.get("plannedEndAt").asString()),task.get("plannedStartAt").asString(),task.get("plannedEndAt").asString(),at,at,actor,actor);
+                int predecessorPosition=0;
+                for(JsonNode predecessor:task.get("predecessorTaskIds"))database.update("INSERT INTO logistics.task_dependency(order_id,task_id,predecessor_task_id,input_position,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?)",order,java.util.UUID.fromString(task.get("id").asString()),java.util.UUID.fromString(predecessor.asString()),predecessorPosition++,at,at,actor,actor);
+            }
+            String saved=json.writeValueAsString(snapshot);
+            var originalRequest=(tools.jackson.databind.node.ObjectNode)com.xksystem.logistics.support.TomContract.example("graphCases","DEMO-LOCAL-CONTRACT").get("draft");
+            originalRequest.put("remark",snapshot.get("remark").asString());
+            String requestHash=com.xksystem.logistics.tom.domain.DraftCodec.canonicalHash(originalRequest);
+            database.update("INSERT INTO logistics.order_draft_revision(id,order_id,aggregate_version,snapshot,request_trace_id,created_at,updated_at,created_by,updated_by) VALUES (?,?,0,?::json,'synthetic-upgrade-trace',?,?,?,?)",java.util.UUID.randomUUID(),order,saved,at,at,actor,actor);
+            database.update("INSERT INTO logistics.api_idempotency(id,company_scope,actor_id,http_method,canonical_path,idempotency_key,request_hash,order_id,original_status,original_data,original_location,created_at,updated_at,created_by,updated_by) VALUES (?,'SINGLE_COMPANY',?,'POST','/api/v1/orders','synthetic-v5-upgrade',?,?,201,?::json,?,?,?,?,?)",java.util.UUID.randomUUID(),actor,requestHash,order,saved,"/api/v1/orders/"+order,at,at,actor,actor);
+            var tableOrders=new java.util.LinkedHashMap<String,String>();
+            for(String table:new String[]{"upms_lock","upms_account","upms_audit","adm_dict_category","adm_dict_item","adm_parameter_definition","adm_parameter","adm_change_log","crm_customer","crm_contact","crm_address","order_core","cargo_item","transport_task","order_draft_revision","api_idempotency"})tableOrders.put(table,"id");
+            tableOrders.put("adm_parameter_definition","parameter_key");tableOrders.put("tom_order","order_id");tableOrders.put("task_dependency","order_id,task_id,predecessor_task_id");
+            var before=new java.util.LinkedHashMap<String,String>();tableOrders.forEach((table,ordering)->before.put(table,tableDigest(database,table,ordering)));
+            Flyway upgrade=Flyway.configure().dataSource(url,postgres.getUsername(),postgres.getPassword()).schemas("logistics").defaultSchema("logistics").target("6").load();
+            assertThat(upgrade.migrate().migrationsExecuted).isEqualTo(1);assertThat(upgrade.validateWithResult().validationSuccessful).isTrue();assertThat(upgrade.migrate().migrationsExecuted).isZero();
+            tableOrders.forEach((table,ordering)->assertThat(tableDigest(database,table,ordering)).as("Preserved every existing V5 row in %s",table).isEqualTo(before.get(table)));
+            assertThat(database.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'",Long.class)).isEqualTo(20);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.fms_vehicle",Long.class)).isZero();
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.adm_dict_item i JOIN logistics.adm_dict_category c ON c.id=i.category_id WHERE c.code='VEHICLE_TYPE'",Long.class)).isZero();
+            assertThat(json.readTree(database.queryForObject("SELECT snapshot::text FROM logistics.order_draft_revision WHERE order_id=?",String.class,order))).isEqualTo(snapshot);
+            assertThat(json.readTree(database.queryForObject("SELECT original_data::text FROM logistics.api_idempotency WHERE order_id=?",String.class,order))).isEqualTo(snapshot);
+        }finally{jdbc.execute("DROP DATABASE "+databaseName+" WITH (FORCE)");}
+    }
+
+    private static byte[] bytes(JsonNode value,String field){return value.get(field).asString().getBytes(java.nio.charset.StandardCharsets.UTF_8);}
+    private static String tableDigest(JdbcTemplate database,String table,String order){return database.queryForObject("SELECT md5(coalesce(json_agg(row_to_json(t) ORDER BY "+order+")::text,'[]')) FROM logistics."+table+" t",String.class);}
+
 }

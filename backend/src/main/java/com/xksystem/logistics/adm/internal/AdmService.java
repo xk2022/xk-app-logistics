@@ -8,9 +8,15 @@ import java.time.Clock;
 import java.util.*;
 import java.util.regex.Pattern;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
@@ -24,6 +30,7 @@ public class AdmService implements AdmQueries {
     private final UpmsAuthorization authorization;
     private final Clock clock;
     private final JsonMapper json;
+    @PersistenceContext private EntityManager entityManager;
     private static final Pattern RESERVED=Pattern.compile("(^|_)(AUTH|SESSION|SECURITY|SECRET|PASSWORD|TOKEN|CSRF|JWT|COOKIE|TLS|SSL|DATABASE|DATASOURCE|SMTP|CREDENTIAL|INFRA|PORT|HOST|URL|URI|ORIGIN|CORS|ITERATIONS|LOGIN|PBKDF2|RATE_LIMIT)(_|$)");
     private static final Pattern CREDENTIAL=Pattern.compile("(?is)-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|\\bBearer\\s+[a-zA-Z0-9._~+/-]{12,}|\\b(?:password|secret|token|api[_-]?key|XKSESSION|JSESSIONID)\\s*[:=]\\s*\\S+|\\b(?:jdbc:|postgres(?:ql)?://|mysql://|redis://|mongodb(?:\\+srv)?://)|\\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\\b|https?://[^\\s/@]+:[^\\s/@]+@");
 
@@ -73,6 +80,27 @@ public class AdmService implements AdmQueries {
                 .flatMap(parent->items.findByCategoryIdAndCode(parent.id,AdmValidation.code(itemCode,"itemCode"))).map(item->item.label);
     }
     @Override public Optional<String> historicalLabel(UUID itemId) { return items.findById(itemId).map(item->item.label); }
+    @Override public Optional<ItemSnapshot> findItem(String categoryCode,UUID itemId) {
+        if(itemId==null)return Optional.empty();
+        // Scalar projection reads parent/item state in one statement and bypasses stale managed entities.
+        return items.snapshot(AdmValidation.code(categoryCode,"categoryCode"),itemId).map(item->new ItemSnapshot(
+                item.getId(),item.getCategoryId(),item.getCategoryCode(),item.getCode(),item.getLabel(),
+                item.getCategoryEnabled()&&item.getItemEnabled(),item.getVersion()));
+    }
+    @Override @Transactional(propagation=Propagation.MANDATORY)
+    public ItemSnapshot requireEnabledItemForNewReference(String categoryCode,UUID itemId) {
+        if(TransactionSynchronizationManager.isCurrentTransactionReadOnly())
+            throw new IllegalTransactionStateException("ADM new references require a writable caller transaction");
+        var parent=categories.findByCode(AdmValidation.code(categoryCode,"categoryCode"))
+                .orElseThrow(()->UpmsException.field("itemId","找不到指定分類的有效項目"));
+        entityManager.refresh(parent,LockModeType.PESSIMISTIC_WRITE);
+        var item=itemId==null?null:items.findById(itemId).orElse(null);
+        if(item==null)throw UpmsException.field("itemId","找不到指定分類的有效項目");
+        entityManager.refresh(item,LockModeType.PESSIMISTIC_WRITE);
+        if(!item.categoryId.equals(parent.id)||!parent.enabled||!item.enabled)
+            throw UpmsException.field("itemId","項目或所屬分類已停用，不能新增引用");
+        return new ItemSnapshot(item.id,parent.id,parent.code,item.code,item.label,true,item.version);
+    }
     @Override public Optional<AdmDtos.Parameter> enabledParameter(String key) {
         return parameters.findByKeyAndEnabledTrue(AdmValidation.code(key,"key")).map(parameter -> {
             var definition=definition(parameter.key);

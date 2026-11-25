@@ -55,6 +55,7 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers("/api/v1/upms/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/crm/**").hasAnyRole("ADMIN","DISPATCHER")
+                .requestMatchers("/api/v1/fms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/orders","/api/v1/orders/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());

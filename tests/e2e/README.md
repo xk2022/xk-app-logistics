@@ -1,9 +1,11 @@
 # Browser verification
 
-The suite has 18 cases: nine each for desktop Chromium and Pixel 7. The
+The suite has 20 cases: ten each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
+`vehicle.spec.ts` adds one independent FMS scenario per viewport; the original
+18 cases remain unchanged.
 
 The desktop Chromium and Pixel 7 projects preserve the M1 service-state success,
 request failure, retry, and overflow checks. UPMS verification uses the same
@@ -46,16 +48,28 @@ navigation nor order API access. Both viewports check accessible field labels,
 keyboard operation and horizontal overflow. The three cases run sequentially
 within each viewport so they cannot evict one another's sessions; other suites
 and viewports retain independent credentials and can run concurrently.
-No CRM or TOM records are inserted by the fixture runner.
+FMS uses its own normal ADMIN, DISPATCHER, and DRIVER accounts. Its synthetic
+vehicle types are isolated by viewport, so disabling a type does not affect the
+other project's records or the existing suites. The scenario verifies management
+roles, lists and pagination, creation and editing, administrative status filters,
+available master-data options, real version conflicts, inactive-type history,
+decimal and date boundaries, and all six DRIVER API refusals. AVAILABLE describes
+the master record; no test treats it as proof of dispatch availability or creates
+an IN_USE state. Both viewports check labels, keyboard access, and overflow.
+No CRM, TOM, or vehicle records are inserted by the fixture runner.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 30 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
-and order UI ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
+runner creates 36 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+order UI, and FMS ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
 TEXT/NUMBER/BOOLEAN set per browser project. These exist only in the test runner;
 the production parameter-definition catalog remains empty.
+It also inserts six synthetic ADM `VEHICLE_TYPE` items, three per viewport, solely
+for these isolated tests, with clearly synthetic tractor, trailer, and truck
+labels. General application startup still has no approved
+vehicle-type items or vehicle seed records.
 
 ```sh
 umask 077
@@ -122,10 +136,15 @@ TOM API artifacts remain unchanged. These artifacts are
 also covered by the existing privacy guard. Reports and
 screenshots are ignored by Git; inspect the HTML report with
 `npm run test:e2e:report`. Keep credential files out of report directories.
+Each FMS case separately writes `vehicle-contract-responses.json`, using the same
+body-only `{schema, value}` format for its independent FMS OpenAPI schemas. It
+includes real permission, validation, uniqueness, and version-conflict responses;
+no authentication response or request metadata is captured.
 
-CI validates health/status, Flyway V1–V5 on an empty database, exact UPMS/ADM/CRM/TOM
+CI validates health/status, Flyway V1–V6 on an empty database, exact UPMS/ADM/CRM/TOM/FMS
 tables, the fixed ORDER_TYPE enum and three empty configurable categories,
-absence of seeded accounts, parameter definitions/values, CRM records, or TOM records, restart stability,
+absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
+or vehicles, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

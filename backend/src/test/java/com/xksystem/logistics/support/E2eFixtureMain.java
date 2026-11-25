@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -39,6 +40,15 @@ public final class E2eFixtureMain {
                         throw new IllegalStateException("The fixture runner requires an empty isolated account table");
                     }
                 }
+            }
+            UUID vehicleTypeCategoryId;
+            try (var statement = connection.prepareStatement(
+                    "SELECT id FROM logistics.adm_dict_category WHERE code='VEHICLE_TYPE' AND enabled=true");
+                    var category = statement.executeQuery()) {
+                if (!category.next()) {
+                    throw new IllegalStateException("Synthetic vehicle types require an enabled VEHICLE_TYPE category");
+                }
+                vehicleTypeCategoryId = category.getObject(1, UUID.class);
             }
             for (String project : new String[] {"chromium", "mobile-chromium"}) {
                 Map<String, Object> accounts = new LinkedHashMap<>();
@@ -87,6 +97,18 @@ public final class E2eFixtureMain {
                     orderUi.put(name, Map.of("username", username, "password", secret));
                 }
                 accounts.put("orderUi", orderUi);
+                Map<String, Object> fms = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driver"}) {
+                    String username = "fms-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    UpmsTestData.insert(connection, encoder, username, name.toUpperCase(java.util.Locale.ROOT),
+                            secret, false, Instant.now());
+                    fms.put(name, Map.of("username", username, "password", secret));
+                }
+                fms.put("vehicleTypeCategoryId", vehicleTypeCategoryId.toString());
+                fms.put("vehicleTypes", insertVehicleTypes(connection, vehicleTypeCategoryId,
+                        project.equals("chromium") ? "DESKTOP" : "MOBILE"));
+                accounts.put("fms", fms);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();
@@ -102,5 +124,38 @@ public final class E2eFixtureMain {
             }
         }
         System.out.println("Synthetic E2E fixture created; credentials are stored only in the private fixture file.");
+    }
+
+    private static Map<String, Map<String, String>> insertVehicleTypes(Connection connection,
+            UUID categoryId, String suffix) throws Exception {
+        Map<String, Map<String, String>> vehicleTypes = new LinkedHashMap<>();
+        for (String name : new String[] {"a", "b", "c"}) {
+            UUID id = UUID.randomUUID();
+            String code = "FMS_" + suffix + "_" + name.toUpperCase(java.util.Locale.ROOT);
+            String kind = switch (name) {
+                case "a" -> "車頭";
+                case "b" -> "拖板";
+                default -> "貨車";
+            };
+            String label = "合成測試" + kind + " " + suffix + " " + name.toUpperCase(java.util.Locale.ROOT);
+            try (var statement = connection.prepareStatement("""
+                    INSERT INTO logistics.adm_dict_item
+                        (id,category_id,code,label,enabled,sort_order,read_only,created_at,updated_at)
+                    VALUES (?,?,?,?,true,?,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                    """)) {
+                statement.setObject(1, id);
+                statement.setObject(2, categoryId);
+                statement.setString(3, code);
+                statement.setString(4, label);
+                statement.setInt(5, switch (name) {
+                    case "a" -> 10;
+                    case "b" -> 20;
+                    default -> 30;
+                });
+                statement.executeUpdate();
+            }
+            vehicleTypes.put(name, Map.of("id", id.toString(), "code", code, "label", label));
+        }
+        return vehicleTypes;
     }
 }

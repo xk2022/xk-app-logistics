@@ -1,0 +1,76 @@
+.vehicle-workspace { min-width: 0; }
+.vehicle-heading { align-items: flex-start; gap: 18px; }
+.vehicle-heading-actions, .vehicle-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.vehicle-scope { display: flex; align-items: flex-start; gap: 14px; background: #eff6ff; color: #172554; border: 1px solid #dbeafe; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px; }
+.vehicle-scope svg { flex: 0 0 auto; margin-top: 2px; }
+.vehicle-scope strong { display: block; font-size: 14px; }
+.vehicle-scope p { margin: 5px 0 0; font-size: 13px; color: #475569; line-height: 1.7; }
+.vehicle-filter { margin-bottom: 24px; }
+.vehicle-filter-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.vehicle-filter h2, .vehicle-options h2 { font-size: 20px; margin-bottom: 0; }
+.vehicle-query { display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(130px, 1fr) minmax(130px, 1fr) 100px auto; align-items: end; gap: 14px; margin-top: 22px; }
+.vehicle-query label, .vehicle-field > label, .vehicle-options-query label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+.vehicle-query input, .vehicle-query select, .vehicle-field input, .vehicle-field select, .vehicle-options-query input, .vehicle-options-query select { width: 100%; min-height: 44px; padding: 10px 12px; font: inherit; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #101828; min-width: 0; }
+.vehicle-workspace input:focus-visible, .vehicle-workspace select:focus-visible, .vehicle-workspace [tabindex="-1"]:focus-visible { outline: 3px solid #2563eb55; outline-offset: 3px; border-color: #2563eb; }
+.vehicle-workspace input:disabled, .vehicle-workspace select:disabled { background: #f1f5f9; color: #64748b; }
+.vehicle-field [aria-invalid="true"] { border-color: #b91c1c; }
+.vehicle-field > small, .vehicle-muted { display: block; color: #64748b; font-size: 12px; line-height: 1.7; margin-top: 6px; }
+.vehicle-list-card { margin-bottom: 18px; }
+.vehicle-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.vehicle-list-heading h2 { font-size: 21px; margin: 0; }
+.vehicle-list-heading p { color: #64748b; font-size: 13px; margin: 0; }
+.vehicle-table th, .vehicle-table td { white-space: normal; overflow-wrap: anywhere; }
+.vehicle-table small { display: block; font-size: 12px; color: #64748b; font-weight: 400; margin-top: 4px; }
+.vehicle-plate { letter-spacing: .015em; }
+.vehicle-status { display: inline-block; padding: 4px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.vehicle-status-AVAILABLE { background: #ecfdf5; color: #166534; }
+.vehicle-status-MAINTENANCE { background: #fffbeb; color: #92400e; }
+.vehicle-status-INACTIVE { background: #f1f5f9; color: #475569; }
+.vehicle-date { white-space: nowrap; }
+.vehicle-inspection-note { font-size: 12px; color: #92400e; display: block; margin-top: 5px; }
+.vehicle-options-toggle { margin: 20px 0; }
+.vehicle-options { margin-top: 16px; }
+.vehicle-options-query { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin: 20px 0; }
+.vehicle-options-query > div { flex: 1; min-width: 180px; }
+.vehicle-options-list { list-style: none; padding: 0; margin: 20px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.vehicle-options-list li { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; min-width: 0; overflow-wrap: anywhere; }
+.vehicle-options-list strong { display: block; color: #172554; margin-bottom: 5px; }
+.vehicle-options-list span { font-size: 13px; color: #64748b; }
+.vehicle-form-card { max-width: 980px; }
+.vehicle-form-card h2 { font-size: 24px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.vehicle-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 24px; }
+.vehicle-field { min-width: 0; }
+.vehicle-field-wide { grid-column: 1 / -1; }
+.vehicle-field-error { color: #b91c1c; font-size: 12px; line-height: 1.7; margin: 6px 0 0; }
+.vehicle-form-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #64748b; font-size: 12px; margin: 14px 0; }
+.vehicle-form-status { display: inline-flex; align-items: center; gap: 8px; }
+.vehicle-history-note, .vehicle-type-empty { padding: 14px 16px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; margin-top: 10px; font-size: 13px; line-height: 1.7; color: #475569; }
+.vehicle-type-empty strong { display: block; margin-bottom: 5px; color: #334155; }
+.vehicle-type-empty p { margin: 0; }
+.vehicle-reload { border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 24px; }
+.vehicle-confirm { border: 1px solid #fcd34d; background: #fffbeb; color: #78350f; padding: 18px 20px; border-radius: 9px; margin: 18px 0; font-size: 14px; line-height: 1.7; }
+.vehicle-confirm h2, .vehicle-confirm h3 { font-size: 18px; margin: 0 0 8px; }
+.vehicle-confirm p { margin: 8px 0 14px; }
+.vehicle-identity { margin-top: 24px; font-size: 12px; color: #64748b; }
+.vehicle-identity summary { cursor: pointer; color: #475569; padding: 7px 0; font-weight: 600; }
+.vehicle-identity dl { display: grid; gap: 10px; }
+.vehicle-identity dt { font-weight: 600; }
+.vehicle-identity dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.vehicle-form-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid #e2e8f0; padding-top: 22px; margin-top: 26px; }
+.vehicle-form-actions p { color: #64748b; font-size: 12px; margin: 0; }
+.vehicle-form-actions > div { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 1200px) { .vehicle-query { grid-template-columns: repeat(2, minmax(0, 1fr)); } .vehicle-query > div:first-child { grid-column: 1 / -1; } }
+@media (max-width: 680px) {
+  .vehicle-heading-actions { width: 100%; }
+  .vehicle-heading-actions button { flex: 1; justify-content: center; }
+  .vehicle-scope { padding: 16px; }
+  .vehicle-query, .vehicle-form-grid, .vehicle-options-list { grid-template-columns: 1fr; }
+  .vehicle-query > div:first-child { grid-column: auto; }
+  .vehicle-query > button { justify-content: center; }
+  .vehicle-form-grid { gap: 19px; }
+  .vehicle-field-wide { grid-column: auto; }
+  .vehicle-form-card h2 { font-size: 22px; }
+  .vehicle-form-actions, .vehicle-form-actions > div { align-items: stretch; width: 100%; }
+  .vehicle-form-actions > div > button { flex: 1; justify-content: center; }
+  .vehicle-options-query > button { width: 100%; justify-content: center; }
+}
