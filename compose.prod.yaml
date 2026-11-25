@@ -1,0 +1,8 @@
+# Reserved for a separately approved production work package.
+# This overlay deliberately cannot start a database or deploy an application.
+# No production image, credential, domain or provider has been approved in M1.
+services:
+  db:
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["echo 'Production deployment is not configured in LG-M1' >&2; exit 1"]
+    restart: "no"
