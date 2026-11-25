@@ -24,6 +24,14 @@
 | 文件／工具與舊基準保留 | 13 份 Markdown、176 相對連結有效；actionlint、E2E strict TypeScript、diff check 通過；V1–V6、既有契約／validator／依賴與原測試全部保留 |
 | GitHub 交付 | 最終 head 四項 CI 全成功後才合併；source／merge SHA、run 與合併後 main 結果由交付 PR 及 GitHub 執行紀錄追蹤 |
 
+## 產品交付與遠端驗證追蹤
+
+[產品 PR #14](https://github.com/xk2022/xk-app-logistics/pull/14) 已合併：source `01de1f26cf338502a1ddcb02b0e328bdb4332938`，產品 merge `f0299c35fdaf45a44993660ea3c169aa978ec76c`。[PR CI 45650752757](https://github.com/xk2022/xk-app-logistics/actions/runs/45650752757) attempt 1 四項成功；遠端再次確認 103 unit＋177 integration、22 E2E，以及 TOM 296／Vehicle 174／Driver 282 實際回應與報告隱私全部通過。
+
+產品合併後 [push CI 45651314921](https://github.com/xk2022/xk-app-logistics/actions/runs/45651314921) 的前端、安全、Compose／瀏覽器三項成功。後端尚未執行測試，下載 Spring Boot parent POM 時被官方 Maven Central alternate 回 HTTP 429。單一失敗工作重跑、單一 job 重跑及既有 workflow_dispatch 入口均回內部 HTTP 500，實際 run 仍為 attempt 1，沒有將請求失敗誤記為已重跑。
+
+本次文件補錄已完成產品的 PR／SHA／CI 證據，以正常文件 PR 再次觸發既有完整四項品質檢查。產品來源、依賴、API、migration 與測試門檻均維持上述受測版本；文件交付 PR 及其合併後 main 的最終 SHA／成功 run 由該 PR 的交付追蹤記錄，保留前次 429 與重跑介面失敗的歷史。
+
 ## 必驗行為
 
 - UUID、canonical 唯一且不可變的司機編號、停用／離職不可重用；可不綁帳號管理。
