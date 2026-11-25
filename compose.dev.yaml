@@ -34,3 +34,21 @@ services:
       backend:
         condition: service_healthy
     networks: [app]
+  gateway:
+    image: nginx:1.30.8-alpine@sha256:6437a63b5c529f0e06162b3f593c0154cff6fa2ea0f94fd7c27928cb399e022d
+    ports:
+      - "127.0.0.1:${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./infrastructure/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infrastructure/dev-tls:/etc/nginx/dev-tls:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks: [app]
+    healthcheck:
+      test: ["CMD", "wget", "-Y", "off", "--no-check-certificate", "-q", "-O", "/dev/null", "https://127.0.0.1/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30

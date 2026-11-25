@@ -1,6 +1,6 @@
 # LG-M2-01｜UPMS 開發交接
 
-狀態：Ready for assignment；Q06–Q10 已採用。基準 main：c47dfa2b3bbc336e0d05b364d1b053d182f61bff（M1 PR #2 已合併）。先合併本次決策 PR 再從最新 main 開發。
+狀態：本輪依使用者交辦執行；Q06–Q10 已採用。原交接範圍保留，實際結果見 [M2-01 驗證](../09_testing/m2-01-validation.md)。基準 main：c47dfa2b3bbc336e0d05b364d1b053d182f61bff（M1 PR #2 已合併）。先合併本次決策 PR 再從最新 main 開發。
 
 ## 開發範圍
 
@@ -21,4 +21,4 @@
 | UI | 手機與桌面登入、錯誤、登出、改密及角色工作台 |
 | CI | 前端品質、Maven verify、依賴及秘密檢查、Compose/E2E 全通過 |
 
-在實作前核對 [歷史啟動包](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/FIRST_SLICE_STARTUP_PLAN.md) 的精確工程參數及官方依據，記錄新契約、必要 ADR 及未決例外；不用降低品質門檻來消除失敗。尚無任何安全或產品實測結果。完成後獨立 PR，更新 README、狀態及驗收紀錄；待 M2-01 通過再交辦 M2-02。
+在實作前核對 [歷史啟動包](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/FIRST_SLICE_STARTUP_PLAN.md) 的精確工程參數及官方依據，記錄新契約、必要 ADR 及未決例外；不用降低品質門檻來消除失敗。原交接時尚無安全或產品實測；本輪 UPMS 工程參數與新契約分別記於 [工程決策](../98_decisions/2026-11-25-upms-engineering.md)及 [UPMS 契約](../06_api/upms.md)，實測另列驗證紀錄。完成後獨立 PR，更新 README、狀態及驗收紀錄；待 M2-01 通過再交辦 M2-02。

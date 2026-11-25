@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import App from './App'
+import App from './SystemOverview'
 
 const healthy = {
   code: '0000', message: '成功', data: { service: 'xk-logistics', status: 'UP' },
