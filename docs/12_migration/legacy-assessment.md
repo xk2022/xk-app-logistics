@@ -11,3 +11,7 @@
 舊平台原碼靜態核對（2026-11-17 歷史證據）：[45 個來源檔及報告](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/SOURCE_CODE_AUDIT_20261117.md)，[功能對照](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/TRUCK_PLATFORM_TO_LOGISTICS_MATRIX.md)。本次僅讀取文件、未重跑源碼或驗證本機／DB。
   
 既有決策 M01：[ADR-0007](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/adr/ADR-0007.md)。不移轉所詢問舊客戶、訂單及照片；不刪除舊資料、不停用舊庫。其他導入需另議。新庫後續作正式產品，舊庫保留作歷史來源，不複製商業模板或實際客戶資料。
+
+## 固定契約快照
+
+新庫已原樣收錄 OpenAPI 0.2.0、15 筆角色操作對照、40 筆欄位 CSV、合成案例 JSON。原路徑及歷史狀態保留供追溯；以新庫決策頁判斷目前核准範圍。原始檔固定來源為上表 codex-xk-logistic commit，未重新跑舊檢查。

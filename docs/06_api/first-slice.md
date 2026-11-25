@@ -1,5 +1,15 @@
-# 首片 API 基準｜Draft
+# 首片 API 基準｜已採用範圍
 
-承接已建立的 [OpenAPI 0.2.0](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/api/openapi.yaml) 和[契約說明](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/api/README.md)，不得重新發明不相容路徑與欄位。首片五項操作：草稿建立、草稿替換、列表、明細、只讀受理完整性；實際受理與派工不在首片。
+與歷史 v0.2.0 契約相容。新庫保存原始 [OpenAPI](openapi.yaml)、[角色矩陣 JSON](order-draft-access-policy.json)、[合成正反例](order-draft-contract-examples.json) 及[40 筆欄位字典](../05_database/first-slice-fields.csv)；四檔為固定來源原樣快照，內部歷史狀態及原路徑保留，不代表新庫實作。原始契約解說：[來源](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/api/README.md)。
 
-ACC-P01/P02 已採用：管理員與調度操作本公司五項整單 API；司機不開放整單 API，後續僅本人有效派工摘要。其餘帳號政策未決。實作前將固定來源契約與合成案例帶入新庫並驗證，若修改 API 先記錄相容性決策。API 規範參考[公司 API 與資料](https://github.com/xk2022/xplore-kaleidoscope/blob/main/doc/04_engineering/api-and-data.md)。目前無 API 執行結果。
+| 方法 | 路徑（/api/v1） | 功能 |
+| --- | --- | --- |
+| POST | /orders | 建立草稿 |
+| GET | /orders | 列表查詢 |
+| GET | /orders/{orderId} | 重讀完整聚合 |
+| PUT | /orders/{orderId} | 草稿完整替換 |
+| GET | /orders/{orderId}/acceptance-check | 只讀檢查三項已確認規則 |
+
+只有 ADMIN、DISPATCHER 可在本公司範圍操作；DRIVER 不開放整單 API。只讀完整性不等於受理／派工。沿用穩定 clientRef、交易一致性、expectedVersion、重送及錯誤契約；詳細模型以[既有工程模型](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/FIRST_SLICE_DATA_MODEL.md)為基準。精確安全政策見[角色與認證](../04_architecture/access-baseline.md)。
+
+本次無實際 API、DB 或合成案例執行結果；M1 只建立工程基礎，M2 才實作此契約。
