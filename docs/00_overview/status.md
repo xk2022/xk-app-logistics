@@ -9,6 +9,6 @@
 - LG-M2-04：[PR #9](https://github.com/xk2022/xk-app-logistics/pull/9) 依使用者交辦實作 OrderCore／TOM 與原五項 API，包含真正訂單快照、版本／重送及客戶停用競爭，首輪四項遠端 CI 全成功；實際狀態與交付追蹤見 [M2-04 驗證](../09_testing/m2-04-validation.md)。
 - LG-M2-05：依本次交辦建立 ADMIN／DISPATCHER 訂單工作台、列表、新增與完整編輯、有效客戶查詢、多項目／多段／依賴、版本與原次重試；[實測與交付追蹤](../09_testing/m2-05-validation.md)。
 - M2 完成狀態：M2-01 至 M2-05 的登入、核心主檔、五項草稿 API 與完整草稿 UI 已完成實作與本機首片驗收。M2-05 前端 155／後端 211／E2E 18／實際 HTTP schema 296 全過；最終合併與 main CI 追蹤見交付 PR，不代表正式受理、派工或完整運輸閉環已完成。
-- 下一工作：M3 正式受理、資源調度與派工須獨立交辦與決策；司機回報、照片、結案及 FMS 尚未開發，原四份訂單契約來源保持原樣。
+- 下一工作：Q21–Q25 已核准，[LG-M3-01 車輛管理](../08_development/m3-01-fms-vehicle-handoff.md)待實作；M3 後續正式受理、資源占用與派工須獨立交辦與決策；司機回報、照片、結案及 FMS 尚未開發，原四份訂單契約來源保持原樣。
 - 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
 - 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。
