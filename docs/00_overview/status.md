@@ -6,7 +6,7 @@
 - LG-M2-01：[PR #4](https://github.com/xk2022/xk-app-logistics/pull/4) 依已合併 PR #3 決策交付 UPMS，首輪遠端四項品質檢查全通過；帳號、固定角色、Session／CSRF、受控初始化／復原、角色 UI 及 V2 migration 的結果見 [M2-01 驗證](../09_testing/m2-01-validation.md)。
 - LG-M2-02：[PR #6](https://github.com/xk2022/xk-app-logistics/pull/6) 依已合併 PR #5 及 Q11–Q15 交付 ADM 字典／核准參數框架，首輪四項遠端品質檢查全通過；結果見 [M2-02 驗證](../09_testing/m2-02-validation.md)。正式參數鍵及非 ADMIN 讀取分類仍未核准，維持關閉。
 - LG-M2-03：[PR #8](https://github.com/xk2022/xk-app-logistics/pull/8) 依已合併 PR #7 及 Q16–Q20 交付 CRM 客戶、聯絡人、地址、角色介面與 V4，首輪四項遠端品質檢查全通過；實際本機／遠端品質結果及交付追蹤見 [M2-03 驗證](../09_testing/m2-03-validation.md)。
-- LG-M2-04：依使用者交辦實作 OrderCore／TOM 與原五項 API，包含真正訂單快照、版本／重送及客戶停用競爭；實際狀態與交付追蹤見 [M2-04 驗證](../09_testing/m2-04-validation.md)。
+- LG-M2-04：[PR #9](https://github.com/xk2022/xk-app-logistics/pull/9) 依使用者交辦實作 OrderCore／TOM 與原五項 API，包含真正訂單快照、版本／重送及客戶停用競爭，首輪四項遠端 CI 全成功；實際狀態與交付追蹤見 [M2-04 驗證](../09_testing/m2-04-validation.md)。
 - 下一工作：LG-M2-05 完整訂單操作 UI 待獨立交辦；正式受理、派車、司機回報、照片、結案及 FMS 尚未開發，原四份訂單契約來源保持原樣。
 - 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
 - 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。

@@ -18,7 +18,7 @@ CSRF, password, request context, or authentication headers. A missing/empty file
 match fails the check. Validation failures print schema, pointer, and keyword
 without echoing submitted data.
 
-Use CPython 3.12 on Linux x86_64 (verified locally with 3.12.14). The seven test-only
+Use CPython 3.12 on Linux x86_64 (verified locally with 3.12.14 and on GitHub ubuntu-24.04 with 3.12.3). The seven test-only
 packages and compatible wheels are version- and SHA-256-pinned in
 `requirements.txt`; no Maven/npm/production dependency was added.
 

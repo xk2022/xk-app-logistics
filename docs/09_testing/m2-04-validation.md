@@ -23,7 +23,7 @@
 | 實際 HTTP 原 schema | 120／120 真實回應全過（桌面／手機各 60）：OrderEnvelope 56、OrderPageEnvelope 8、AcceptanceCheckEnvelope 14、ErrorEnvelope 42；format checks 啟用 |
 | 報告隱私 | fixture 憑證與 trace 隱私檢查通過；認證 trace 關閉，response JSON 只有合成業務 data，沒有 Cookie／CSRF／headers／密碼 |
 | 靜態與秘密 | actionlint、CI shell 語法、E2E strict TypeScript、相對連結及 diff whitespace 通過；staged gitleaks 無洩漏，沒有提交 fixture 憑證／TLS 私鑰／產出檔 |
-| GitHub CI／交付 | 尚未建立 PR 或執行本包遠端 CI，不列為通過 |
+| GitHub CI／交付 | [PR #9](https://github.com/xk2022/xk-app-logistics/pull/9) 首輪四項全 success；受測 SHA／run 詳見下節 |
 
 ## 必要情境
 
@@ -35,6 +35,16 @@
 - 真實 PostgreSQL 中客戶停用／建立競爭、新引用同交易、主檔改名不改歷史、相同停用客戶可編輯舊草稿、明確換客戶才取新快照；重播不先重驗已舊 expectedVersion 或今日客戶狀態。
 - 三角色五操作完整矩陣；未登入、強制改密、失效／撤銷、CSRF、TLS；JSESSIONID-only 真容器 Session、同 ID alias、輪換／登出、衝突 Cookie 及 URL Session 拒絕。全部錯誤保持原 TOM envelope。
 - 每個 acceptance-check 對同一版聚合執行，missingFields 對應原欄位與規則、COMPLETE／INCOMPLETE 正反例、pendingPolicyIds 及 NOT_GRANTED；不修改狀態、版本或產生派工。
+
+## CI 與交付追蹤
+
+- 工程受測 commit：`4cbe2cecafdbf9d645dd68dca884dccff121dd6e`，交付 [PR #9](https://github.com/xk2022/xk-app-logistics/pull/9)。
+- 首輪 [Application quality run 45583679300](https://github.com/xk2022/xk-app-logistics/actions/runs/45583679300) 四項全部 success、attempt 1：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke。使用儲存庫原始 Dockerfile，前端 77／後端 211／E2E 12／實際 HTTP schema 120 全部通過。
+- GitHub ubuntu-24.04 的 CPython 3.12.3 以相同 wheel hash 成功安裝七個套件並通過全部固定／實際契約檢查，與本機 CPython 3.12.14 的同 3.12 ABI 相容性已實測，不以假定代替記錄。
+- 本機完整 16 commits 的 gitleaks 無洩漏；正式 JAR 不含 fixture、測試資料或診斷入口。秘密掃描曾把公有契約 digest 誤認為 key，已改用標準 sha256sum manifest 表示，同一組 digest／掃描規則保持原樣，沒有關閉或排除安全檢查。
+- 隔離 TOM E2E 資料卷及私有 0600 fixture 憑證已清理。一般 DEV 的原 V4 資料庫升級 V5、十九表及可信本機 TLS 狀態通過；帳號／CRM 客戶／TOM 七表／參數定義與參數仍全 0，未混入測試資料。
+- 本機 Cloud 最終 backend image 為 `sha256:730f00df6c83f384a6ca5707c3cfc0a6befb3ab28e8d3690f890813e83a0ed39`，只作 DEV 驗收。Cloud 的暫存 Dockerfile／Compose overlay 用 BuildKit secret 掛載專用 Maven 代理與 CA，設定不入庫或映像層；遠端 CI 使用原始 Dockerfile。沒有發佈或正式部署映像。
+- 本次文件提交只補錄證據；最終 head 及合併後 main 仍執行相同四項檢查。最新 head／run／merge SHA 以 PR 與 GitHub 執行紀錄為準，四項全成功才合併，未略過測試或降低門檻。
 
 ## 可重現
 
