@@ -1,4 +1,4 @@
-# LG-M2-03 CRM｜Ready for assignment
+# LG-M2-03 CRM｜Implementation and validation
 
 基準 main：6dd797fe774779257acf8336b0abb5a589ae643a；ADM PR #6 已合併。Q16–Q20 已核准。先合併本文件 PR，再從最新 main 建立功能分支。
 
@@ -9,4 +9,4 @@
 5. 驗收空庫與升級、唯一性、多聯絡人／地址、父子一致性、停用與引用查核、越權拒絕、版本與交易、真實 PostgreSQL／HTTP、桌面與手機 E2E；保留 UPMS、ADM 測試。
 6. CI 全通過後 Commit、Push、PR，依核准流程合併；更新 README、驗收證據與狀態。
 
-全部測試目前 not_run。正常 migration 不加入真實客戶或合成測試 seed；不開發 TOM、FMS、派工、照片、計費或部署，不改原訂單契約。客戶快照真正寫入與停用／新訂單競爭整合驗收在 M2-04 完成，不在 CRM 先宣稱訂單驗收完成。
+本輪實作與實際測試結果見 [M2-03 驗證](../09_testing/m2-03-validation.md)，不能以本交接清單代替驗收結果。正常 migration 不加入真實客戶或合成測試 seed；不開發 TOM、FMS、派工、照片、計費或部署，不改原訂單契約。客戶快照真正寫入與停用／新訂單競爭整合驗收在 M2-04 完成，不在 CRM 先宣稱訂單驗收完成。

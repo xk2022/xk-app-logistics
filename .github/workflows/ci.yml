@@ -165,7 +165,7 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
           curl --fail --silent --cacert infrastructure/dev-tls/localhost.crt https://localhost:8443/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP"'
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''2'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,flyway_schema_history,upms_account,upms_audit,upms_lock
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,crm_address,crm_contact,crm_customer,flyway_schema_history,upms_account,upms_audit,upms_lock
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''3'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(code, '\'','\'' ORDER BY code) FROM logistics.adm_dict_category"')" = CONTAINER_TYPE,ORDER_TYPE,TASK_KIND,VEHICLE_TYPE
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(i.code, '\'','\'' ORDER BY i.code) FROM logistics.adm_dict_item i JOIN logistics.adm_dict_category c ON c.id = i.category_id WHERE c.code = '\''ORDER_TYPE'\'' AND c.read_only"')" = EXPORT,IMPORT,LOCAL
@@ -173,13 +173,17 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.adm_parameter_definition"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.adm_parameter"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.adm_change_log"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''4'\'' AND success"')" = 1
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.crm_customer"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.crm_contact"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.crm_address"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.upms_account"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.upms_audit"')" = 0
           docker compose restart backend
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 3
-      - name: Create isolated synthetic UPMS and ADM fixture with test-only runner
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 4
+      - name: Create isolated synthetic UPMS, ADM, and CRM fixture with test-only runner
         working-directory: backend
         run: |
           ./mvnw --batch-mode --no-transfer-progress test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
@@ -188,7 +192,7 @@ jobs:
           set +a
           DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
             java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
-      - name: TLS browser UPMS, ADM, and service smoke on desktop and mobile
+      - name: TLS browser UPMS, ADM, CRM, and service smoke on desktop and mobile
         run: npm run test:e2e
       - name: Reject browser artifacts containing temporary credentials
         id: report_privacy

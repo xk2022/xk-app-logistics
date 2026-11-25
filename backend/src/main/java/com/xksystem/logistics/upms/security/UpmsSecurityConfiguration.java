@@ -42,6 +42,7 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers("/actuator/health", "/api/v1/status", "/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
                 .requestMatchers("/api/v1/upms/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/crm/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());
         http.addFilterBefore(new UpmsAuthenticationFilter(service, clock, responses), AuthorizationFilter.class);

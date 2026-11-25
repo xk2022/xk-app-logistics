@@ -16,4 +16,8 @@ public class UpmsAuthorization {
     /** Caller transaction owns both the authorization locks and its subsequent domain writes. */
     @Transactional(propagation=Propagation.MANDATORY)
     public AccountDto requireAdminForWrite(SessionPrincipal principal) { return service.authorizeAdmin(principal, true); }
+    @Transactional(readOnly=true)
+    public AccountDto requireCustomerManager(SessionPrincipal principal) { return service.authorizeCustomerManager(principal, false); }
+    @Transactional(propagation=Propagation.MANDATORY)
+    public AccountDto requireCustomerManagerForWrite(SessionPrincipal principal) { return service.authorizeCustomerManager(principal, true); }
 }

@@ -18,7 +18,8 @@ public class UpmsAccessFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         String path=request.getServletPath();
-        boolean upms=path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/upms/") || path.startsWith("/api/v1/adm/") || path.equals("/api/v1/adm");
+        boolean upms=path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/upms/") || path.startsWith("/api/v1/adm/") || path.equals("/api/v1/adm")
+                || path.startsWith("/api/v1/crm/") || path.equals("/api/v1/crm");
         if (upms && !request.isSecure()) {
             responses.error(response, 403, "請使用 HTTPS 安全連線"); return;
         }
