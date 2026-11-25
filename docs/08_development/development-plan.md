@@ -11,7 +11,7 @@
 
 M1 應依中央 APP Repo 結構建立 frontend/、backend/、infrastructure/、tests/e2e/、.github/workflows/、compose.yaml、compose.dev.yaml、compose.prod.yaml、.env.example。M1 已建立工程骨架；後續業務功能另行交辦。每工作包需獨立 PR、驗收證據，實作與部署另行交辦。
 
-M1 已完成。M2 分為五個工作包，逐一交付：
+M1 已完成。M2 五包的實作與本機首片驗收已完成；最終 M2-05 PR／main CI 與受測版本見 [M2-05 驗證](../09_testing/m2-05-validation.md)。各包獨立交付如下：
 
 | 工作包 | 範圍 |
 | --- | --- |
@@ -19,6 +19,6 @@ M1 已完成。M2 分為五個工作包，逐一交付：
 | LG-M2-02 | [ADM 字典與參數](m2-02-adm-handoff.md)（Q11–Q15 已核准，本輪實作／[驗證紀錄](../09_testing/m2-02-validation.md)） |
 | LG-M2-03 | [CRM 客戶主檔](m2-03-crm-handoff.md)（Q16–Q20 已核准，本輪實作／[驗證紀錄](../09_testing/m2-03-validation.md)） |
 | LG-M2-04 | [TOM 訂單草稿與五項 API](m2-04-tom-handoff.md)（本輪實作／[驗證紀錄](../09_testing/m2-04-validation.md)） |
-| LG-M2-05 | 訂單 UI 與首片整合驗收 |
+| LG-M2-05 | [訂單工作台與首片整合驗收](m2-05-order-ui-handoff.md)（[驗證紀錄](../09_testing/m2-05-validation.md)） |
 
 全部沿用 M1 技術基準，逐包獨立交辦。

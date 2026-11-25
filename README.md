@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M2-04 TOM（驗證紀錄見下方） |
+| 狀態 | development — LG-M2-05 訂單工作台（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -16,6 +16,8 @@
 - [產品需求](docs/01_product/prd.md)
 - [MVP 與路線圖](docs/01_product/mvp-roadmap.md)
 - [開發工作包](docs/08_development/development-plan.md)
+- [訂單工作台規格](docs/07_ui-ux/order-workspace.md) · [M2-05 交接](docs/08_development/m2-05-order-ui-handoff.md)
+- [M2-05 驗證](docs/09_testing/m2-05-validation.md)
 - [TOM 工程交接](docs/08_development/m2-04-tom-handoff.md)
 - [TOM API 整合](docs/06_api/tom.md) · [原 OpenAPI 0.2.0](docs/06_api/openapi.yaml)
 - [TOM 工程決策](docs/98_decisions/2026-11-25-tom-engineering.md)
@@ -130,7 +132,7 @@ ADM 的資料庫、HTTP、前端與 E2E 證據見 [M2-02 驗證](docs/09_testing
 
 ## TOM 訂單草稿 API
 
-本包只提供原 OpenAPI 0.2.0 五項 API：POST／GET `/api/v1/orders`、GET／PUT `/api/v1/orders/{orderId}`、GET `/api/v1/orders/{orderId}/acceptance-check`。完整訂單操作 UI 留至 M2-05；目前角色工作台不加入半成品訂單入口。
+M2-04 提供原 OpenAPI 0.2.0 五項 API：POST／GET `/api/v1/orders`、GET／PUT `/api/v1/orders/{orderId}`、GET `/api/v1/orders/{orderId}/acceptance-check`。M2-05 的訂單工作台整合這五項操作，沒有新增或更改訂單端點。
 
 正常 ADMIN／DISPATCHER 可管理本公司草稿，DRIVER 不可讀寫整單。寫入需要同源 HTTPS Session、X-CSRF-TOKEN 與 Idempotency-Key。訂單契約使用 JSESSIONID，與既有 XKSESSION 是同一 HttpSession 的兩個安全 Cookie 名稱；衝突身分拒絕。原成功 `OK`／traceId 與錯誤 fieldErrors 格式保留，UPMS／ADM／CRM 的 envelope 不受影響。
 
@@ -139,6 +141,16 @@ ADM 的資料庫、HTTP、前端與 E2E 證據見 [M2-02 驗證](docs/09_testing
 CRM 建立／換客戶查核與訂單寫入同交易協調停用，保存當時 customerName；主檔改名不回填舊單，同 customerId 編輯保留歷史名稱。只讀完整性檢查只驗 ORD-P01–P03，operationalAcceptance 永遠 NOT_GRANTED，沒有正式受理或派工副作用。
 
 [TOM 契約整合](docs/06_api/tom.md)與[資料模型](docs/05_database/tom-model.md)記完整規則，[M2-04 驗證](docs/09_testing/m2-04-validation.md)記實際結果。CI 另以[原 schema 工具](tests/contracts/README.md)校驗固定來源與桌機／手機的真實合成 HTTP 回應。
+
+## 訂單工作台
+
+ADMIN／DISPATCHER 登入後由「訂單工作台」查詢、新增及編輯本公司訂單；DRIVER 沒有整單入口或資料存取權。列表以類型、客戶篩選，支援分頁與最近更新／單號排序。從有效客戶查詢選擇新單客戶；歷史訂單保留原客戶名稱，即使客戶已停用也可維護原草稿。
+
+新增先選進口、出口或國內運輸及有效客戶，即可保存最小草稿。再逐步補齊船務、多貨櫃／貨物、每段任務及前置依賴；不把未決現場規則增加為草稿必填。編輯先讀完整資料，再以原版本完整保存，既有項目與任務維持相同識別。十進位重量／材積、日期、含時區與微秒的時間及原文字保持原值，不借用 CRM 的 trim／NFC 規則。
+
+保存遇到連線中斷、逾時或無法確認的回應時，保留該次請求內容及重送識別，讓使用者明確重試同一次保存；不自動換 key 新增另一單。版本衝突保留本機內容，不自動覆寫或再次保存；重新讀取伺服器版本需明確確認捨棄本機內容。未儲存或結果未確認時，離開頁面會先提示；表單與重送資訊僅在記憶體，關閉／重新整理頁面不會持久保存。
+
+完整性檢核針對已保存的版本顯示缺漏；若要檢查本機修改，須先保存。即使顯示完整，也不代表正式受理：`operationalAcceptance` 仍為 `NOT_GRANTED`。本階段沒有派車、司機回報、照片或結案操作。桌面／手機及真實後端／PostgreSQL 的實測結果見 [M2-05 驗證](docs/09_testing/m2-05-validation.md)。
 
 ## 範圍與部署
 

@@ -26,6 +26,7 @@ interface ProjectFixture {
   adm?: AdmFixture
   crm?: CrmFixture
   tom?: TomFixture
+  orderUi?: TomFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -68,6 +69,15 @@ export function tomFixtureFor(project: string): TomFixture {
     const account = group[key as keyof TomFixture]
     return account && typeof account.username === 'string' && typeof account.password === 'string'
   })) throw new Error('TOM test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function orderUiFixtureFor(project: string): TomFixture {
+  const group = fixtureFor(project).orderUi
+  if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
+    const account = group[key as keyof TomFixture]
+    return account && typeof account.username === 'string' && typeof account.password === 'string'
+  })) throw new Error('Order UI test fixture is incomplete for this browser project.')
   return group
 }
 
