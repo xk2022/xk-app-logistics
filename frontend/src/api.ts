@@ -31,7 +31,7 @@ export function parseAccount(value: unknown): Account {
   return value as unknown as Account
 }
 
-async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<unknown> {
+export async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<unknown> {
   const controller = new AbortController()
   const abort = () => controller.abort()
   signal?.addEventListener('abort', abort, { once: true })
@@ -74,7 +74,7 @@ export async function refreshCsrf(): Promise<void> {
   }
   csrf = { token: data.token, headerName: data.headerName }
 }
-async function write(path: string, method: string, body?: unknown): Promise<unknown> {
+export async function write(path: string, method: string, body?: unknown): Promise<unknown> {
   if (!csrf) await refreshCsrf()
   try { return await request(path, method, body) } catch (error) {
     if (error instanceof ApiError && error.status === 403) {

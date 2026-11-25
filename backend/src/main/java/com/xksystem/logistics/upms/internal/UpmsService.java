@@ -76,6 +76,14 @@ public class UpmsService {
     @Transactional(readOnly=true)
     public AccountDto current(SessionPrincipal principal) { return active(principal, false).dto(); }
 
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeAdmin(SessionPrincipal principal, boolean write) {
+        if (write) lock();
+        var actor=active(principal, write);
+        requireAdmin(actor);
+        return actor.dto();
+    }
+
     @Transactional(readOnly=true)
     public List<AccountDto> list(SessionPrincipal principal) {
         requireAdmin(active(principal, false));

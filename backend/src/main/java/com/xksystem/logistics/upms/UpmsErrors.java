@@ -10,8 +10,10 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 
-@RestControllerAdvice(basePackages="com.xksystem.logistics.upms")
+@RestControllerAdvice(basePackages={"com.xksystem.logistics.upms", "com.xksystem.logistics.adm"})
 public class UpmsErrors {
     private static final org.slf4j.Logger log=org.slf4j.LoggerFactory.getLogger(UpmsErrors.class);
     @ExceptionHandler(UpmsException.class)
@@ -21,6 +23,14 @@ public class UpmsErrors {
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class, MethodArgumentNotValidException.class})
     public ResponseEntity<ApiEnvelope<Object>> invalid(Exception exception) {
         return ResponseEntity.badRequest().body(ApiEnvelope.error("E0400", "請確認輸入欄位與資料格式", Map.of("request", "請提供符合格式的完整資料")));
+    }
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiEnvelope<Object>> unsupportedMethod(HttpRequestMethodNotSupportedException exception) {
+        return ResponseEntity.status(405).body(ApiEnvelope.error("E0405", "不支援此操作方法", null));
+    }
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiEnvelope<Object>> unsupportedType(HttpMediaTypeNotSupportedException exception) {
+        return ResponseEntity.status(415).body(ApiEnvelope.error("E0415", "請使用 JSON 格式提交資料", null));
     }
     @ExceptionHandler({DataIntegrityViolationException.class, ObjectOptimisticLockingFailureException.class})
     public ResponseEntity<ApiEnvelope<Object>> conflict(Exception exception) {

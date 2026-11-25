@@ -4,13 +4,20 @@ The desktop Chromium and Pixel 7 projects preserve the M1 service-state success,
 request failure, retry, and overflow checks. UPMS verification uses the same
 local TLS origin as the application and covers all three roles, first-password
 changes, cookie protection, CSRF refusal, administrator account creation,
-authorization denial, session revocation, and logout.
+authorization denial, session revocation, and logout. ADM scenarios use separate
+normal test accounts per browser project, so UPMS password changes and account
+disabling cannot affect dictionary and parameter checks. They verify category
+and item creation, stable codes, sorting, enable/disable behavior, real optimistic
+locking conflicts and reload, typed allowlisted parameters, audit display, and
+non-administrator refusal.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
 runner accepts only that database on the local machine and refuses a populated
 account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
-report directories.
+report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
+TEXT/NUMBER/BOOLEAN set per browser project. These exist only in the test runner;
+the production parameter-definition catalog remains empty.
 
 ```sh
 umask 077
@@ -33,6 +40,7 @@ DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" 
   java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
 cd ..
 npm run test:e2e
+python3 tests/e2e/assert_report_privacy.py
 ```
 
 Run the tests immediately after creating the fixture because initial passwords
@@ -48,8 +56,11 @@ Screenshots show the resulting workspace and account list. Reports and
 screenshots are ignored by Git; inspect the HTML report with
 `npm run test:e2e:report`. Keep credential files out of report directories.
 
-CI validates health/status, Flyway V1 and V2 on an empty database, exact UPMS
-tables, absence of seeded accounts, restart stability, and these browser flows.
+CI validates health/status, Flyway V1–V3 on an empty database, exact UPMS/ADM
+tables, the fixed ORDER_TYPE enum and three empty configurable categories,
+absence of seeded accounts or parameter definitions/values, restart stability,
+and these browser flows. Report upload requires the privacy check to confirm
+that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after
 completion. When finished with a local test database, remove only that isolated
 project:

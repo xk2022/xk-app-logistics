@@ -3,10 +3,17 @@ import { randomBytes } from 'node:crypto'
 import { expect, type Locator, type Page } from '@playwright/test'
 
 export interface Credential { username: string; password: string }
+interface AdmFixture {
+  admin: Credential
+  dispatcher: Credential
+  driver: Credential
+  parameterKeys: { text: string; number: string; boolean: string }
+}
 interface ProjectFixture {
   admin: Credential
   dispatcher: Credential
   driver: Credential
+  adm?: AdmFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -17,9 +24,20 @@ export function fixtureFor(project: string): ProjectFixture {
   }
   const group = (fixture as Record<string, ProjectFixture>)[project]
   if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
-    const account = group[key as keyof ProjectFixture]
+    const account = group[key as 'admin' | 'dispatcher' | 'driver']
     return account && typeof account.username === 'string' && typeof account.password === 'string'
   })) throw new Error('UPMS test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function admFixtureFor(project: string): AdmFixture {
+  const group = fixtureFor(project).adm
+  if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
+    const account = group[key as 'admin' | 'dispatcher' | 'driver']
+    return account && typeof account.username === 'string' && typeof account.password === 'string'
+  }) || !['text', 'number', 'boolean'].every((key) => typeof group.parameterKeys?.[key as keyof AdmFixture['parameterKeys']] === 'string')) {
+    throw new Error('ADM test fixture is incomplete for this browser project.')
+  }
   return group
 }
 
