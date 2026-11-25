@@ -41,6 +41,13 @@
 
 Cloud：Intel Xeon Platinum 8573C、5 vCPU、Temurin JDK 21.0.12.1。以實際 `UpmsConfiguration.passwordEncoder()`，2 次 warm-up、5 次量測：encode 中位 253.2 ms（140.4–292.8），verify 中位 224.6 ms（132.7–266.6）。每次均驗證匹配成功；未列印原密碼、salt 或 hash。共用測試硬體數字僅作工程成本證據，不是正式服務 SLA；沒有為加速測試降低 600000 次參數。
 
+## CI 與交付追蹤
+
+- 交付 [PR #4](https://github.com/xk2022/xk-app-logistics/pull/4)，目標 `main`。
+- 工程實作受測 commit：`16c8e587924518b056327afc46db4f3340dfffc1`。
+- 首輪 [Application quality run](https://github.com/xk2022/xk-app-logistics/actions/runs/45547159640)：Frontend quality、Backend verify、Dependency and secret checks、Compose and browser smoke 四項全部 **success**；原始 Dockerfile、27 項後端測試及 6 項 HTTPS E2E 均通過。
+- 本次補錄僅修正 E2E 文件入口並記錄已通過的 CI；最終文件提交及合併後 main 仍由同一 workflow 驗證，最新受測 SHA、run 與 merge SHA 以 PR／GitHub 紀錄為準。合併前必須核對最新 head 的四項品質結果。
+
 ## 可重現命令及證據
 
 啟動方式見 [README](../../README.md)及 [infrastructure](../../infrastructure/README.md)。後端測試報告在 `backend/target/{surefire,failsafe}-reports`；瀏覽器報告在 `playwright-report/`、`test-results/`。CI 上傳報告保存 14 天，測試秘密只在 runner 暫存檔，認證 trace 不上傳，DEV TLS 私鑰不入庫。

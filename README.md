@@ -78,12 +78,7 @@ cd backend
 
 後端 verify 使用 Testcontainers 啟動獨立 PostgreSQL，必須有可用 Docker。測試不會略過整合測試，且不連外部或正式 DB。
 
-```sh
-# Repo 根目錄；先依上方啟動完整 Compose
-npm ci
-npx playwright install chromium
-npm run test:e2e
-```
+E2E 必須使用隔離的 `xk_logistics_e2e` 空帳號資料庫與 test-only fixture，不能直接對一般 DEV DB 執行。請完整依照 [E2E README](tests/e2e/README.md) 準備獨立環境、私有暫存憑證及同源 TLS，再執行 `npm run test:e2e`。
 
 CI 每次 PR／main push 執行前端品質檢查、後端 verify、依賴與機密檢查、Compose 與 Playwright smoke；報告作為 workflow artifacts 保存。實際命令與驗收結果見 [M1 驗證紀錄](docs/09_testing/m1-validation.md)。覆蓋率門檻尚待核准；目前以必要案例與不可略過的整合測試為門檻。UPMS 的真實 HTTPS、三角色、Session／CSRF 與 migration 驗證見 [M2-01 驗證](docs/09_testing/m2-01-validation.md)。
 
