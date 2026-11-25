@@ -7,16 +7,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 
 @Configuration
 @ConditionalOnWebApplication(type=ConditionalOnWebApplication.Type.SERVLET)
 public class UpmsSecurityConfiguration {
+    @Bean
+    public WebSecurityCustomizer rejectedRequests(SecurityResponses responses) {
+        return web->web.requestRejectedHandler((request,response,exception)->responses.error(request,response,400,"VALIDATION_ERROR","請確認請求路徑與格式"));
+    }
     @Bean
     public HttpSessionCsrfTokenRepository csrfTokens() { return new HttpSessionCsrfTokenRepository(); }
 
@@ -32,20 +38,27 @@ public class UpmsSecurityConfiguration {
         http.formLogin(form -> form.disable()).httpBasic(basic -> basic.disable()).logout(logout -> logout.disable());
         http.requestCache(cache -> cache.disable());
         http.securityContext(context -> context.securityContextRepository(new NullSecurityContextRepository()));
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+        // Authentication is rebuilt from our validated HttpSession on each request.
+        // Only AuthController runs login/CSRF rotation; automatic "new authentication"
+        // strategies would rotate the session (and invalidate the alias) on every request.
+        // IF_REQUIRED is already the default. Explicitly setting it conflicts with
+        // Security 7's explicit-authentication-strategy mode and reinstalls implicit handling.
+        http.sessionManagement(session -> session.requireExplicitAuthenticationStrategy(true));
         http.csrf(csrf -> csrf.csrfTokenRepository(csrfTokens)
                 .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
         http.exceptionHandling(errors -> errors
-                .authenticationEntryPoint((request, response, exception) -> responses.error(response, 401, "無法登入或登入已失效，請確認資料後重新登入"))
-                .accessDeniedHandler((request, response, exception) -> responses.error(response, 403, "無權執行此操作，請確認權限或重新整理後再試")));
+                .authenticationEntryPoint((request, response, exception) -> responses.error(request,response,401,"UNAUTHENTICATED","無法登入或登入已失效，請確認資料後重新登入"))
+                .accessDeniedHandler((request, response, exception) -> responses.error(request,response,403,
+                        exception instanceof CsrfException?"CSRF_INVALID":"FORBIDDEN","無權執行此操作，請確認權限或重新整理後再試")));
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/api/v1/status", "/api/v1/auth/csrf", "/api/v1/auth/login").permitAll()
                 .requestMatchers("/api/v1/upms/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/crm/**").hasAnyRole("ADMIN","DISPATCHER")
+                .requestMatchers("/api/v1/orders","/api/v1/orders/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());
-        http.addFilterBefore(new UpmsAuthenticationFilter(service, clock, responses), AuthorizationFilter.class);
+        http.addFilterBefore(new UpmsAuthenticationFilter(service, clock, responses), CsrfFilter.class);
         http.addFilterBefore(new UpmsAccessFilter(responses), AuthorizationFilter.class);
         return http.build();
     }

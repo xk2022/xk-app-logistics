@@ -95,6 +95,10 @@ public class UpmsService {
             throw UpmsException.forbidden();
         return actor.dto();
     }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeOrderManager(SessionPrincipal principal, boolean write) {
+        return authorizeCustomerManager(principal, write);
+    }
 
     @Transactional(readOnly=true)
     public List<AccountDto> list(SessionPrincipal principal) {

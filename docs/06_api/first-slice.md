@@ -12,4 +12,4 @@
 
 只有 ADMIN、DISPATCHER 可在本公司範圍操作；DRIVER 不開放整單 API。只讀完整性不等於受理／派工。沿用穩定 clientRef、交易一致性、expectedVersion、重送及錯誤契約；詳細模型以[既有工程模型](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/FIRST_SLICE_DATA_MODEL.md)為基準。精確安全政策見[角色與認證](../04_architecture/access-baseline.md)。
 
-本次無實際 API、DB 或合成案例執行結果；M1 只建立工程基礎，M2 才實作此契約。
+LG-M2-04 已依原五操作實作 API、DB 與合成案例驗收，結果見 [M2-04 驗證](../09_testing/m2-04-validation.md)及 [TOM 整合](tom.md)。四份固定來源保留原始歷史註記，不修改它們來冒充當前執行結果；完整操作 UI 留至 M2-05，正式受理與派工不在本包。

@@ -20,4 +20,8 @@ public class UpmsAuthorization {
     public AccountDto requireCustomerManager(SessionPrincipal principal) { return service.authorizeCustomerManager(principal, false); }
     @Transactional(propagation=Propagation.MANDATORY)
     public AccountDto requireCustomerManagerForWrite(SessionPrincipal principal) { return service.authorizeCustomerManager(principal, true); }
+    @Transactional(readOnly=true)
+    public AccountDto requireOrderManager(SessionPrincipal principal) { return service.authorizeOrderManager(principal, false); }
+    @Transactional(propagation=Propagation.MANDATORY)
+    public AccountDto requireOrderManagerForWrite(SessionPrincipal principal) { return service.authorizeOrderManager(principal, true); }
 }

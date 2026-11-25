@@ -8,6 +8,8 @@ public interface CrmQueries {
     record Snapshot(UUID id,String code,String name,long version) {}
     /** Current master data, including disabled records. Never use it to overwrite saved order snapshots. */
     Optional<Snapshot> findCurrent(UUID customerId);
+    /** Read-only current eligibility for checks; never replaces the locked new-reference method. */
+    boolean isEnabled(UUID customerId);
     /**
      * Requires the caller's writable transaction and customer-manager authorization first.
      * Locks the customer until caller commit, coordinating new references with disable/rename.

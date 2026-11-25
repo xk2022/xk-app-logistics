@@ -69,6 +69,15 @@ public final class E2eFixtureMain {
                     crm.put(name, Map.of("username", username, "password", secret));
                 }
                 accounts.put("crm", crm);
+                Map<String, Object> tom = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driver"}) {
+                    String username = "tom-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    UpmsTestData.insert(connection, encoder, username, name.toUpperCase(java.util.Locale.ROOT),
+                            secret, false, Instant.now());
+                    tom.put(name, Map.of("username", username, "password", secret));
+                }
+                accounts.put("tom", tom);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();

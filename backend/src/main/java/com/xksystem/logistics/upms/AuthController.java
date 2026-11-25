@@ -2,6 +2,7 @@ package com.xksystem.logistics.upms;
 
 import com.xksystem.logistics.upms.internal.UpmsService;
 import com.xksystem.logistics.upms.security.SessionPrincipal;
+import com.xksystem.logistics.upms.security.SessionCookieAliases;
 import com.xksystem.logistics.upms.security.UpmsSessions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -28,9 +29,11 @@ public class AuthController {
     public record PasswordRequest(String currentPassword, String newPassword) {}
 
     @GetMapping("/csrf")
-    public ApiEnvelope<Map<String,String>> csrf(HttpServletRequest request) {
+    public ApiEnvelope<Map<String,String>> csrf(HttpServletRequest request, HttpServletResponse response) {
         var token=(CsrfToken)request.getAttribute(CsrfToken.class.getName());
-        return ApiEnvelope.success(Map.of("token", token.getToken(), "headerName", token.getHeaderName()));
+        String value=token.getToken();
+        SessionCookieAliases.mirrorCurrentSession(request, response);
+        return ApiEnvelope.success(Map.of("token", value, "headerName", token.getHeaderName()));
     }
     @PostMapping("/login")
     public ApiEnvelope<AccountDto> login(@RequestBody LoginRequest input, HttpServletRequest request, HttpServletResponse response) {
@@ -44,6 +47,7 @@ public class AuthController {
         session.setAttribute(UpmsSessions.AUTH, new SessionPrincipal(result.account().id(), result.authVersion(), now, now));
         sessions.register(result.account().id(), session);
         csrf.saveToken(csrf.generateToken(request), request, response);
+        SessionCookieAliases.mirrorCurrentSession(request, response);
         response.setHeader("Cache-Control", "no-store");
         return ApiEnvelope.success(result.account());
     }
@@ -66,6 +70,7 @@ public class AuthController {
         var session=request.getSession(false);
         if (session != null) UpmsSessions.invalidate(session);
         csrf.saveToken(csrf.generateToken(request), request, response);
+        SessionCookieAliases.mirrorCurrentSession(request, response);
         response.setHeader("Cache-Control", "no-store");
     }
     static SessionPrincipal principal(Authentication authentication) {
