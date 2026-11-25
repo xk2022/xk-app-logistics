@@ -1,6 +1,6 @@
-# LG-M2-02 ADM｜開發交接草案
+# LG-M2-02 ADM｜開發交接｜Ready for assignment
 
-基準 main 268bab8136d943d891f24e6651ebbb848e7288f0，UPMS 已合併。須先確認 [Q11–Q15](../98_decisions/2026-11-25-adm.md) 後方可實作。
+基準 main 268bab8136d943d891f24e6651ebbb848e7288f0，UPMS 已合併。[Q11–Q15](../98_decisions/2026-11-25-adm.md) 已採用。先合併 PR #5，再由最新 main 建立實作分支。
 
 1. 閱讀 AGENTS、APP 公司規範、[資料模型](../05_database/adm-model.md)、[API](../06_api/adm.md)與既有 UPMS 契約。
 2. 在現有模組化架構內建立 ADM、Flyway 新 migration、DTO、Service、資料驗證、權限及稽核。

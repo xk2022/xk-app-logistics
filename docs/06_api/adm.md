@@ -1,4 +1,4 @@
-# ADM API 契約｜Draft
+# ADM API 契約｜已採用基準（DTO 待細化）
 
 沿既有 UPMS 的 /api/v1、JSON envelope、HTTP 狀態及同源 Session/CSRF；所有寫入須經後端角色守衛。詳細 DTO 及 OpenAPI 由實作前確認，原訂單 OpenAPI 保持原樣。
 
