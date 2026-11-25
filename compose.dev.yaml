@@ -1,0 +1,36 @@
+# DEV only. Database and application ports bind to the local machine.
+services:
+  db:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-xk_logistics}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-xk_dev}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set a local-only password in .env}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8084}:8084"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [app]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8084/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    environment:
+      API_PROXY_TARGET: http://backend:8084
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [app]

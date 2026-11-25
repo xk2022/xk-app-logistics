@@ -1,7 +1,8 @@
-# M0 狀態｜2026-11-25
+# 專案狀態｜2026-11-25
 
-- 已完成：新 Repo 建立、舊規格與公司規範盤點、Q01–Q05 核准紀錄、首片契約及欄位快照、M1 交接文件。
-- M0 文件基準：已採用的產品範圍定案；後續業務例外、精確安全參數及技術版本仍須複核。
-- 下一工作：依 [M1 交接](../08_development/m1-bootstrap-handoff.md) 建立可重現工程基礎。此批僅文件，尚無前後端、DB、CI 或部署。
-- 產品驗收：not_run。
-- 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。本批延續原需求，不修改舊庫。
+- M0：PR #1 已驗收並合併，merge commit `3f86a25c7b8311d753a53754a4b5898113d92ea4`。靜態規格、契約及 Q01–Q05 保留。
+- LG-M1：前後端工程基礎、Flyway 空庫基線、DEV Compose、測試與 CI 已建立。實測、PR 與 CI 追蹤見 [M1 驗證](../09_testing/m1-validation.md)。
+- 產品驗收：物流業務尚未實作，M0 首片契約案例未作產品執行驗收；M1 僅驗收工程基礎。
+- 下一工作：M1 合併後，LG-M2 需獨立交辦；先逐項複核精確帳號／安全政策與必要主檔契約，再實作已採用的五項草稿 API。
+- 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
+- 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。

@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: xk-logistics
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/xk_logistics}
+    username: ${DB_USER:xk_dev}
+    password: ${DB_PASSWORD}
+    hikari:
+      connection-timeout: 3000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: logistics
+  flyway:
+    enabled: true
+    clean-disabled: true
+    validate-on-migrate: true
+    default-schema: logistics
+    schemas: logistics
+server:
+  port: ${SERVER_PORT:8084}
+  error:
+    include-message: never
+    include-stacktrace: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      probes:
+        enabled: false
+logging:
+  pattern:
+    correlation: '[${spring.application.name:},%X{requestId:-}] '
