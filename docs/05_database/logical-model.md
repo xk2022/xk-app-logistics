@@ -3,7 +3,7 @@
 | 領域 | 概念實體 | 關係 |
 | --- | --- | --- |
 | 帳號 | Account、Role | 首片三角色，細部多角色待決 |
-| 客戶 | Customer | 客戶 1:N 訂單 |
+| 客戶 | Customer、Contact、Address | 客戶 1:N 訂單、聯絡人、常用地址；見 [CRM 模型](crm-model.md) |
 | 訂單 | TransportOrder、ShippingDetails | 訂單 1:N 項目；船務適用性按類型 |
 | 作業 | OrderItem、TransportTask、TaskDependency | 項目 1:N 任務；依賴同單無環 |
 | 資源 | Driver、Vehicle | 任務派工引用司機及車輛 |
