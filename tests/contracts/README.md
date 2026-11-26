@@ -314,3 +314,68 @@ The default HTTP glob is mandatory without `--static-only`. Missing files, empty
 files/arrays, malformed JSON/Unicode, unknown schemas, extra metadata and schema
 failures fail the command. `--static-only` and `--responses` are mutually exclusive.
 No new dependency or scanner exclusion is added.
+
+## Independent M4-02 progress and private evidence checks
+
+`validate_progress_evidence_contract.py` reads only the new
+`docs/06_api/tms-progress-evidence-openapi.yaml`: exactly five operations and 25
+schemas. It independently checks the unchanged four original source fingerprints
+and pins the frozen M4-01 OpenAPI SHA-256; seven common schemas and Session/CSRF
+schemes must equal their original definitions. No old validator, dependency,
+manifest, M401 shape or original fourteen-field task list is changed.
+
+Static tooling contains 59 positives / 291 negatives and eight local-reference
+rejection self-checks. It covers exact policy7/evidence10/result3/page5 DTOs,
+conditional blocked/null policy and adjacent stages, the full reserved read-phase
+enum, PNG-only verified metadata, canonical lowercase response UUID/hash, privacy
+field rejection, strict mathematical integers, E18/common413 errors and nullable
+reason-only403 compatibility. The explicit custom `x-uniqueCanonicalUuids` keyword
+also rejects mixed-case duplicate request UUID identities; product IT/E2E still
+proves canonical sorted-set command replay. `execution-version-header` is a custom
+format enforcing the exact ASCII digits grammar and MAX numeric bound, separate
+from JSON 1/1.0/1e0 equivalence. Static reserved-phase metadata examples are type
+coverage, not authorization to upload at WAITING or implement completion.
+
+Only isolated test-source policy/provider beans may return count1, PNG, 65536-byte,
+4096-pixel requirements after verifying the actual `xk_logistics_e2e` database and
+same synthetic scope. Normal policy/provider remain UNCONFIRMED/unavailable, with
+null requirements and no zero/empty waiver. The 1048576-byte stream cap and 32-ID
+command cap are technical bounds, not approved D06 photo rules. Private content
+read permission is independent of whether a next progress rule exists; these
+schemas do not approve a formal storage provider, retention, release or closure.
+
+All references are internal and checked before a retrieval-denying registry is
+created. Existing hash-pinned packages are reused. Evidence parsing rejects extra
+capture metadata, unknown schemas, duplicates, non-JSON constants, malformed
+UTF-8/Unicode and invalid extreme Decimal input. Exact Decimal checks avoid
+rounding a fractional safe-version boundary. Diagnostics show only schema,
+pointer and validation keyword, never submitted values or parser messages.
+
+The new nonempty `progress-evidence-contract-responses.json` arrays contain only
+public synthetic `{schema,value}` JSON bodies. Names are `ProgressPolicyEnvelope`,
+`ProgressEnvelope`, `EvidenceEnvelope`, `EvidencePageEnvelope`, `ErrorEnvelope`.
+Content-route JSON failures use ErrorEnvelope; successful binary photos are never
+captured as JSON/base64/files. Original execution/order/acceptance/TMS/FMS setup
+responses retain their original artifacts and validators. No request, key, Cookie,
+CSRF token, password, authentication header, original image or trace is captured;
+existing recursive credential/privacy scans remain required before upload.
+
+A body-only schema cannot prove actual bytes/CRC/pixels/hash, response status,
+no-store/nosniff/length/replay headers, current-session/current-person scope,
+canonical path identity, version+1, GET zero mutation, lock sequencing or atomic
+blob/metadata/event/link/receipt rollback. Real PostgreSQL and HTTPS IT/E2E assert
+those separately, including lost-response retry and reads after progress. Static
+fixtures do not constitute actual HTTP or formal policy acceptance.
+
+```sh
+# Static tooling only; actual HTTP is explicitly not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_progress_evidence_contract.py --static-only
+# After the isolated real HTTPS run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_progress_evidence_contract.py \
+  --responses 'test-results/**/progress-evidence-contract-responses.json'
+```
+
+Without `--static-only` the response glob is mandatory. Missing matches, empty
+files/arrays, malformed evidence, unknown envelopes, extra metadata and schema
+failures fail the command. `--static-only` and `--responses` are mutually exclusive.
+No new dependency or artifact-scanner exception is introduced.

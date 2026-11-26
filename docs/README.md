@@ -36,3 +36,10 @@
 - [本人詳情／出發交接](08_development/m4-01-driver-departure-handoff.md)
 - [M4-01 工程採用](98_decisions/2026-11-26-m4-01-engineering.md)
 - [M4-01 驗證](09_testing/m4-01-validation.md)
+
+### M4-02 工程與驗證
+
+- [進度與私有照片交接](08_development/m4-02-progress-evidence-handoff.md)
+- [M4-02 工程採用](98_decisions/2026-11-26-m4-02-engineering.md)
+- [獨立 API](06_api/tms-progress-evidence.md)／[OpenAPI](06_api/tms-progress-evidence-openapi.yaml)
+- [M4-02 驗證](09_testing/m4-02-validation.md)

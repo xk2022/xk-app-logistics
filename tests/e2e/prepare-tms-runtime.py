@@ -10,11 +10,15 @@ DESTINATION = ROOT / "artifacts/tms-e2e-runtime"
 
 
 def main():
-    exact = [SOURCE / "TmsE2eApplication.class", SOURCE / "SyntheticDispatchPolicy.class"]
-    inner = sorted(SOURCE.glob("SyntheticDispatchPolicy$*.class"))
-    if not all(path.is_file() for path in exact) or not inner:
+    exact = [SOURCE / name for name in (
+        "TmsE2eApplication.class", "SyntheticDispatchPolicy.class",
+        "SyntheticEvidencePolicy.class", "SyntheticEvidenceStorage.class",
+    )]
+    dispatch_inner = sorted(SOURCE.glob("SyntheticDispatchPolicy$*.class"))
+    evidence_inner = sorted(SOURCE.glob("SyntheticEvidencePolicy$*.class"))
+    if not all(path.is_file() for path in exact) or not dispatch_inner or not evidence_inner:
         raise SystemExit("Compile the isolated TMS test launcher and policy before preparing its runtime")
-    files = exact + inner
+    files = exact + dispatch_inner + evidence_inner
     # Never copy all test classes, the @TestConfiguration wrapper, fixtures, or JUnit libraries.
     if DESTINATION.exists():
         shutil.rmtree(DESTINATION)

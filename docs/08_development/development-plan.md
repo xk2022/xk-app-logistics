@@ -40,3 +40,7 @@ M1 已完成。M2 五包的實作與本機首片驗收已完成；最終 M2-05 P
 ## M4 工作包規劃
 
 Q41–Q47 與 M4-01～07 已採用。依 [M4 七工作包交接](m4-execution-handoff.md) 逐包執行；[驗收計畫](../09_testing/m4-integration-acceptance.md)。規格 PR #22 與 main CI 已四過，M4-01 本機 590／418／30 與六份 HTTP 契約全過，遠端交付見 [本包驗證](../09_testing/m4-01-validation.md)，後續包依序待前包 main CI 四過後開始；未核准正式政策維持限制。
+
+M4-01 已由 [PR #23](https://github.com/xk2022/xk-app-logistics/pull/23) 合併，PR CI45768556588／main CI45769255127 attempt1 均四過；M4-02 從 merge `daf26f979c1c03c078876f204a713578abe80a4e` 開始，後續 03～07 保持前包 main 四過的順序門檻。
+
+M4-02 本機590／469／32及七HTTP1,731全過；[本包驗證](../09_testing/m4-02-validation.md)追蹤 source／merge／PR與main四項CI，全部完成再進M4-03。正式照片／例外／釋放／結案責任仍未核准，正向只隔離合成。

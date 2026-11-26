@@ -41,7 +41,7 @@ public class ExecutionService {
         this.vehicles=vehicles;this.tasks=tasks;this.policy=policy;this.clock=clock;
     }
     public record Written(ExecutionDtos.DepartureResult data,boolean replayed) {}
-    private record Owned(UUID actorId,UUID driverId,TmsDtos.Assignment assignment) {}
+    record Owned(UUID actorId,UUID driverId,DriverQueries.Snapshot driver,TmsDtos.Assignment assignment) {}
 
     /** Lock-capable read; WAITING has no database/event/receipt side effect. */
     @Transactional
@@ -82,7 +82,7 @@ public class ExecutionService {
         return new Written(result,false);
     }
 
-    private Owned current(SessionPrincipal principal,UUID assignmentId,HttpSession originalSession) {
+    Owned current(SessionPrincipal principal,UUID assignmentId,HttpSession originalSession) {
         var actor=authorization.requireDriverSelfWithLocks(principal);
         UpmsSessions.requireCurrent(originalSession,principal,clock);
         var driver=drivers.currentBoundDriverWithLock(actor.id()).orElseThrow(ExecutionFailure::missing);
@@ -100,7 +100,7 @@ public class ExecutionService {
                     ||!source.source().equals(assignment.source())||!source.source().orderId().equals(anchor.orderId())
                     ||!source.source().taskId().equals(anchor.taskId()))throw ExecutionFailure.missing();
             completeOccupation(assignment);
-            return new Owned(actor.id(),driver.id(),assignment);
+            return new Owned(actor.id(),driver.id(),driver,assignment);
         } catch(TmsFailure failure) {
             if(failure.status()==404)throw ExecutionFailure.missing();throw failure;
         } catch(UpmsException failure) {

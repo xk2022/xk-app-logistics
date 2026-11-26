@@ -14,3 +14,9 @@
 ## M4-01 可執行轉移
 
 本包列舉 WAITING／DEPARTED／IN_PROGRESS／AWAITING_COMPLETION／COMPLETED，只開放 WAITING→DEPARTED；沒有列舉以外的自訂狀態、任意 PATCH 或跳步 API。出發後新 M3 撤改拒絕、占用保持；原成功管理命令重播仍回歷史收據。新 DRIVER 命令先重驗本人及目前有效指派，再取得歷史收據；出發不解前置任務。[精確定義](../98_decisions/2026-11-26-m4-01-engineering.md)。
+
+## M4-02 受控進度與私有照片
+
+依[本包工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)新增 DEPARTED→IN_PROGRESS→AWAITING_COMPLETION 兩個相鄰命令。照片上傳只建立原始不可變證據，不推進版本；進度以同次指派／目前 phase／execution version 的明確 VERIFIED 照片集合檢核，成功事件保留選照關聯。照片、進度及回放均重驗本人原 Session／目前綁定／來源與完整占用，不以舊 actor 或 UUID 當授權。
+
+正式照片規則及 provider／保存仍 UNCONFIRMED；獨立 policy/provider 預設拒絕依賴動作。只有隔離合成策略可正向驗證，原照片與歷史收據不覆寫。AWAITING_COMPLETION 不是完成或安全釋放；本包不解前置／資源，不處置例外或結案。完整操作 UI 留 M4-06。

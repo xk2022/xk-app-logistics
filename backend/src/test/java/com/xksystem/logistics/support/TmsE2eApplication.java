@@ -2,6 +2,8 @@ package com.xksystem.logistics.support;
 
 import com.xksystem.logistics.LogisticsApplication;
 import com.xksystem.logistics.tms.DispatchEligibilityPolicy;
+import com.xksystem.logistics.tms.evidence.EvidenceStorage;
+import com.xksystem.logistics.tms.evidence.ExecutionEvidencePolicy;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -37,6 +39,18 @@ public final class TmsE2eApplication {
                 }
             });
             registry.registerBeanDefinition("syntheticDispatchEligibilityPolicy", definition);
+            var evidencePolicy=new RootBeanDefinition(ExecutionEvidencePolicy.class);evidencePolicy.setPrimary(true);
+            evidencePolicy.setInstanceSupplier(()->{
+                try{return SyntheticEvidencePolicy.create(context.getBean(DataSource.class));}
+                catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated evidence policy database",failure);}
+            });
+            registry.registerBeanDefinition("syntheticExecutionEvidencePolicy",evidencePolicy);
+            var evidenceStorage=new RootBeanDefinition(EvidenceStorage.class);evidenceStorage.setPrimary(true);
+            evidenceStorage.setInstanceSupplier(()->{
+                try{return SyntheticEvidenceStorage.create(context.getBean(DataSource.class));}
+                catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated private storage database",failure);}
+            });
+            registry.registerBeanDefinition("syntheticEvidenceStorage",evidenceStorage);
         });
         return application;
     }

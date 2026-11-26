@@ -1,6 +1,6 @@
 # LG-M4-01 本人詳情與出發驗證
 
-狀態：本機驗收完成；最終 source／PR／merge／四項 PR 及 main CI 依[本包唯一工作分支交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)記錄，不以歷史通過替代本包執行。
+狀態：已合併且 PR／main 四項 CI 全過；最終 source／PR／merge／四項 PR 及 main CI 依[本包唯一工作分支交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)記錄，不以歷史通過替代本包執行。
 
 ## 前置與規範
 
@@ -67,3 +67,7 @@ Session invalidation 無法隨 DB rollback 復原；若 audit 已 flush、Sessio
 | 整筆回滾／DB 保護 | ExecutionIT `storageFailureAtAnyInsertRollsBackEntireDepartureAndTheOriginalKeyCanRetry`（三表）、`commitTimeDeferredForeignKeyUsesExecutionNamespaceAndRollsBackReceiptAndTransition`（兩表）、`committedExecutionSnapshotEventsAndCommandReceiptCannotBeRewrittenOrDeleted`、`databaseRejectsInventedInitialProgressWrongTransitionAndCrossAssignmentReceiptIdentity` | 各 insert 與 commit-time FK 失敗整筆回滾、原 key 可重試；出發事實／事件／收據不可覆寫或刪除，拒絕虛構初態、非法轉移及跨派工身分配對。 |
 | 排隊撤權／登出先後 | ExecutionIT `queuedDepartureRechecksFreshActorAndBindingUnderTheSharedCanonicalLock`、`logoutAheadOfQueuedDriverOperationInvalidatesTheCapturedSessionBeforeAnyDetailOrReceipt`（DETAIL／DEPART／REPLAY）、`departureAheadOfLogoutCompletesOnceBeforeThatSessionIsInvalidated` | 真 DB gate 與獨立 lock observer 證明順序；canonical 內重驗身分、綁定及原 Session。登出先則 401／無收據與異動；出發先則恰一提交，隨後原 Session 失效。 |
 | 升級／真 TLS 桌面與手機 | PlatformIT `initializesEmptyPostgresWithPlatformUpmsAdmCrmAndNoSeedAccountsCustomersOrParameters`、`upgradesV8ToV9PreservingEveryPriorDomainRowAndIndexingOnlyOpenAcceptedTasks`、`upgradesV9ToV10PreservingEveryExistingRowIncludingActiveDispatchHistoryWithoutExecutionBackfill`；execution.spec.ts `current DRIVER detail and departure preserve authority, version, replay and dispatch race safety over TLS`（desktop／Pixel 7） | V10／30 表空庫、新三表零回填、26 舊領域表及 Flyway 原列保留；原 V8→V9 證明完成後明驗 runtime 升 V10。真瀏覽器同源 API 驗本人權限、HEAD 405、回應失落後原請求重播／CSRF、撤改競爭及十四欄列表；全量 E2E 的六份實際 HTTP 驗證結果另列本頁。本包沒有新增執行 UI 或 M4-02 以後功能。 |
+
+## 最終交付收據（M4-02 開工前核對）
+
+[PR #23](https://github.com/xk2022/xk-app-logistics/pull/23)，source `71dac55cdf568ddb6f46c043c0f74d81d3fafe07`，merge `daf26f979c1c03c078876f204a713578abe80a4e`，兩者 Git tree 相同。[PR CI 45768556588](https://github.com/xk2022/xk-app-logistics/actions/runs/45768556588)／[main CI 45769255127](https://github.com/xk2022/xk-app-logistics/actions/runs/45769255127) 均 attempt 1、四項成功；遠端各 131 unit＋287 integration、30 E2E、1,490 HTTP／32 檔（execution 158；本機 157），0 測試失敗／略過。採集數量依該次競爭回應紀錄，沒有把本機數量冒充 CI；其餘五份 HTTP 數量一致。main 精確 head 核對完成才建立 M4-02 分支。
