@@ -52,3 +52,7 @@ M4-02 PR #24／main四過收據已核對；M4-03從merge `4681f13b4dd1dc32463284
 - LG-M4-03 PR #25與main四項已成功，source508e1e4／merge e55ee4e；LG-M4-04由此獨立分支實作，依[交接](m4-04-task-completion-handoff.md)及[驗證](../09_testing/m4-04-validation.md)逐項核對，不提前M4-05／06或部署。
 
 - LG-M4-04完成本機718／566／36／九HTTP2,244驗收及隔離資料清理，依[本包收據](../09_testing/m4-04-validation.md)核對PR及main四項後才進M4-05。
+
+- LG-M4-05 已由PR #27及補正 #28交付，最終main45823239922四項成功；M4-06從a879f93獨立分支實作[司機完整介面](m4-06-driver-ui-handoff.md)，全部實測及PR／main四過後才進M4-07。
+
+- LG-M4-06已完成本機1,083／612／40與十HTTP3,075驗收、原始130值隱私及桌面／手機真畫面；待本包獨立PR及精確main四項CI成功後自動進入M4-07全量整合驗收。

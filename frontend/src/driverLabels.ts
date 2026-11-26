@@ -1,0 +1,4 @@
+import type { DriverCommandKind } from './driverExecutionApi'
+export const driverOperationLabels: Record<DriverCommandKind, { start: string; review: string; confirm: string }> = { depart: { start: '出發回報', review: '檢視出發確認', confirm: '確認出發' }, upload: { start: '上傳任務照片', review: '檢視任務照片上傳', confirm: '確認上傳任務照片' }, progress: { start: '提交執行進度', review: '檢視進度確認', confirm: '確認提交進度' }, report: { start: '回報任務異常', review: '檢視異常回報確認', confirm: '確認回報異常' }, supplementUpload: { start: '上傳補件照片', review: '檢視補件照片上傳', confirm: '確認上傳補件照片' }, supplementSubmit: { start: '提交補件', review: '檢視補件提交確認', confirm: '確認提交補件' }, complete: { start: '完成任務並解除占用', review: '檢視任務完成確認', confirm: '確認完成並解除占用' } }
+export const driverExceptionLabels = { OPEN: '待管理處置', NEEDS_SUPPLEMENT: '待補件', RESOLVED: '已處置' } as const
+export const driverPhaseLabels = { WAITING: '待出發', DEPARTED: '已出發', IN_PROGRESS: '執行中', AWAITING_COMPLETION: '待完成確認', COMPLETED: '已完成' } as const

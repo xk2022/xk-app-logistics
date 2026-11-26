@@ -158,7 +158,12 @@ jobs:
           sed -i 's/^POSTGRES_DB=.*/POSTGRES_DB=xk_logistics_e2e/' .env
           echo "E2E_FIXTURE_PATH=$RUNNER_TEMP/xk-m2-e2e-fixture.json" >> "$GITHUB_ENV"
           ./infrastructure/generate-dev-tls.sh
-      - run: npm ci && npx playwright install --with-deps chromium
+      - name: Install browsers and isolated display dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get install --yes --no-install-recommends xvfb xauth
+          dpkg-query -W -f='${Package} ${Version}\n' xvfb xauth
       - name: Install hash-pinned independent API contract validators
         run: |
           python3 --version
@@ -253,7 +258,7 @@ jobs:
           DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
             java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
       - name: TLS browser services, roles, orders, FMS and TMS API/workbench on desktop and mobile
-        run: npm run test:e2e
+        run: xvfb-run --auto-servernum npm run test:e2e -- --headed --workers=2 --retries=0
       - name: Validate original order schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
         run: >-
