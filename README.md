@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M3-04 TMS 派工與資源占用（驗證紀錄見下方） |
+| 狀態 | development — LG-M3-05 TMS 調度工作台（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,7 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [調度工作台交接](docs/08_development/m3-05-dispatch-ui-handoff.md) · [M3-05 驗證](docs/09_testing/m3-05-validation.md)
 - [TMS 派工交接](docs/08_development/m3-04-dispatch-handoff.md) · [TMS API／OpenAPI](docs/06_api/tms-dispatch.md)
 - [派工工程決策](docs/98_decisions/2026-11-26-tms-dispatch-engineering.md) · [M3-04 驗證](docs/09_testing/m3-04-validation.md)
 - [正式受理交接](docs/08_development/m3-03-tom-acceptance-handoff.md) · [受理 API／OpenAPI](docs/06_api/tom-acceptance.md)
@@ -202,10 +203,18 @@ UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、�
 
 ## TMS 派工與占用（M3-04）
 
-ADMIN／DISPATCHER 可查詢已受理任務、伺服器資源候選、目前派工與有界歷史，並透過獨立 API 指派、撤派及改派。每段以獨立 generation 控制版本，司機與所有車輛位置使用資料庫排他占用；撤改、釋放／取得、版本、事件及成功重播結果同交易，失敗保留原派工。M3-04 先交付 API，完整工作台在 M3-05 整合。
+ADMIN／DISPATCHER 可查詢已受理任務、伺服器資源候選、目前派工與有界歷史，並透過獨立 API 指派、撤派及改派。每段以獨立 generation 控制版本，司機與所有車輛位置使用資料庫排他占用；撤改、釋放／取得、版本、事件及成功重播結果同交易，失敗保留原派工。M3-04 API 已以 PR #19 交付；M3-05 整合完整工作台。
 
 只接受 OPEN＋ACCEPTED 的同單任務，後段須有可驗證的前置完成／交接證據；本階段沒有 M4 證據，不能以撤派、到時或無占用放行後段。DRIVER 本人端點每次依目前有效帳號與綁定，只回目前當段必要路線、聯絡及標的，不回整單、其他資源或歷史。
 
 **正式適格政策尚未核准，一般 DEV／正式 JAR 的新派工與改派預設拒絕。** FMS 行政可用不保證車種、配對、駕照、載重、檢驗或工時適格。正向工程驗收僅在 `xk_logistics_e2e` 載入另外編譯、明確合成的 test-only 政策，回應及快照標示 `SYNTHETIC_TEST_ONLY`；正式 JAR 沒有 override、launcher 或可開放資格的環境參數。隔離啟動依 [E2E README](tests/e2e/README.md) 加 `compose.e2e.yaml`，一般 DEV 不加該檔。
 
 占用中的 FMS 資源不能失去行政可用或直接修改配置依據，須先撤派／改派；名稱／聯絡校正仍保留歷史快照。V9 只為既有已受理任務衍生派工索引，沒有派工／占用／業務種子。D04／D05／D10 及正式政策仍待核准，沒有出發、完成、回報、照片、自動釋放或正式部署。
+
+## 調度工作台與本人任務（M3-05）
+
+ADMIN／DISPATCHER 登入後進入「調度工作台」，查詢已受理任務的待派／已派狀態，查看當前派工、資源占用與分頁歷史；選定司機、主車及選用拖板後明確確認指派。改派／撤派需填寫原因，資源候選與阻擋理由由後端提供。一般 DEV 的正式資格未核准，新指派／改派維持關閉；既有有效派工仍可撤派。
+
+寫入結果未知時保留原次操作、內容、版本與 key，僅由使用者明確重試。CSRF 更新不會自動重送；確認成功的歷史收據與目前派工分開，必須重新讀取目前狀態才進行下一操作。衝突不自動覆寫，離開／登出須確認捨棄本機未決內容，請求傳送中無法離開。
+
+DRIVER 登入後可進入「本人運輸任務」唯讀頁；原「本人司機資料」另行保留。本人任務只讀目前帳號綁定的有效派工，重新讀取、切頁、撤權或無綁定後清除舊可見路線／聯絡資料，沒有整單、資源、歷史或回報入口。畫面驗收使用隔離合成資料，依 [操作與證據](docs/09_testing/m3-05-validation.md) 重現；沒有新增環境設定、API、migration、依賴或正式部署。

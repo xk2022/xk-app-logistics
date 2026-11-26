@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 26 cases: thirteen each for desktop Chromium and Pixel 7. The
+The suite has 28 cases: fourteen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -89,6 +89,27 @@ state and history, same-key historical replay, resource conflict, predecessor
 blocking, guarded FMS changes, and current-binding DRIVER isolation. No dispatch
 workbench is introduced by M3-04; the full management/mobile UI belongs to M3-05.
 
+The independent M3-05 `dispatch-ui.spec.ts` adds one complete workbench scenario
+per viewport and retains all preceding 26 cases. It accepts a real saved order
+through the order UI, opens the resulting TMS task, selects resources and confirms
+assignment, reassigns with the other management role, and resolves a stale-generation
+conflict explicitly. The scenario checks blocked predecessors and occupied or
+unapproved candidates, current reservations, paged history, and the driver's
+read-only task page. Each of assign, reassign, and revoke commits at the real
+backend before a controlled HTTPS relay drops delivery; only an explicit retry
+with the original key/body/generation retrieves that result. The assign retry is
+first rejected by real CSRF middleware and must remain unresolved. Public receipts
+are historical results; the UI must explicitly read current dispatch state before
+another operation. No request keys or authentication headers are attached to reports.
+
+Driver UI checks cover removal of route/contact DOM after revocation, 404/unbinding,
+rebinding, and 401/account disable. A real logout response is briefly held after
+server completion to verify sensitive task content is unmounted while the client
+is still waiting. The same account can then log in normally again. Current state,
+history, driver tasks, confirmation, and uncertain-result screenshots contain only
+synthetic visible data; keyboard activation, field labels and horizontal overflow
+are checked on desktop and mobile. Runtime startup remains an external explicit step.
+
 Production eligibility stays fail-closed. Positive TMS browser checks explicitly
 use a separately mounted, test-only launcher and synthetic policy, never a
 production profile or approval flag. Every policy construction checks
@@ -100,9 +121,9 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 62 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 70 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
-ADMIN/DISPATCHER/two-DRIVER sets for each browser project. It accepts only
+ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios in each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
@@ -122,6 +143,12 @@ The TMS group adds four normal accounts per viewport and three isolated
 `SYNTHETIC_TMS_<scope>_(MAIN|TRAILER|SHARED)` vehicle-type items per viewport.
 Drivers, vehicles, CRM customers, orders and assignments are still created only
 through the real APIs. The fixture never seeds their business tables.
+The separate `dispatchUi` group adds another four normal accounts per viewport,
+reuses only the API group's immutable synthetic type IDs, and creates driver codes
+`SYNTHETIC_TMS_<scope>_D1001` and higher. It never shares credentials or changes
+those definitions, so API-group role revocation and UI-group binding changes
+cannot invalidate each other's scenarios. Order numbers and resource searches
+isolate each UI scenario from concurrent test records.
 
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through

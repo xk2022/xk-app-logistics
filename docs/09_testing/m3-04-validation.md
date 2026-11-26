@@ -18,7 +18,7 @@
 | TMS 獨立契約 | 7 operations／42 schemas／4 source hashes、51 正例／113 反例／8 引用防護、17 CLI 失敗路徑安全拒絕；實際 HTTP 134／2 files 全過 |
 | 安全與報告 | root／frontend npm audit 均 0；含測試的 CycloneDX SBOM 成功，OSV all-vulns 掃描 409 筆（3＋255＋7＋144）無已知弱點；全 history／staged gitleaks 與同批 E2E 隱私全過，沒有 scanner 排除 |
 | 文件／工具與舊基準 | 12 份 Markdown、213 相對連結有效；actionlint、全 E2E strict TypeScript、diff check 全過；V1–V8、原契約／validator／依賴／測試保留 |
-| GitHub 交付 | 本包 source／merge SHA、PR 及四項 CI／合併後 main 結果由交付 PR 與 GitHub 執行紀錄追蹤；全部成功後才進入 M3-05 |
+| GitHub 交付 | [PR #19](https://github.com/xk2022/xk-app-logistics/pull/19)，source `2d35b7fbcf2846ff01f603c4fe6fbe0c19eb7247`；[PR CI 45744058200](https://github.com/xk2022/xk-app-logistics/actions/runs/45744058200) attempt 1 四過；merge `7180c1f8894baf0d6b878c435ce879863817f2ed`；[main CI 45744753604](https://github.com/xk2022/xk-app-logistics/actions/runs/45744753604) attempt 2 同 merge 四過後才開工 M3-05 |
 
 開發首輪修正兩項新增測試相容性：OptionalAssert 不提供 doesNotContain，改以 Optional 值的布林結果保持相同斷言；合成 customerCode 的 UUID 原有小寫，不符合既有 CRM 大寫規則，改生成大寫測試代碼，不修改 CRM。修正後新模組診斷及全量 verify 重跑通過。
 
@@ -50,3 +50,5 @@ Fixture 私有帳密位於報告之外、trace 關閉。18 份契約 response ev
 ## 剩餘邊界
 
 正式車種／駕照分類、配對、重量、檢驗、工時與現場例外仍未核准；production 新派工／改派維持拒絕，合成政策只證明工程流程。D04／D05／D10 與保存期限、UPMS 單 instance、既有維運／備份及覆蓋率數值門檻延續原邊界。本包只有出發前 ASSIGNED／REVOKED／SUPERSEDED，不實作 M4 出發、回報、照片、完成、結案或正式部署。M3-05 與 M3-06 按獨立 PR／CI／main CI 順序接續。
+
+合併後 main attempt 1 的 backend 在下載官方 Central plugin 遭 429，尚未進入測試；frontend 原 Driver account-conflict 案例於焦點 effect 完成前做即時斷言。相同 SHA 只重跑失敗 jobs，attempt 2 四項成功，沒有略過檢查；單例獨立 5 次成功，M3-05 將焦點斷言改以 waitFor 等待，原斷言保留。

@@ -226,7 +226,7 @@ describe('driver form and narrow account binding', () => {
     fireEvent.click(screen.getByRole('button', { name: '儲存司機' }))
     await screen.findByText('帳號已有其他綁定')
     expect(screen.getByLabelText('綁定登入帳號')).toHaveAccessibleDescription(/請選另一個帳號/)
-    expect(screen.getByLabelText('綁定登入帳號')).toHaveFocus()
+    await waitFor(() => expect(screen.getByLabelText('綁定登入帳號')).toHaveFocus())
     expect(screen.getByRole('button', { name: '儲存司機' })).toBeEnabled()
     expect(screen.queryByRole('heading', { name: '司機資料衝突，本機內容已保留' })).not.toBeInTheDocument()
     expect(updateDriver).toHaveBeenCalledOnce()
