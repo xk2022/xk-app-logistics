@@ -12,6 +12,6 @@
 - LG-M3-01：依已合併 PR #11 與 Q21–Q25 實作 FMS 車輛主檔、ADM 分類、UPMS 權限、V6、管理介面及可信行政狀態來源查詢。前端 238／後端 243／E2E 20、原 TOM HTTP schema 296 與 FMS 174 全過；[實測與交付追蹤](../09_testing/m3-01-validation.md)，最終 head／merge／main CI 以交付 PR 追蹤。
 - LG-M3-02：[產品 PR #14](https://github.com/xk2022/xk-app-logistics/pull/14) 已依已合併 PR #13 與 Q26–Q30 交付司機主檔、選擇性唯一 DRIVER 帳號綁定、本人唯讀、行政出勤、ADM 證照分類與 V7，首輪 PR CI 四項全過。本機前端 330／後端 280／E2E 22、實際 TOM 296／Vehicle 174／Driver 282 回應全過；實測與合併後 Maven Central 429／重跑介面失敗的處理見 [M3-02 驗證](../09_testing/m3-02-validation.md)，最終文件交付及 main CI 由後續驗收 PR 追蹤。
 - LG-M3-03：依已合併 PR #16 與 Q31–Q35 實作獨立正式受理、原子版本／不可變事件／重送、受理後唯讀與待派車顯示；本機前端 426／後端 312／E2E 24 與實際 TOM 414／Acceptance 30／Vehicle 174／Driver 282 回應全過；實際驗收與交付狀態見 [M3-03 驗證](../09_testing/m3-03-validation.md)。
-- 下一工作：M3-04 之後的資源占用與派工須獨立交辦與決策；司機回報、照片、結案及其他 FMS 尚未開發，原四份訂單契約來源保持原樣。
+- 下一工作：Q36–Q40 與剩餘 M3 已採用，依 [M3-04](../08_development/m3-04-dispatch-handoff.md) → [M3-05](../08_development/m3-05-dispatch-ui-handoff.md) → [M3-06](../08_development/m3-06-integration-handoff.md) 依序實作、驗收；司機回報、照片、結案及其他 FMS 尚未開發，原四份訂單契約來源保持原樣。
 - 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
 - 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。

@@ -16,3 +16,5 @@ M3-01 加入 ADMIN／DISPATCHER 的[車輛管理](../06_api/fms-vehicles.md)：�
 M3-02 加入 ADMIN／DISPATCHER 的[司機管理](../06_api/fms-drivers.md)：列表、新增／明細／編輯、狀態、限定帳號綁定與證照日期提示；DRIVER 增加獨立的「本人司機資料」唯讀頁，只呼叫目前身分推導的本人端點，不提供 ID 輸入或編輯／行政出勤切換。本人端點不回證照參考、其他帳號資料及管理稽核。實測見 [M3-02 驗證](../09_testing/m3-02-validation.md)，仍沒有正式受理、派車、配對與資源占用。
 
 M3-03 在既有訂單工作台新增[正式受理](../06_api/tom-acceptance.md)二段確認、已受理唯讀與待派車顯示；原 check 的 NOT_GRANTED 明確表示檢核不授權轉態，實際狀態讀 acceptanceStatus。沒有派車按鈕、資源占用或撤回入口，實測見 [M3-03 驗證](../09_testing/m3-03-validation.md)。
+
+M3-05 [調度工作台](dispatch-workspace.md) 已納入開發規劃，待 M3-04 API 完成後實作；DRIVER 僅本人有效派工唯讀，尚未交付。
