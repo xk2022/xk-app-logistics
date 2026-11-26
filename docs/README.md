@@ -1,6 +1,6 @@
-# 文件索引｜M0 / M1 / M2 / M3
+# 文件索引｜M0 / M1 / M2 / M3 / M4
 
-日期：2026-11-26（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q40 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
+日期：2026-11-26（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q47 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
 
 | 分類 | 文件 |
 | --- | --- |
@@ -20,3 +20,13 @@
 | 98_decisions | [TMS 工程決策](98_decisions/2026-11-26-tms-dispatch-engineering.md)、 [產品基準與待決](98_decisions/2026-11-25-foundation.md)、[M2 帳號與權限決策](98_decisions/2026-11-25-m2-access.md)、[UPMS 工程決策](98_decisions/2026-11-25-upms-engineering.md)、[ADM 採用決策](98_decisions/2026-11-25-adm.md)、[ADM 工程決策](98_decisions/2026-11-25-adm-engineering.md)、[CRM 採用決策](98_decisions/2026-11-25-crm.md)、[CRM 工程決策](98_decisions/2026-11-25-crm-engineering.md)、[TOM 工程決策](98_decisions/2026-11-25-tom-engineering.md)、[TOM UI 工程決策](98_decisions/2026-11-25-tom-ui-engineering.md)、[FMS 車輛決策](98_decisions/2026-11-25-fms-vehicle.md)、[FMS 車輛工程](98_decisions/2026-11-25-fms-vehicle-engineering.md)、[FMS 司機決策](98_decisions/2026-11-25-fms-driver.md)、[FMS 司機工程](98_decisions/2026-11-25-fms-driver-engineering.md)、[TOM 受理決策](98_decisions/2026-11-26-tom-acceptance.md)、[TOM 受理工程](98_decisions/2026-11-26-tom-acceptance-engineering.md)、[TMS 決策](98_decisions/2026-11-26-tms-dispatch.md) |
 
 99_archive 按需要建立。引用的舊規格固定至來源 commit；確認有變更時以新決策記錄差異。
+
+
+## M4 採用規格
+- [2026-11-26-m4-execution.md](98_decisions/2026-11-26-m4-execution.md)
+- [tms-execution-workflow.md](03_domain/tms-execution-workflow.md)
+- [tms-execution-model.md](05_database/tms-execution-model.md)
+- [tms-execution.md](06_api/tms-execution.md)
+- [driver-execution-workspace.md](07_ui-ux/driver-execution-workspace.md)
+- [m4-execution-handoff.md](08_development/m4-execution-handoff.md)
+- [m4-integration-acceptance.md](09_testing/m4-integration-acceptance.md)

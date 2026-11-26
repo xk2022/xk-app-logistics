@@ -20,3 +20,6 @@
 - LG-M3-05 交付完成：[PR #20](https://github.com/xk2022/xk-app-logistics/pull/20)，source `997950eb1ee80982bc455e29e8a8d7ecb52cdcbd`／merge `7acbd43f5e098a877af6a1458e5b32d81e390f41`；PR CI45751323496 attempt2、main CI45752348554 attempt1 四項全過。M3-06 依此為基礎完成全量整合驗收；完整狀態見 [M3 報告](../09_testing/m3-integration-acceptance.md)。
 
 - LG-M3-06／M3 工程驗收：前端 590、後端 369（124 unit＋245 integration）、桌面／Pixel 7 E2E 28（0 retries）與五份實際 HTTP 契約 1,244 筆全過；空庫／重啟、V8→V9 舊資料真 HTTPS 派工／重播、併發及回滾與本人隔離通過。最終 source／merge／四項 PR 及 main CI 以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Atest%2Flg-m3-06-integration+base%3Amain)與 [M3 最終報告](../09_testing/m3-integration-acceptance.md)為準。M3 完成後停在後續規格決議，正式資格仍 UNCONFIRMED，不實作 M4 或部署。
+
+
+- LG-M4：Q41–Q47 及全部七包已採用；[規格](../98_decisions/2026-11-26-m4-execution.md)、[工作包](../08_development/m4-execution-handoff.md)。尚未實作、驗收或部署；不代表正式資格及保存政策已核准。
