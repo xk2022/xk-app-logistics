@@ -96,6 +96,17 @@ class TomOperationsImpl implements TomOperations {
         var root=rootFields(draft,name);root.put("version",previous.get("version").asLong()+1);root.put("updated_at",timestamp(now));root.put("updated_by",actor);update("tom_order",root,"order_id=?",id);
         var core=new LinkedHashMap<String,Object>();core.put("updated_at",timestamp(now));core.put("updated_by",actor);update("order_core",core,"id=?",id);return read(id,scope,false);
     }
+    @Override public ObjectNode accept(UUID id,String scope,UUID actor,Instant now,long previousVersion){
+        // The service already owns both root locks. Conditional updates are a final fail-closed invariant.
+        if(jdbc.update("UPDATE logistics.order_core SET updated_at=?,updated_by=? WHERE id=? AND company_scope=? AND lifecycle_status='OPEN'",
+                timestamp(now),actor,id,scope)!=1)
+            throw new TomFailure(409,"ORDER_NOT_EDITABLE","目前訂單不能正式受理");
+        if(jdbc.update("UPDATE logistics.tom_order SET acceptance_status='ACCEPTED',version=version+1,updated_at=?,updated_by=? WHERE order_id=? AND acceptance_status='DRAFT' AND version=? AND version<?",
+                timestamp(now),actor,id,previousVersion,DraftCodec.MAX_VERSION)!=1)
+            throw new TomFailure(409,"ORDER_NOT_EDITABLE","目前訂單不能正式受理");
+        // Do not rebuild children, refresh customerName, or alter any historical/raw draft fields.
+        return read(id,scope,false);
+    }
     private LinkedHashMap<String,Object> rootFields(ObjectNode draft,String name){
         var values=new LinkedHashMap<String,Object>();values.put("order_type",draft.get("type").asString());values.put("customer_id",UUID.fromString(draft.get("customerId").asString()));values.put("customer_name",name);
         values.put("customer_reference",bytes(draft.get("customerReference")));values.put("remark",bytes(draft.get("remark")));
@@ -131,6 +142,12 @@ class TomOperationsImpl implements TomOperations {
     }
     @Override public void revision(UUID id,ObjectNode result,String trace,UUID actor,Instant now){
         var values=audit(actor,now);values.put("id",UUID.randomUUID());values.put("order_id",id);values.put("aggregate_version",result.get("version").asLong());values.put("snapshot",new JsonValue(json.writeValueAsString(result)));values.put("request_trace_id",trace);insert("order_draft_revision",values);
+    }
+    @Override public void acceptanceEvent(UUID id,long fromVersion,ObjectNode result,String trace,UUID actor,Instant now){
+        var values=new LinkedHashMap<String,Object>();values.put("id",UUID.randomUUID());values.put("order_id",id);
+        values.put("from_version",fromVersion);values.put("to_version",result.get("version").asLong());values.put("actor_id",actor);
+        values.put("accepted_at",timestamp(now));values.put("snapshot",new JsonValue(json.writeValueAsString(result)));
+        values.put("request_trace_id",trace);insert("order_acceptance_event",values);
     }
     @Override public void remember(String scope,UUID actor,String method,String path,String key,String hash,UUID id,int status,ObjectNode data,String location,Instant now){
         var values=audit(actor,now);values.put("id",UUID.randomUUID());values.put("company_scope",scope);values.put("actor_id",actor);values.put("http_method",method);values.put("canonical_path",path);values.put("idempotency_key",key);values.put("request_hash",hash);values.put("order_id",id);values.put("original_status",status);values.put("original_data",new JsonValue(json.writeValueAsString(data)));values.put("original_location",location);insert("api_idempotency",values);

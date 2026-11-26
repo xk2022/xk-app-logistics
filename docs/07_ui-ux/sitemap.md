@@ -14,3 +14,5 @@ M2-05 的實作範圍見 [訂單工作台規格](order-workspace.md)：ADMIN／D
 M3-01 加入 ADMIN／DISPATCHER 的[車輛管理](../06_api/fms-vehicles.md)：列表、分頁／篩選、新增／明細／編輯、行政狀態、自然日提示及主檔可用選項。DRIVER 不顯示或查詢車隊；沒有司機管理、使用中設定、車頭拖板配對或派工占用。實測見 [M3-01 驗證](../09_testing/m3-01-validation.md)。
 
 M3-02 加入 ADMIN／DISPATCHER 的[司機管理](../06_api/fms-drivers.md)：列表、新增／明細／編輯、狀態、限定帳號綁定與證照日期提示；DRIVER 增加獨立的「本人司機資料」唯讀頁，只呼叫目前身分推導的本人端點，不提供 ID 輸入或編輯／行政出勤切換。本人端點不回證照參考、其他帳號資料及管理稽核。實測見 [M3-02 驗證](../09_testing/m3-02-validation.md)，仍沒有正式受理、派車、配對與資源占用。
+
+M3-03 在既有訂單工作台新增[正式受理](../06_api/tom-acceptance.md)二段確認、已受理唯讀與待派車顯示；原 check 的 NOT_GRANTED 明確表示檢核不授權轉態，實際狀態讀 acceptanceStatus。沒有派車按鈕、資源占用或撤回入口，實測見 [M3-03 驗證](../09_testing/m3-03-validation.md)。

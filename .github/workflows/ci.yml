@@ -46,8 +46,10 @@ jobs:
           distribution: temurin
           java-version: '21.0.13'
           cache: maven
+      # Use the same default official Central repository identity as SBOM and Docker builds.
+      # A shared cache restored from central must not force parent-POM revalidation at repo1.
       - name: Verify with real PostgreSQL Testcontainers
-        run: ./mvnw --settings ../.github/maven-central-settings.xml --strict-checksums --batch-mode --no-transfer-progress verify
+        run: ./mvnw --strict-checksums --batch-mode --no-transfer-progress verify
         working-directory: backend
       - name: Retain JUnit reports
         if: always()
@@ -172,7 +174,7 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
           curl --fail --silent --cacert infrastructure/dev-tls/localhost.crt https://localhost:8443/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP"'
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''2'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_core,order_draft_revision,task_dependency,tom_order,transport_task,upms_account,upms_audit,upms_lock
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_acceptance_event,order_core,order_draft_revision,task_dependency,tom_order,transport_task,upms_account,upms_audit,upms_lock
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''3'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(code, '\'','\'' ORDER BY code) FROM logistics.adm_dict_category"')" = CONTAINER_TYPE,DRIVER_LICENSE_TYPE,ORDER_TYPE,TASK_KIND,VEHICLE_TYPE
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(i.code, '\'','\'' ORDER BY i.code) FROM logistics.adm_dict_item i JOIN logistics.adm_dict_category c ON c.id = i.category_id WHERE c.code = '\''ORDER_TYPE'\'' AND c.read_only"')" = EXPORT,IMPORT,LOCAL
@@ -198,10 +200,12 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.fms_vehicle"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''7'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.fms_driver"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''8'\'' AND success"')" = 1
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.order_acceptance_event"')" = 0
           docker compose restart backend
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 7
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 8
       - name: Create isolated synthetic UPMS, ADM, CRM, TOM, and FMS fixture with test-only runner
         working-directory: backend
         run: |
@@ -211,13 +215,18 @@ jobs:
           set +a
           DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
             java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
-      - name: TLS browser UPMS, ADM, CRM, TOM API, FMS vehicles and drivers, and service smoke on desktop and mobile
+      - name: TLS browser UPMS, ADM, CRM, TOM API and acceptance, FMS vehicles and drivers, and service smoke on desktop and mobile
         run: npm run test:e2e
       - name: Validate original order schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
         run: >-
           "$RUNNER_TEMP/xk-contract-env/bin/python" tests/contracts/validate_order_contract.py
           --responses 'test-results/**/order-contract-responses.json'
+      - name: Validate independent TOM acceptance schemas and actual HTTP response artifacts
+        if: ${{ !cancelled() }}
+        run: >-
+          "$RUNNER_TEMP/xk-contract-env/bin/python" tests/contracts/validate_acceptance_contract.py
+          --responses 'test-results/**/acceptance-contract-responses.json'
       - name: Validate FMS vehicle schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
         run: >-

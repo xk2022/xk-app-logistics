@@ -71,6 +71,44 @@ public class TomService {
             return new WriteResult(200,result,null,false);
         }catch(DataAccessException failure){throw persistence(failure);}
     }
+    @Transactional
+    public WriteResult accept(SessionPrincipal principal,UUID id,String raw,String key,String trace){
+        var actor=authorization.requireOrderManager(principal);
+        JsonNode original=DraftCodec.parseJson(raw);var input=AcceptanceRequest.parse(original);
+        String hash=DraftCodec.canonicalHash(original);key(key);String path="/api/v1/orders/"+id+"/accept";
+        if(!orders.tryKeyLock(SCOPE,actor.id(),"POST",path,key))throw inProgress();
+        var prior=orders.replay(SCOPE,actor.id(),"POST",path,key);
+        if(prior.isPresent())return replay(principal,prior.get(),hash);
+
+        actor=authorization.requireOrderManagerForWrite(principal);
+        ObjectNode observed=orders.read(id,SCOPE,false);
+        UUID customerId=UUID.fromString(observed.get("customerId").asString());
+        // Hold the current CRM source lock, but preserve the order's original customerName snapshot.
+        eligibleCustomer(customerId);
+        ObjectNode previous=orders.read(id,SCOPE,true);
+        if(!customerId.equals(UUID.fromString(previous.get("customerId").asString())))
+            throw new TomFailure(409,"ORDER_NOT_EDITABLE","客戶來源已變更，請重新讀取訂單後再受理");
+        long actual=previous.get("version").asLong();
+        if(actual!=input.expectedVersion())throw new TomFailure(409,"VERSION_CONFLICT","訂單已由其他操作更新，請重新讀取",
+                Map.of("actualVersion",actual),List.of(new FieldIssue("/expectedVersion","AF01","VERSION","版本已更新")));
+        if(!"OPEN".equals(previous.get("lifecycleStatus").asString())||!"DRAFT".equals(previous.get("acceptanceStatus").asString())||actual==DraftCodec.MAX_VERSION)
+            throw new TomFailure(409,"ORDER_NOT_EDITABLE","目前訂單不能正式受理");
+        ObjectNode checked=AcceptanceChecker.check(previous,true);
+        if(!"COMPLETE".equals(checked.get("confirmedRulesOutcome").asString())){
+            var missing=new ArrayList<FieldIssue>();
+            for(JsonNode issue:checked.get("missingFields"))missing.add(new FieldIssue(issue.get("path").asString(),
+                    issue.get("fieldId").asString(),issue.get("ruleId").asString(),issue.get("message").asString()));
+            throw new TomFailure(400,"VALIDATION_ERROR","訂單尚有已核准規則的必要資料未完成",null,missing);
+        }
+        Instant now=now();
+        try{
+            ObjectNode result=orders.accept(id,SCOPE,actor.id(),now,actual);
+            orders.revision(id,result,trace,actor.id(),now);
+            orders.acceptanceEvent(id,actual,result,trace,actor.id(),now);
+            orders.remember(SCOPE,actor.id(),"POST",path,key,hash,id,200,result,null,now);
+            return new WriteResult(200,result,null,false);
+        }catch(DataAccessException failure){throw persistence(failure);}
+    }
     private WriteResult replay(SessionPrincipal principal,TomOperations.Replay saved,String hash){
         if(!saved.requestHash().equals(hash))throw new TomFailure(409,"IDEMPOTENCY_KEY_REUSED","此重送識別已用於不同內容");
         // Refresh authorization even when a caller persistence context cached the account before revocation.
@@ -87,8 +125,9 @@ public class TomService {
         authorization.requireOrderManager(principal);ObjectNode order=orders.read(id,SCOPE,false);
         return AcceptanceChecker.check(order,customers.isEnabled(UUID.fromString(order.get("customerId").asString())));
     }
-    private String customerName(UUID id){
-        try{return customers.requireEnabledForNewReference(id).name();}
+    private String customerName(UUID id){return eligibleCustomer(id).name();}
+    private CrmQueries.Snapshot eligibleCustomer(UUID id){
+        try{return customers.requireEnabledForNewReference(id);}
         catch(UpmsException rejected){if(rejected.status()!=400&&rejected.status()!=404)throw rejected;
             throw new TomFailure(400,"INVALID_CUSTOMER","客戶不存在或不能新增引用",null,List.of(new FieldIssue("/customerId","OF04","ORD-P01","請選擇有效客戶")));}
     }

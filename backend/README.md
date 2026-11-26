@@ -1,4 +1,4 @@
-# XK Logistics 後端｜LG-M1 / M2 / M3-01–02
+# XK Logistics 後端｜LG-M1 / M2 / M3-01–03
 
 Java 21、Spring Boot 4.1.3、Maven 3.9.16（Wrapper 3.3.4）。相依由 Spring Boot BOM 統一管理：Spring Security 7.1.3、Spring Data JPA 4.1.3、Hibernate 7.4.15.Final、Flyway 12.4.0、PostgreSQL JDBC 42.7.14、JUnit 6.0.3、Testcontainers 2.0.5。完整版本依據及專案啟動見[根目錄 README](../README.md)。
 
@@ -49,7 +49,7 @@ Session 使用 `XKSESSION`，並以 `JSESSIONID` 相容原訂單契約；兩名�
 
 ## 範圍與模組邊界
 
-`platform` 只提供 `/actuator/health`、`/api/v1/status`、伺服器產生的請求識別碼及中性錯誤呈現介面。Health 僅公開狀態；status 依資料庫健康回傳 HTTP 200／503、繁中訊息與 `+08:00` timestamp。`upms` 提供固定角色、帳號管理與同源認證；`adm` 提供分類、字典項目、核准參數與異動紀錄；`crm` 提供客戶、聯絡人及常用地址主檔；`tom` 提供原首片訂單草稿與只讀完整性檢查，尚無受理、派工或資源占用動作。
+`platform` 只提供 `/actuator/health`、`/api/v1/status`、伺服器產生的請求識別碼及中性錯誤呈現介面。Health 僅公開狀態；status 依資料庫健康回傳 HTTP 200／503、繁中訊息與 `+08:00` timestamp。`upms` 提供固定角色、帳號管理與同源認證；`adm` 提供分類、字典項目、核准參數與異動紀錄；`crm` 提供客戶、聯絡人及常用地址主檔；`tom` 提供原首片訂單草稿、只讀完整性檢查與獨立明確受理；派工與資源占用屬後續。
 
 Flyway 是唯一結構來源，建立 `logistics` schema 與歷程表；V1 保留原空庫基線，V2 增加帳號、audit 與單一協調鎖資料列，V3 增加 ADM 五表，V4 增加 CRM 三表，V5 增加訂單聚合及技術歷程七表。Migration 不建立使用者帳號、客戶或訂單種子。Hibernate 採 `validate`，禁止以自動 DDL 取代 migration。已套用的 migration 不可修改，未來以新版本遞增。
 
@@ -116,3 +116,13 @@ V7 新增 `fms_driver` 與空 `DRIVER_LICENSE_TYPE` 分類，保留 V1–V6；�
 GET `/fms/drivers/me` 僅 DRIVER，安全 matcher 優先於 FMS 管理路徑。以可鎖定但無業務寫入的交易，canonical → fresh actor → 目前綁定 driver，與解綁／角色異動協調；不快取 driverId，不接受外部識別或查詢。正常身分即使主檔 INACTIVE／LEFT 仍可讀必要本人資料；停帳、撤銷、改角色或解綁依當前授權拒絕。
 
 可信 `DriverQueries` 只提供目前主檔來源與 ACTIVE＋ON_DUTY 的 writable MANDATORY 鎖定查核，不回證照參考或 credential、不判定法規／派車或占用。LEFT 暫不轉回其他 employment；duty 與 employment 不互相自動變更。詳細規則見 [FMS 司機契約](../docs/06_api/fms-drivers.md)、[工程決策](../docs/98_decisions/2026-11-25-fms-driver-engineering.md)及 [M3-02 驗證](../docs/09_testing/m3-02-validation.md)。
+
+## TOM 正式受理（M3-03）
+
+新 POST `/api/v1/orders/{orderId}/accept` 沿 TOM 同源 Session／CSRF、角色與 Idempotency-Key，body 僅 expectedVersion，200 回原 OrderEnvelope。舊 GET／列表／POST／PUT／check DTO 與四份固定契約原樣；GET accept 仍沿未知路徑404，只新增 POST JSON 操作與僅 POST 的媒體格式錯誤處理。
+
+新 key 依 advisory try-key-lock → UPMS canonical／fresh actor → CRM 有效來源 → 訂單根鎖協調。受理只修改根狀態／版本／audit，重新對鎖定聚合驗 ORD-P01–P03，保留歷史 customerName 與子項。前後觀察的 customerId 若不一致則拒絕；不以先前 check 或未核准例外授權。
+
+V8 的 `order_acceptance_event` 每單唯一、版本恰加一、完整 JSON 快照以 composite FK 連結新 revision；UPDATE／DELETE 由 trigger 拒絕，不種事件或替歷史資料捏造人員／時間。使用 textual json 保留 U+0000；不加會解碼自由文字的 jsonb/extraction 檢查。事件、同版 revision、根狀態與 idempotency 同交易提交／回滾，沒有事件改寫或清理 API。
+
+成功 replay 先驗目前授權，跳過今日客戶、前態、原版本與完整性，返回原業務結果／新 traceId。舊 POST／PUT 歷史 replay 在之後受理仍有效；新 key 的 PUT 或再受理由狀態／版本拒絕。公開範圍不包含派工、占用、撤回或正式部署；詳細契約、模型與證據見 [受理 API](../docs/06_api/tom-acceptance.md)、[受理模型](../docs/05_database/tom-acceptance-model.md)及 [M3-03 驗證](../docs/09_testing/m3-03-validation.md)。

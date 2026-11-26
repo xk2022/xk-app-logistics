@@ -45,6 +45,7 @@ interface ProjectFixture {
   orderUi?: TomFixture
   fms?: FmsFixture
   driverFlow?: DriverFixture
+  acceptance?: TomFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -120,6 +121,15 @@ export function driverFixtureFor(project: string): DriverFixture {
     const type = group.licenseTypes?.[key as 'a' | 'b']
     return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
   })) throw new Error('Driver test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function acceptanceFixtureFor(project: string): TomFixture {
+  const group = fixtureFor(project).acceptance
+  if (!group || !['admin', 'dispatcher', 'driver'].every((key) => {
+    const account = group[key as keyof TomFixture]
+    return account && typeof account.username === 'string' && typeof account.password === 'string'
+  })) throw new Error('Acceptance test fixture is incomplete for this browser project.')
   return group
 }
 

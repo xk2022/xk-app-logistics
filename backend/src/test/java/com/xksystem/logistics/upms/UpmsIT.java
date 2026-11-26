@@ -78,7 +78,7 @@ class UpmsIT {
 
     @BeforeEach
     void isolateSyntheticAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
                 + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
                 + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
@@ -109,7 +109,7 @@ class UpmsIT {
         Browser anonymous = new Browser();
         assertThat(anonymous.get("/api/v1/upms/bootstrap").statusCode()).isIn(401, 404);
         assertThat(anonymous.post("/api/v1/upms/bootstrap", Map.of(), true).statusCode()).isIn(401, 403, 404);
-        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
                 + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
                 + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");

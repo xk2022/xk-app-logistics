@@ -35,4 +35,4 @@ PUT 省略可選值變 null、省略 items／tasks／predecessorRefs 變空。sh
 
 完整性檢核逐一對應原 ORD-P01–P03 及 40 欄 fieldId／JSON Pointer。缺項列 missingFields；COMPLETE 時必為空。pendingPolicyIds 保留相關未決例外，operationalAcceptance 永遠 NOT_GRANTED，且檢核不寫版本、稽核或訂單狀態。保留單號及 lifecycle／acceptance 讀值不代表提供轉態 API。
 
-後續工作：正式受理採獨立 [M3-03 API 規格](tom-acceptance.md)，其實作尚未完成；本頁所記五項草稿契約不被替換。
+後續工作：正式受理採獨立 [M3-03 API 規格](tom-acceptance.md)，實作與驗收見 [M3-03 驗證](../09_testing/m3-03-validation.md)；本頁所記五項草稿契約不被替換。

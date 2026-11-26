@@ -138,6 +138,15 @@ public final class E2eFixtureMain {
                 driverFlow.put("licenseTypes", insertDriverLicenseTypes(connection, driverLicenseTypeCategoryId,
                         project.equals("chromium") ? "DESKTOP" : "MOBILE"));
                 accounts.put("driverFlow", driverFlow);
+                Map<String, Object> acceptance = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driver"}) {
+                    String username = "accept-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    UpmsTestData.insert(connection, encoder, username, name.toUpperCase(java.util.Locale.ROOT),
+                            secret, false, Instant.now());
+                    acceptance.put(name, Map.of("username", username, "password", secret));
+                }
+                accounts.put("acceptance", acceptance);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();
