@@ -1,6 +1,6 @@
 # LG-M3-05 調度工作台驗證
 
-狀態：實作與本機驗收完成。PR 與合併後 main 四項 CI 必須全部成功，才視為本包遠端交付完成；最終 SHA 與執行連結由交付 PR 追蹤。
+狀態：本機驗收、PR 與合併後 main 四項 CI 均完成。最終 source `997950eb1ee80982bc455e29e8a8d7ecb52cdcbd`，merge `7acbd43f5e098a877af6a1458e5b32d81e390f41`。
 
 ## 基準
 
@@ -24,9 +24,9 @@
 | 真實 HTTPS／E2E | 完整 28／28 通過，11 files、2 workers、0 retries、2.3 分鐘；原 26 保留，70 個私有合成帳號，桌機與 Pixel 7 真 UI／真後端／PG |
 | 實際 HTTP 契約／隱私 | 五份全過：原 TOM 424／12 files、Acceptance 32／4、Vehicle 174／2、Driver 282／2、TMS 332／4，合計 1,244 筆／24 files；同批報告隱私檢查通過，沒有 fixture 帳密或 trace |
 | 安全／工具 | root／frontend npm audit 均 0；含測試 SBOM 成功、OSV all-vulns 掃 409 套件無已知弱點；actionlint、全 E2E strict TS 通過；staged gitleaks 已通過，無 scanner 排除；完整 history 提交後以交付 PR 留存結果 |
-| GitHub 交付 | not_run：完整本機驗收後才 commit／push／PR，四項 CI 全過才合併，main 四過後才進 M3-06 |
+| GitHub 交付 | [PR #20](https://github.com/xk2022/xk-app-logistics/pull/20)；[PR CI 45751323496](https://github.com/xk2022/xk-app-logistics/actions/runs/45751323496) attempt 2 四過；[main CI 45752348554](https://github.com/xk2022/xk-app-logistics/actions/runs/45752348554) attempt 1 四過，head 等於上述 merge，受測 source 與合併樹相同後才開始 M3-06 |
 
-原 Driver account-conflict 焦點測試改為等待同一 toHaveFocus 斷言，避免錯誤文字進 DOM 與 passive effect 之間競速；未改產品或減少原斷言。整檔 focused 29／29 通過，完整回歸仍待執行。
+原 Driver account-conflict 焦點測試改為等待同一 toHaveFocus 斷言，避免錯誤文字進 DOM 與 passive effect 之間競速；未改產品或減少原斷言。整檔 focused 29／29 通過，後續完整前端 590／590、PR 及 main 四項 CI 也全過。
 
 ## 限制
 
@@ -59,3 +59,5 @@ Vite 成功建置時回報單一 JS 513.87 kB／gzip 144.32 kB，超過預設 50
 此測試改先持有 PostgreSQL `upms_lock`，以獨立 autocommit observer 實際確認兩個寫入交易都已通過 auth／CSRF 並等待 canonical lock，再釋放競爭；不是固定 sleep 猜排程，也未加寬原狀態集合。保留 17 個案例、前段兩個 409 與恰一成功／最後一個管理員，另核對回應 code／時區、winner／loser 身分、帳號與認證版本、目前 Session 及唯一 ACCOUNT_UPDATE 審計。Gate／observer／future 均有界，失敗 finally 先釋放 gate 再等 executor。
 
 修正後 focused 5 unit＋17 integration 全過（1 分 03 秒）；修正後完整 verify 再次通過 124 unit＋245 integration＝369，0 failure／error／skip，5 分 49 秒。只有測試排程及斷言變更，202 個產品／建置輸入與 frontend／E2E 測試保持先前受測位元組，沒有業務例外或 API／migration／依賴變更。
+
+最終 PR run 45751323496 attempt 1 僅 backend 在測試前遭 official Central plugin 429，其餘三項成功；同 head 只重跑失敗工作，attempt 2 四項成功。前一 source 的 run45749066236 併發測試失敗另保留於上述紀錄，不混記為下載失敗。合併前再查公司 `d03cd673c10a8f7c0427c558c562112aa4d34a8c`，APP 工程、安全與維運核心相同。普通 DEV 已套用同受測前端，可信 HTTPS 正常，V9／27表及原全部領域計數保留，正常 java-jar 且無測試政策掛載。

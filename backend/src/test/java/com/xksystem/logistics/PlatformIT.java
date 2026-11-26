@@ -490,7 +490,7 @@ class PlatformIT {
 
     @Test
     void upgradesV8ToV9PreservingEveryPriorDomainRowAndIndexingOnlyOpenAcceptedTasks() throws Exception {
-        String databaseName = "xk_tms_upgrade_test";
+        String databaseName = "xk_logistics_e2e";
         jdbc.execute("CREATE DATABASE " + databaseName);
         String url = postgres.getJdbcUrl().replace("/" + postgres.getDatabaseName(), "/" + databaseName);
         try {
@@ -501,11 +501,12 @@ class PlatformIT {
                     url, postgres.getUsername(), postgres.getPassword()));
             java.util.UUID actor, driverAccount;
             java.util.Map<String, String> definitions;
+            String adminPassword = com.xksystem.logistics.support.UpmsTestData.password();
             var at = java.time.OffsetDateTime.parse("2026-11-17T08:00:00.123456Z");
             try (var connection = java.sql.DriverManager.getConnection(url, postgres.getUsername(), postgres.getPassword())) {
                 var encoder = new com.xksystem.logistics.upms.UpmsConfiguration().passwordEncoder();
                 actor = com.xksystem.logistics.support.UpmsTestData.insert(connection, encoder,
-                        "synthetic-v8-upgrade-admin", "ADMIN", com.xksystem.logistics.support.UpmsTestData.password(), false, at.toInstant());
+                        "synthetic-v8-upgrade-admin", "ADMIN", adminPassword, false, at.toInstant());
                 driverAccount = com.xksystem.logistics.support.UpmsTestData.insert(connection, encoder,
                         "synthetic-v8-upgrade-driver", "DRIVER", com.xksystem.logistics.support.UpmsTestData.password(), false, at.toInstant());
                 definitions = com.xksystem.logistics.support.AdmTestData.insertDefinitions(connection, "TMS_UPGRADE");
@@ -592,8 +593,195 @@ class PlatformIT {
                     java.util.UUID.fromString(accepted.get("id").asString())))).isEqualTo(accepted);
             assertThat(database.queryForObject("SELECT encode(remark,'hex') FROM logistics.tom_order WHERE order_id=?", String.class,
                     java.util.UUID.fromString(accepted.get("id").asString()))).isEqualTo(java.util.HexFormat.of().formatHex(accepted.get("remark").asString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+
+            // Migration preservation is established above before login or new administrative HTTP writes.
+            String oldVehicle = tableDigest(database, "fms_vehicle", "id", " WHERE id='" + vehicle + "'");
+            String oldDriver = tableDigest(database, "fms_driver", "id", " WHERE id='" + driver + "'");
+            verifiesMigratedTaskThroughHttps(database, url, accepted, actor, adminPassword, tableOrders, before);
+            assertThat(tableDigest(database, "fms_vehicle", "id", " WHERE id='" + vehicle + "'")).isEqualTo(oldVehicle);
+            assertThat(tableDigest(database, "fms_driver", "id", " WHERE id='" + driver + "'")).isEqualTo(oldDriver);
+            assertThat(database.queryForObject("SELECT administrative_status FROM logistics.fms_vehicle WHERE id=?", String.class, vehicle)).isEqualTo("INACTIVE");
+            assertThat(database.queryForObject("SELECT employment_status FROM logistics.fms_driver WHERE id=?", String.class, driver)).isEqualTo("LEFT");
+            assertThat(database.queryForObject("SELECT account_id FROM logistics.fms_driver WHERE id=?", java.util.UUID.class, driver)).isEqualTo(driverAccount);
         } finally {
-            jdbc.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
+            // The short TLS context and its pool are closed before the bounded database cleanup.
+            String cleanupUrl = postgres.getJdbcUrl() + (postgres.getJdbcUrl().contains("?") ? "&" : "?")
+                    + "connectTimeout=5&socketTimeout=10";
+            try (var connection = java.sql.DriverManager.getConnection(cleanupUrl, postgres.getUsername(), postgres.getPassword());
+                    var statement = connection.createStatement()) {
+                statement.setQueryTimeout(10);
+                statement.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
+            }
+        }
+    }
+
+    private void verifiesMigratedTaskThroughHttps(JdbcTemplate database, String url, JsonNode accepted,
+            java.util.UUID actor, String adminPassword, java.util.Map<String, String> tableOrders,
+            java.util.Map<String, String> beforeMigration) throws Exception {
+        var properties = new java.util.LinkedHashMap<String, Object>();
+        properties.put("spring.datasource.url", url);
+        properties.put("spring.datasource.username", postgres.getUsername());
+        properties.put("spring.datasource.password", postgres.getPassword());
+        properties.put("server.port", 0);
+        properties.put("server.shutdown", "immediate");
+        properties.put("spring.lifecycle.timeout-per-shutdown-phase", "5s");
+        com.xksystem.logistics.support.TlsTestSupport.register((name, supplier) -> properties.put(name, supplier.get()));
+        var application = com.xksystem.logistics.support.TmsE2eApplication.createApplication();
+        application.setRegisterShutdownHook(false);
+        application.addInitializers(context -> context.getEnvironment().getPropertySources().addFirst(
+                new org.springframework.core.env.MapPropertySource("isolated-upgrade-https", properties)));
+        try (var runtime = application.run()) {
+            assertThat(runtime.getBeansOfType(java.time.Clock.class)).containsOnlyKeys("clock");
+            assertThat(runtime.getBeansOfType(com.xksystem.logistics.support.MutableTestClock.class)).isEmpty();
+            assertThat(runtime.getBeansWithAnnotation(org.springframework.boot.test.context.TestConfiguration.class)).isEmpty();
+            assertThat(runtime.getBean(com.xksystem.logistics.tms.DispatchEligibilityPolicy.class).mode())
+                    .isEqualTo(com.xksystem.logistics.tms.PolicyMode.SYNTHETIC_TEST_ONLY);
+            assertThat(runtime.getBean(JdbcTemplate.class).queryForObject("SELECT current_database()", String.class))
+                    .isEqualTo("xk_logistics_e2e");
+            int runtimePort = runtime.getEnvironment().getRequiredProperty("local.server.port", Integer.class);
+            try (var browser = new UpgradeBrowser(runtimePort)) {
+                upgradeData(browser.post("/auth/login", java.util.Map.of(
+                        "username", "synthetic-v8-upgrade-admin", "password", adminPassword), null), 200, "0000");
+                JsonNode first = accepted.get("tasks").get(0), dependent = accepted.get("tasks").get(1);
+                assertThat(first.get("predecessorTaskIds")).isEmpty();
+                assertThat(dependent.get("predecessorTaskIds")).contains(first.get("id"));
+                String firstId = first.get("id").asString(), dependentId = dependent.get("id").asString();
+                JsonNode tasks = upgradeData(browser.get("/tms/tasks?orderId=" + accepted.get("id").asString()
+                        + "&size=100&state=ALL"), 200, "0000");
+                assertThat(tasks.get("totalElements").asInt()).isEqualTo(accepted.get("tasks").size());
+                var listed = new java.util.ArrayList<String>();
+                for (JsonNode task : tasks.get("content")) {
+                    listed.add(task.get("taskId").asString());
+                    assertThat(task.get("generation").asLong()).isZero();
+                    assertThat(task.get("orderVersion").asLong()).isEqualTo(1);
+                    assertThat(task.get("currentAssignmentId").isNull()).isTrue();
+                    assertThat(task.get("policyMode").asString()).isEqualTo("SYNTHETIC_TEST_ONLY");
+                }
+                assertThat(listed).containsExactlyInAnyOrder(firstId, dependentId);
+                JsonNode initial = upgradeData(browser.get("/tms/tasks/" + firstId + "/dispatch"), 200, "0000");
+                assertThat(initial.get("task").get("prerequisiteReady").asBoolean()).isTrue();
+                assertThat(initial.get("task").get("blockingReasons")).isEmpty();
+                assertThat(initial.get("current").isNull()).isTrue();
+                assertThat(initial.get("history").get("totalElements").asInt()).isZero();
+
+                String categoryId = null;
+                for (JsonNode category : upgradeData(browser.get("/adm/categories?size=100"), 200, "0000").get("content"))
+                    if (category.get("code").asString().equals("VEHICLE_TYPE")) categoryId = category.get("id").asString();
+                assertThat(categoryId).isNotNull();
+                JsonNode type = upgradeData(browser.post("/adm/categories/" + categoryId + "/items", java.util.Map.of(
+                        "code", "SYNTHETIC_TMS_IT_MAIN", "label", "合成升級派工主車類別", "enabled", true, "sortOrder", 1), null), 201, "0000");
+                JsonNode driver = upgradeData(browser.post("/fms/drivers", java.util.Map.of(
+                        "driverCode", "SYNTHETIC_TMS_IT_D1", "name", "合成升級派工司機", "dutyStatus", "ON_DUTY"), null), 201, "0000");
+                assertThat(driver.get("employmentStatus").asString()).isEqualTo("ACTIVE");
+                assertThat(driver.get("dutyStatus").asString()).isEqualTo("ON_DUTY");
+                assertThat(driver.get("accountId").isNull()).isTrue();
+                JsonNode vehicle = upgradeData(browser.post("/fms/vehicles", java.util.Map.of(
+                        "plateNo", "SYN-" + java.util.UUID.randomUUID().toString().substring(0, 12).toUpperCase(java.util.Locale.ROOT),
+                        "vehicleType", type.get("id").asString(), "capacityTon", "12.3400"), null), 201, "0000");
+                assertThat(vehicle.get("administrativeStatus").asString()).isEqualTo("AVAILABLE");
+
+                var command = json.createObjectNode().put("expectedGeneration", 0)
+                        .put("driverId", driver.get("id").asString()).put("mainVehicleId", vehicle.get("id").asString()).putNull("trailerId");
+                String key = java.util.UUID.randomUUID().toString(), path = "/tms/tasks/" + firstId + "/dispatch";
+                var assignedReply = browser.post(path, command, key);
+                JsonNode assigned = upgradeData(assignedReply, 200, "0000");
+                assertThat(assignedReply.headers().firstValue("Idempotency-Replayed")).contains("false");
+                assertThat(assigned.get("taskId")).isEqualTo(first.get("id"));
+                assertThat(assigned.get("generation").asLong()).isEqualTo(1);
+                JsonNode assignment = assigned.get("assignment");
+                assertThat(assignment.get("status").asString()).isEqualTo("ASSIGNED");
+                assertThat(assignment.get("assignedBy").asString()).isEqualTo(actor.toString());
+                assertThat(assignment.get("policyMode").asString()).isEqualTo("SYNTHETIC_TEST_ONLY");
+                assertThat(assignment.get("driver").get("id")).isEqualTo(driver.get("id"));
+                assertThat(assignment.get("mainVehicle").get("id")).isEqualTo(vehicle.get("id"));
+                assertThat(assignment.get("trailer").isNull()).isTrue();
+                assertThat(assignment.get("reservations")).hasSize(2);
+                assertThat(assignment.get("events")).hasSize(1);
+                assertThat(assignment.get("events").get(0).get("actorId").asString()).isEqualTo(actor.toString());
+                var expectedSource = json.createObjectNode();
+                expectedSource.set("taskId", first.get("id"));
+                expectedSource.set("orderId", accepted.get("id"));
+                expectedSource.set("orderNo", accepted.get("orderNo"));
+                expectedSource.set("orderType", accepted.get("type"));
+                expectedSource.set("orderVersion", accepted.get("version"));
+                for (String field : java.util.List.of("taskNo", "taskKind", "pickupName", "pickupAddress", "deliveryName", "deliveryAddress",
+                        "siteContact", "plannedStartAt", "plannedEndAt", "requiredTask")) expectedSource.set(field, first.get(field));
+                var expectedItem = json.createObjectNode();
+                for (JsonNode item : accepted.get("items")) if (item.get("id").equals(first.get("itemId")))
+                    for (String field : java.util.List.of("itemKind", "containerType", "containerNo", "packageQty", "grossWeight", "cbm"))
+                        expectedItem.set(field, item.get(field));
+                expectedSource.set("item", expectedItem);
+                assertThat(assignment.get("source")).isEqualTo(expectedSource);
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_assignment", Long.class)).isEqualTo(1);
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_resource_reservation WHERE released_at IS NULL", Long.class)).isEqualTo(2);
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_dispatch_event", Long.class)).isEqualTo(1);
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_idempotency", Long.class)).isEqualTo(1);
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_dispatch_event WHERE actor_id=? AND task_id=? AND action='ASSIGNED' AND from_generation=0 AND to_generation=1",
+                        Long.class, actor, java.util.UUID.fromString(firstId))).isEqualTo(1);
+                var afterAssignment = new java.util.LinkedHashMap<String, String>();
+                for (String table : java.util.List.of("tms_task_dispatch", "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency"))
+                    afterAssignment.put(table, tableDigest(database, table, table.equals("tms_task_dispatch") ? "task_id" : "id"));
+                var replay = browser.post(path, command, key);
+                assertThat(upgradeData(replay, 200, "0000")).isEqualTo(assigned);
+                assertThat(replay.headers().firstValue("Idempotency-Replayed")).contains("true");
+                JsonNode current = upgradeData(browser.get(path), 200, "0000");
+                assertThat(current.get("task").get("generation").asLong()).isEqualTo(1);
+                assertThat(current.get("current")).isEqualTo(assignment);
+                assertThat(current.get("history").get("totalElements").asInt()).isEqualTo(1);
+
+                JsonNode blocked = upgradeData(browser.get("/tms/tasks/" + dependentId + "/dispatch"), 200, "0000");
+                assertThat(blocked.get("task").get("prerequisiteReady").asBoolean()).isFalse();
+                assertThat(blocked.get("task").get("blockingReasons").toString()).contains("PREREQUISITE_NOT_READY");
+                assertThat(blocked.get("task").get("generation").asLong()).isZero();
+                assertThat(blocked.get("current").isNull()).isTrue();
+                assertThat(upgradeData(browser.post("/tms/tasks/" + dependentId + "/dispatch", command, java.util.UUID.randomUUID().toString()),
+                        409, "E1604").get("reason").asString()).isEqualTo("PREREQUISITE_NOT_READY");
+                afterAssignment.forEach((table, digest) -> assertThat(tableDigest(database, table, table.equals("tms_task_dispatch") ? "task_id" : "id"))
+                        .as("Replay, reads and blocked dependent task preserve %s", table).isEqualTo(digest));
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_task_dispatch WHERE company_scope='SINGLE_COMPANY'", Long.class))
+                        .isEqualTo(accepted.get("tasks").size());
+                for (String table : java.util.List.of("order_core", "tom_order", "cargo_item", "transport_task", "task_dependency",
+                        "order_draft_revision", "api_idempotency", "order_acceptance_event", "crm_customer", "crm_contact", "crm_address"))
+                    assertThat(tableDigest(database, table, tableOrders.get(table)))
+                            .as("Real migrated-task HTTP dispatch preserves all original TOM/CRM bytes in %s", table).isEqualTo(beforeMigration.get(table));
+            }
+        }
+    }
+
+    private JsonNode upgradeData(HttpResponse<String> reply, int status, String code) {
+        JsonNode envelope = json.readTree(reply.body());
+        assertThat(reply.statusCode()).as("Upgrade HTTP response code %s", envelope.get("code").asString()).isEqualTo(status);
+        assertThat(envelope.propertyNames()).containsExactlyInAnyOrder("code", "message", "data", "timestamp");
+        assertThat(envelope.get("code").asString()).isEqualTo(code);
+        assertThat(envelope.get("message").asString()).isNotBlank();
+        assertThat(OffsetDateTime.parse(envelope.get("timestamp").asString()).getOffset()).isEqualTo(ZoneOffset.ofHours(8));
+        return envelope.get("data");
+    }
+
+    private final class UpgradeBrowser implements AutoCloseable {
+        private final int runtimePort;
+        private final HttpClient https = HttpClient.newBuilder()
+                .cookieHandler(new java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL))
+                .sslContext(com.xksystem.logistics.support.TlsTestSupport.trustedContext())
+                .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+        UpgradeBrowser(int runtimePort) { this.runtimePort = runtimePort; }
+        HttpResponse<String> get(String path) throws Exception { return send(path, null, null, null); }
+        HttpResponse<String> post(String path, Object body, String key) throws Exception {
+            String token = upgradeData(get("/auth/csrf"), 200, "0000").get("token").asString();
+            return send(path, json.writeValueAsString(body), key, token);
+        }
+        private HttpResponse<String> send(String path, String body, String key, String token) throws Exception {
+            var request = HttpRequest.newBuilder(URI.create("https://localhost:" + runtimePort + "/api/v1" + path))
+                    .timeout(java.time.Duration.ofSeconds(30)).header("Accept", "application/json");
+            if (body != null) request.header("Content-Type", "application/json");
+            if (key != null) request.header("Idempotency-Key", key);
+            if (token != null) request.header("X-CSRF-TOKEN", token);
+            return https.send(body == null ? request.GET().build() : request.POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+                    HttpResponse.BodyHandlers.ofString());
+        }
+        @Override public void close() throws InterruptedException {
+            https.shutdownNow();
+            assertThat(https.awaitTermination(java.time.Duration.ofSeconds(5))).as("Temporary upgrade HTTP client terminates").isTrue();
         }
     }
 
@@ -633,6 +821,7 @@ class PlatformIT {
             for (JsonNode ref : task.get("predecessorRefs")) predecessors.add(taskRefs.get(ref.asString()).toString());
         }
         var firstTask = (tools.jackson.databind.node.ObjectNode) snapshot.get("tasks").get(0);
+        if (label.equals("ACCEPTED")) firstTask.put("taskKind", "SYNTHETIC_TMS_IT_UPGRADE_FIRST");
         firstTask.put("pickupAddress", "合成\u0000地址").put("plannedStartAt", "1500-01-02T00:00:00.123456+08:00")
                 .put("plannedEndAt", "1500-01-02T01:00:00.123456+08:00");
         firstTask.putObject("siteContact").putNull("name").putNull("phone");

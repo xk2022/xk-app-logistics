@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M3-05 TMS 調度工作台（驗證紀錄見下方） |
+| 狀態 | development — M3 工程實作與整合驗收完成（逐包交付收據見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,7 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [M3 整合驗收報告](docs/09_testing/m3-integration-acceptance.md) · [M3-06 驗證](docs/09_testing/m3-06-validation.md)
 - [調度工作台交接](docs/08_development/m3-05-dispatch-ui-handoff.md) · [M3-05 驗證](docs/09_testing/m3-05-validation.md)
 - [TMS 派工交接](docs/08_development/m3-04-dispatch-handoff.md) · [TMS API／OpenAPI](docs/06_api/tms-dispatch.md)
 - [派工工程決策](docs/98_decisions/2026-11-26-tms-dispatch-engineering.md) · [M3-04 驗證](docs/09_testing/m3-04-validation.md)
@@ -45,7 +46,7 @@
 
 需要 Node.js 24.22.3／npm 11.19.1、Java 21、Docker Engine 與 Compose v2。Maven Wrapper 固定 Maven 3.9.16；React 19.3.1、TypeScript 6.0.3、Vite 8.3.8、Spring Boot 4.1.3、PostgreSQL 17.12。精確相依、官方相容性與公司規範基準見 [M1 版本紀錄](docs/04_architecture/m1-versions.md)。
 
-Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，提供原五項 API 與獨立正式受理操作。`fms` 提供車輛與司機主檔、受控分類選項、DRIVER 本人唯讀介面及後續模組可使用的行政狀態查詢；不處理派工或資源占用。後續模組必須透過介面協作，不跨模組操作 repository。
+Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，提供原五項 API 與獨立正式受理操作。`fms` 提供車輛與司機主檔、受控分類選項、DRIVER 本人唯讀介面及可信行政狀態查詢。`tms` 透過 TOM／FMS／UPMS 公開介面實作分段派工、原子資源占用、撤改、歷史及本人最小任務摘要；各模組透過介面協作，不跨模組操作 repository。
 
 ## 啟動
 
@@ -197,7 +198,7 @@ DRIVER 由「本人司機資料」唯讀查詢目前帳號綁定的必要資料�
 
 ## 範圍與部署
 
-UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
+UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。TMS 依 Q36–Q40 交付出發前分段派工、原子占用、撤改與工作台／本人唯讀，M3-06 完成整合驗收；正式資格維持未核准。司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。
 
@@ -218,3 +219,9 @@ ADMIN／DISPATCHER 登入後進入「調度工作台」，查詢已受理任務�
 寫入結果未知時保留原次操作、內容、版本與 key，僅由使用者明確重試。CSRF 更新不會自動重送；確認成功的歷史收據與目前派工分開，必須重新讀取目前狀態才進行下一操作。衝突不自動覆寫，離開／登出須確認捨棄本機未決內容，請求傳送中無法離開。
 
 DRIVER 登入後可進入「本人運輸任務」唯讀頁；原「本人司機資料」另行保留。本人任務只讀目前帳號綁定的有效派工，重新讀取、切頁、撤權或無綁定後清除舊可見路線／聯絡資料，沒有整單、資源、歷史或回報入口。畫面驗收使用隔離合成資料，依 [操作與證據](docs/09_testing/m3-05-validation.md) 重現；沒有新增環境設定、API、migration、依賴或正式部署。
+
+## M3 整合驗收（M3-06）
+
+M3-01 車輛、M3-02 司機、M3-03 正式受理、M3-04 原子派工占用及 M3-05 調度／本人任務介面已分包交付。本包對最終版本重跑前後端、PostgreSQL、五份 HTTP 契約與桌面／手機全量回歸，並補驗 V8 舊已受理資料升級至 V9 後的真 HTTPS 派工與重播。本包實測前端 590、後端 369、桌面／手機 E2E 28 與五份契約 1,244 筆 HTTP 回應全過，空庫／重啟及 V8→V9 真 HTTPS 流程通過。各包 PR／SHA／CI、畫面證據與剩餘限制見上述報告及交付收據；M3 完成後停在後續規格決議，不自動實作 M4 或部署。
+
+驗收邊界為出發前工程流程；正式車種／駕照／配對及法規適格仍待核准，一般服務的新指派／改派預設拒絕。M3-06 完成後停在 M4 規格決議，不自動開發出發、回報、照片、完成或正式部署。
