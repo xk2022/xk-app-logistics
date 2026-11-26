@@ -59,6 +59,8 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers(HttpMethod.GET,"/api/v1/fms/drivers/me").hasRole("DRIVER")
                 .requestMatchers("/api/v1/fms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/orders","/api/v1/orders/**").hasAnyRole("ADMIN","DISPATCHER")
+                .requestMatchers(HttpMethod.GET,"/api/v1/tms/my-tasks").hasRole("DRIVER")
+                .requestMatchers("/api/v1/tms","/api/v1/tms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());
         http.addFilterBefore(new UpmsAuthenticationFilter(service, clock, responses), CsrfFilter.class);

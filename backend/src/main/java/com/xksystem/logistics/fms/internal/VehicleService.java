@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,9 +35,10 @@ public class VehicleService implements VehicleQueries {
     private final AdmQueries dictionaries;
     private final UpmsAuthorization authorization;
     private final Clock clock;
+    private final List<MasterDataChangeGuard> changeGuards;
     @PersistenceContext private EntityManager entityManager;
-    public VehicleService(VehicleRepository vehicles,AdmQueries dictionaries,UpmsAuthorization authorization,Clock clock) {
-        this.vehicles=vehicles;this.dictionaries=dictionaries;this.authorization=authorization;this.clock=clock;
+    public VehicleService(VehicleRepository vehicles,AdmQueries dictionaries,UpmsAuthorization authorization,Clock clock,List<MasterDataChangeGuard> changeGuards) {
+        this.vehicles=vehicles;this.dictionaries=dictionaries;this.authorization=authorization;this.clock=clock;this.changeGuards=changeGuards;
     }
     public VehicleDtos.PageData<VehicleDtos.Vehicle> vehicles(SessionPrincipal principal,VehiclePageQuery query) {
         authorization.requireVehicleManager(principal);
@@ -72,6 +76,11 @@ public class VehicleService implements VehicleQueries {
         var entity=vehicle(id,true);long expected=VehicleValidation.version(body);
         if(entity.version!=expected)throw new UpmsException(409,"資料已由其他操作更新，請重新讀取後再試",Map.of("version","版本已更新，請重新讀取後再試"));
         if(entity.version>=VehicleValidation.MAX_VERSION)throw new UpmsException(409,"資料版本已達上限，請由管理員處理",Map.of("version","版本已達上限，請由管理員處理"));
+        var before=new MasterDataChangeGuard.VehicleState(entity.id,entity.administrativeStatus,entity.vehicleType,entity.capacityTon,entity.inspectionDueDate);
+        var after=new MasterDataChangeGuard.VehicleState(entity.id,body.has("administrativeStatus")?VehicleValidation.status(body):entity.administrativeStatus,
+                body.has("vehicleType")?VehicleValidation.vehicleType(body):entity.vehicleType,body.has("capacityTon")?VehicleValidation.capacityTon(body):entity.capacityTon,
+                body.has("inspectionDueDate")?VehicleValidation.date(body,"inspectionDueDate"):entity.inspectionDueDate);
+        for(var guard:changeGuards)guard.beforeVehicleChange(before,after);
         if(body.has("plateNo")) {
             String plate=VehicleValidation.plateNo(body);
             if(vehicles.existsByPlateNoAndIdNot(plate,id))throw duplicate();entity.plateNo=plate;
@@ -109,6 +118,17 @@ public class VehicleService implements VehicleQueries {
         // Refresh acquires the lock atomically even when a trusted caller cached an old @Version.
         if(write)entityManager.refresh(entity,LockModeType.PESSIMISTIC_WRITE);
         return entity;
+    }
+    @Override public Page<Snapshot> pageForDispatch(int page,int size,String q) {
+        if(page<0||page>100_000||size<1||size>100)throw UpmsException.field("page","查詢數值超出範圍");
+        String text=VehicleValidation.text(q==null?"":q,"q",100);
+        Specification<VehicleEntity> spec=(root,query,cb)->text==null?cb.conjunction():cb.like(root.get("plateNo"),"%"+literal(Normalizer.normalize(text.toUpperCase(Locale.ROOT),Normalizer.Form.NFC))+"%",'\\');
+        return vehicles.findAll(spec,PageRequest.of(page,size,Sort.by(Sort.Order.asc("plateNo"),Sort.Order.asc("id")))).map(this::snapshot);
+    }
+    @Override @Transactional(propagation=Propagation.MANDATORY)
+    public Snapshot lockCurrentForDispatch(UUID id) {
+        if(TransactionSynchronizationManager.isCurrentTransactionReadOnly())throw new IllegalTransactionStateException("Vehicle dispatch locks require a writable caller transaction");
+        return snapshot(vehicle(id,true));
     }
     private AdmQueries.ItemSnapshot activeType(UUID typeId) {
         try{return dictionaries.requireEnabledItemForNewReference(VEHICLE_TYPE,typeId);}

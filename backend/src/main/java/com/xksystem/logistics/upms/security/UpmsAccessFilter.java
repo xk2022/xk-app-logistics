@@ -22,6 +22,7 @@ public class UpmsAccessFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/v1/crm/") || path.equals("/api/v1/crm")
                 || path.startsWith("/api/v1/fms/") || path.equals("/api/v1/fms");
         upms=upms||path.equals("/api/v1/orders")||path.startsWith("/api/v1/orders/");
+        upms=upms||path.equals("/api/v1/tms")||path.startsWith("/api/v1/tms/");
         if (upms && !request.isSecure()) {
             responses.error(request,response,403,"FORBIDDEN","請使用 HTTPS 安全連線"); return;
         }

@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
-      COMPOSE_FILE: compose.yaml:compose.dev.yaml
+      COMPOSE_FILE: compose.yaml:compose.dev.yaml:compose.e2e.yaml
       E2E_BASE_URL: https://localhost:8443
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -165,7 +165,13 @@ jobs:
           python3 -c 'import sys; assert sys.implementation.name == "cpython" and sys.version_info[:2] == (3, 12), "Contract tooling requires CPython 3.12"'
           python3 -m venv "$RUNNER_TEMP/xk-contract-env"
           "$RUNNER_TEMP/xk-contract-env/bin/python" -m pip install --require-hashes -r tests/contracts/requirements.txt
-      - name: Start full development stack
+      - name: Compile and prepare isolated test-only TMS runtime
+        run: |
+          cd backend
+          ./mvnw --strict-checksums --batch-mode --no-transfer-progress test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
+          cd ..
+          python3 tests/e2e/prepare-tms-runtime.py
+      - name: Start full isolated stack with explicit synthetic test policy
         run: docker compose up --build --detach --wait --wait-timeout 180
       - name: Validate health, status, and empty-database migration
         run: |
@@ -174,7 +180,7 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
           curl --fail --silent --cacert infrastructure/dev-tls/localhost.crt https://localhost:8443/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP"'
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''2'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_acceptance_event,order_core,order_draft_revision,task_dependency,tom_order,transport_task,upms_account,upms_audit,upms_lock
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_acceptance_event,order_core,order_draft_revision,task_dependency,tms_assignment,tms_dispatch_event,tms_idempotency,tms_resource_reservation,tms_task_dispatch,tom_order,transport_task,upms_account,upms_audit,upms_lock
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''3'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(code, '\'','\'' ORDER BY code) FROM logistics.adm_dict_category"')" = CONTAINER_TYPE,DRIVER_LICENSE_TYPE,ORDER_TYPE,TASK_KIND,VEHICLE_TYPE
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(i.code, '\'','\'' ORDER BY i.code) FROM logistics.adm_dict_item i JOIN logistics.adm_dict_category c ON c.id = i.category_id WHERE c.code = '\''ORDER_TYPE'\'' AND c.read_only"')" = EXPORT,IMPORT,LOCAL
@@ -202,20 +208,25 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.fms_driver"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''8'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.order_acceptance_event"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''9'\'' AND success"')" = 1
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_task_dispatch"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_assignment"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_resource_reservation"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_dispatch_event"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_idempotency"')" = 0
           docker compose restart backend
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 8
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 9
       - name: Create isolated synthetic UPMS, ADM, CRM, TOM, and FMS fixture with test-only runner
         working-directory: backend
         run: |
-          ./mvnw --batch-mode --no-transfer-progress test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
           set -a
           source ../.env
           set +a
           DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
             java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
-      - name: TLS browser UPMS, ADM, CRM, TOM API and acceptance, FMS vehicles and drivers, and service smoke on desktop and mobile
+      - name: TLS browser UPMS, ADM, CRM, TOM, FMS, TMS API and service smoke on desktop and mobile
         run: npm run test:e2e
       - name: Validate original order schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
@@ -227,6 +238,11 @@ jobs:
         run: >-
           "$RUNNER_TEMP/xk-contract-env/bin/python" tests/contracts/validate_acceptance_contract.py
           --responses 'test-results/**/acceptance-contract-responses.json'
+      - name: Validate independent TMS schemas and actual HTTP response artifacts
+        if: ${{ !cancelled() }}
+        run: >-
+          "$RUNNER_TEMP/xk-contract-env/bin/python" tests/contracts/validate_tms_contract.py
+          --responses 'test-results/**/tms-contract-responses.json'
       - name: Validate FMS vehicle schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
         run: >-

@@ -1,0 +1,11 @@
+# Isolated synthetic acceptance only. Never include this file in ordinary DEV or deployments.
+# The external classes are compiled from src/test, filtered by prepare-tms-runtime.py,
+# and verify the actual database name before providing any synthetic eligibility policy.
+services:
+  backend:
+    entrypoint: ["java", "-cp", "/app/app.jar", "org.springframework.boot.loader.launch.PropertiesLauncher"]
+    environment:
+      LOADER_MAIN: com.xksystem.logistics.support.TmsE2eApplication
+      LOADER_PATH: /run/tms-e2e
+    volumes:
+      - ./artifacts/tms-e2e-runtime:/run/tms-e2e:ro

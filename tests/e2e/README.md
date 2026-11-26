@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 22 cases: eleven each for desktop Chromium and Pixel 7. The
+The suite has 26 cases: thirteen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -76,14 +76,33 @@ operation. It checks incomplete drafts, explicit confirmation, immutable accepte
 views and waiting-for-dispatch display, actor restrictions, stale versions,
 disabled-customer retry, historical customer names, and a committed response lost
 before delivery. An explicit retry preserves the original key/body/version;
-a CSRF refusal does not unlock the uncertain request. No dispatch operation or
-resource reservation exists. The complete suite contains 24 cases, including all
-22 preceding cases. Acceptance artifacts use their independent incremental
+a CSRF refusal does not unlock the uncertain request. That acceptance scenario
+itself creates no dispatch operation or resource reservation. Its 24-case baseline
+includes all 22 preceding cases. Acceptance artifacts use their independent incremental
 schemas; accepted GET/list/check and rejected PUT also pass the original schemas.
 
+The TMS API scenario adds one case per viewport and retains all preceding 24.
+It signs in through the normal protected page and calls the real seven TMS API
+operations with same-origin HTTPS requests. It verifies initial and optimistic
+task generations, assign/revoke/reassign, atomic occupancy visible in current
+state and history, same-key historical replay, resource conflict, predecessor
+blocking, guarded FMS changes, and current-binding DRIVER isolation. No dispatch
+workbench is introduced by M3-04; the full management/mobile UI belongs to M3-05.
+
+Production eligibility stays fail-closed. Positive TMS browser checks explicitly
+use a separately mounted, test-only launcher and synthetic policy, never a
+production profile or approval flag. Every policy construction checks
+`SELECT current_database()` equals `xk_logistics_e2e`. Synthetic driver codes,
+vehicle-type codes, and task kinds must belong to the same IT/DESKTOP/MOBILE
+scope, and those synthetic vehicle-type items must currently be enabled. MAIN/TRAILER/SHARED are explicit test labels; SHARED exercises the common
+vehicle-occupancy namespace, not a legal pairing approval. Every successful
+synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
+license, work-hour, or real operating qualification is inferred.
+
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 54 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
-order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
+runner creates 62 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
+ADMIN/DISPATCHER/two-DRIVER sets for each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
@@ -99,21 +118,37 @@ isolated candidate pagination. Four synthetic `DRIVER_LICENSE_TYPE` items, two
 per viewport, exist only in this private arrangement. V7 itself initializes only
 the empty category and never inserts accounts, drivers, or formal license types.
 
+The TMS group adds four normal accounts per viewport and three isolated
+`SYNTHETIC_TMS_<scope>_(MAIN|TRAILER|SHARED)` vehicle-type items per viewport.
+Drivers, vehicles, CRM customers, orders and assignments are still created only
+through the real APIs. The fixture never seeds their business tables.
+
+The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
+`compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
+Spring Boot `PropertiesLauncher`. `prepare-tms-runtime.py` copies only the plain
+policy, its compiler-generated inner classes, and the launcher from test output;
+it excludes the Boot test configuration, JUnit classes and fixture runner.
+Normal DEV uses no E2E override and continues to reject unapproved dispatch
+combinations. The production JAR contains none of these test-only classes.
+
 ```sh
 umask 077
 cp .env.example /tmp/xk-e2e.env
 # In /tmp/xk-e2e.env set POSTGRES_DB=xk_logistics_e2e and a local-only password.
 # Optional separate ports: POSTGRES_PORT=5433, BACKEND_PORT=8086,
 # FRONTEND_PORT=5174, HTTPS_PORT=8444. Defaults remain supported.
-export COMPOSE_FILE=compose.yaml:compose.dev.yaml
+export COMPOSE_FILE=compose.yaml:compose.dev.yaml:compose.e2e.yaml
 export COMPOSE_PROJECT_NAME=xk-logistics-e2e
 ./infrastructure/generate-dev-tls.sh
-docker compose --env-file /tmp/xk-e2e.env up --build -d --wait
 npm ci
 npx playwright install --with-deps chromium
 
 cd backend
 ./mvnw test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
+cd ..
+python3 tests/e2e/prepare-tms-runtime.py
+docker compose --env-file /tmp/xk-e2e.env up --build -d --wait
+cd backend
 set -a
 source /tmp/xk-e2e.env
 set +a
@@ -141,6 +176,8 @@ python3 -m venv /tmp/xk-order-contract-env
   --responses 'test-results/**/vehicle-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_driver_contract.py \
   --responses 'test-results/**/driver-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_tms_contract.py \
+  --responses 'test-results/**/tms-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -180,10 +217,18 @@ independent driver envelope schemas in the same body-only format. The separate
 driver validator checks this evidence; the order and vehicle validators and
 their artifacts are preserved.
 
-CI validates health/status, Flyway V1–V7 on an empty database, exact UPMS/ADM/CRM/TOM/FMS
-tables, the fixed ORDER_TYPE enum and four empty configurable categories,
+Each TMS case writes `tms-contract-responses.json` with only the six independent
+TMS envelope schemas in the same body-only format. The TMS validator checks real
+manager and self responses, errors, and historical command results. HTTP status,
+`Idempotency-Replayed`, generation increments and current-state isolation are
+asserted directly by the API scenario; body-only schema validation is not claimed
+as proof of a database transaction. No authentication body or request headers
+are collected.
+
+CI validates health/status, Flyway V1–V9 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
+tables (27 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
-vehicles, or drivers, restart stability,
+vehicles, drivers, dispatch assignments/events/reservations, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

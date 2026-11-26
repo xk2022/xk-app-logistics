@@ -77,7 +77,7 @@ class FmsVehicleIT {
     private static final List<String> OPTION_FIELDS=List.of("id","plateNo","vehicleType","vehicleTypeCode","vehicleTypeLabel","vehicleTypeEnabled","capacityTon","version");
 
     @BeforeEach void isolateSyntheticVehiclesAccountsAndTypeCatalog()throws Exception{
-        jdbc.execute("TRUNCATE TABLE logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
+        jdbc.execute("TRUNCATE TABLE logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
         jdbc.update("DELETE FROM logistics.adm_dict_item WHERE NOT read_only");
         jdbc.update("UPDATE logistics.adm_dict_category SET enabled=true,version=0 WHERE code='VEHICLE_TYPE'");
         category=jdbc.queryForObject("SELECT id FROM logistics.adm_dict_category WHERE code='VEHICLE_TYPE'",UUID.class);
@@ -277,8 +277,11 @@ class FmsVehicleIT {
             assertThat(queries.findCurrent(id).orElseThrow().administrativeStatus().name()).isEqualTo(state);
             assertThatThrownBy(()->transaction.execute(status->{authorization.requireVehicleManagerForWrite(principal(actor));return queries.requireAdministrativelyAvailable(id);})).isInstanceOfSatisfying(UpmsException.class,error->{assertThat(error.status()).isEqualTo(400);assertThat(((Map<?,?>)error.data()).containsKey("vehicleId")).isTrue();});
         }
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics' AND tablename IN ('resource_reservation','dispatch_assignment','vehicle_pair')",Long.class)).isZero();
-        // M3-02 adds the separately approved driver master, still without occupancy or driver seeds.
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics' AND tablename='vehicle_pair'",Long.class)).isZero();
+        // The source facade remains administrative only; M3-04 owns its separate, initially empty TMS tables.
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics' AND tablename IN ('tms_task_dispatch','tms_assignment','tms_resource_reservation','tms_dispatch_event','tms_idempotency')",Long.class)).isEqualTo(5);
+        for(String table:List.of("tms_task_dispatch","tms_assignment","tms_resource_reservation","tms_dispatch_event","tms_idempotency"))
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM logistics."+table,Long.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics' AND tablename='fms_driver'",Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM logistics.fms_driver",Long.class)).isZero();
     }
@@ -364,14 +367,14 @@ class FmsVehicleIT {
         assertThat(data(admin.get(path))).isEqualTo(vehicle);assertThat(count()).isEqualTo(1);
     }
 
-    @Test void fmsUsesPublicModuleFacadesAndHasNoCrossModuleRepositoriesOrOccupancyTables()throws Exception{
+    @Test void fmsUsesPublicModuleFacadesAndOwnsNoCrossModulePersistence()throws Exception{
         try(var classes=java.nio.file.Files.walk(java.nio.file.Path.of("target/classes/com/xksystem/logistics/fms"))){
             for(var file:classes.filter(value->value.toString().endsWith(".class")).toList()){
                 String constants=new String(java.nio.file.Files.readAllBytes(file),StandardCharsets.ISO_8859_1);
-                for(String forbidden:List.of("com/xksystem/logistics/adm/internal/","com/xksystem/logistics/upms/internal/","com/xksystem/logistics/crm/internal/","com/xksystem/logistics/tom/internal/"))assertThat(constants.contains(forbidden)).as("FMS owns its persistence: %s",file.getFileName()).isFalse();
+                for(String forbidden:List.of("com/xksystem/logistics/adm/internal/","com/xksystem/logistics/upms/internal/","com/xksystem/logistics/crm/internal/","com/xksystem/logistics/tom/internal/","com/xksystem/logistics/tms/internal/"))assertThat(constants.contains(forbidden)).as("FMS owns its persistence: %s",file.getFileName()).isFalse();
             }
         }
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'",Long.class)).isEqualTo(22);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'",Long.class)).isEqualTo(27);
     }
 
     private Map<String,Object> minimal(){return fields("plateNo",plate(),"vehicleType",types.get(0).toString());}

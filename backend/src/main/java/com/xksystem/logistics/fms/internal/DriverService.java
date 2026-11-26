@@ -21,6 +21,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
@@ -36,9 +39,10 @@ public class DriverService implements DriverQueries {
     private final DriverAccountQueries accounts;
     private final UpmsAuthorization authorization;
     private final Clock clock;
+    private final List<MasterDataChangeGuard> changeGuards;
     @PersistenceContext private EntityManager entityManager;
-    public DriverService(DriverRepository drivers,AdmQueries dictionaries,DriverAccountQueries accounts,UpmsAuthorization authorization,Clock clock) {
-        this.drivers=drivers;this.dictionaries=dictionaries;this.accounts=accounts;this.authorization=authorization;this.clock=clock;
+    public DriverService(DriverRepository drivers,AdmQueries dictionaries,DriverAccountQueries accounts,UpmsAuthorization authorization,Clock clock,List<MasterDataChangeGuard> changeGuards) {
+        this.drivers=drivers;this.dictionaries=dictionaries;this.accounts=accounts;this.authorization=authorization;this.clock=clock;this.changeGuards=changeGuards;
     }
     public DriverDtos.PageData<DriverDtos.DriverSummary> drivers(SessionPrincipal principal,DriverPageQuery query) {
         authorization.requireDriverManager(principal);
@@ -87,6 +91,11 @@ public class DriverService implements DriverQueries {
         var entity=driver(id,true);long expected=DriverValidation.version(body);
         if(entity.version!=expected)throw new UpmsException(409,"資料已由其他操作更新，請重新讀取後再試",Map.of("version","版本已更新，請重新讀取後再試"));
         if(entity.version>=DriverValidation.MAX_VERSION)throw new UpmsException(409,"資料版本已達上限，請由管理員處理",Map.of("version","版本已達上限，請由管理員處理"));
+        var before=new MasterDataChangeGuard.DriverState(entity.id,entity.employmentStatus,entity.dutyStatus,entity.licenseType,entity.licenseDueDate);
+        var after=new MasterDataChangeGuard.DriverState(entity.id,body.has("employmentStatus")?DriverValidation.employmentStatus(body):entity.employmentStatus,
+                body.has("dutyStatus")?DriverValidation.dutyStatus(body):entity.dutyStatus,body.has("licenseType")?DriverValidation.optionalUuid(body,"licenseType"):entity.licenseType,
+                body.has("licenseDueDate")?DriverValidation.date(body,"licenseDueDate"):entity.licenseDueDate);
+        for(var guard:changeGuards)guard.beforeDriverChange(before,after);
         if(body.has("employmentStatus")) {
             var next=DriverValidation.employmentStatus(body);
             if(entity.employmentStatus==EmploymentStatus.LEFT&&next!=EmploymentStatus.LEFT)
@@ -144,6 +153,26 @@ public class DriverService implements DriverQueries {
         var entity=id==null?null:drivers.findById(id).orElse(null);if(entity==null)throw missing();
         if(write)entityManager.refresh(entity,LockModeType.PESSIMISTIC_WRITE);return entity;
     }
+    @Override public Page<Snapshot> pageForDispatch(int page,int size,String q) {
+        if(page<0||page>100_000||size<1||size>100)throw UpmsException.field("page","查詢數值超出範圍");
+        String text=DriverValidation.text(q==null?"":q,"q",100);
+        Specification<DriverEntity> spec=(root,query,cb)->{
+            if(text==null)return cb.conjunction();String code=Normalizer.normalize(text.toUpperCase(Locale.ROOT),Normalizer.Form.NFC);
+            return cb.or(cb.like(root.get("driverCode"),"%"+literal(code)+"%",'\\'),cb.like(cb.lower(root.get("name")),cb.lower(cb.literal("%"+literal(text)+"%")),'\\'));
+        };
+        return drivers.findAll(spec,PageRequest.of(page,size,Sort.by(Sort.Order.asc("driverCode"),Sort.Order.asc("id")))).map(this::snapshot);
+    }
+    @Override @Transactional(propagation=Propagation.MANDATORY)
+    public Snapshot lockCurrentForDispatch(UUID id) {
+        writableDispatch();return snapshot(driver(id,true));
+    }
+    @Override @Transactional(propagation=Propagation.MANDATORY)
+    public Optional<Snapshot> currentBoundDriverWithLock(UUID accountId) {
+        writableDispatch();if(accountId==null)return Optional.empty();
+        return drivers.findByAccountId(accountId).map(entity->{entityManager.refresh(entity,LockModeType.PESSIMISTIC_WRITE);return entity;})
+                .filter(entity->accountId.equals(entity.accountId)).map(this::snapshot);
+    }
+    private static void writableDispatch(){if(TransactionSynchronizationManager.isCurrentTransactionReadOnly())throw new IllegalTransactionStateException("Driver dispatch locks require a writable caller transaction");}
     private record License(String code,String label,boolean enabled) {}
     private License license(UUID typeId) {
         if(typeId==null)return new License(null,null,false);

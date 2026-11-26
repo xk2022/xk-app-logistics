@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M3-03 TOM 正式受理（驗證紀錄見下方） |
+| 狀態 | development — LG-M3-04 TMS 派工與資源占用（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,8 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [TMS 派工交接](docs/08_development/m3-04-dispatch-handoff.md) · [TMS API／OpenAPI](docs/06_api/tms-dispatch.md)
+- [派工工程決策](docs/98_decisions/2026-11-26-tms-dispatch-engineering.md) · [M3-04 驗證](docs/09_testing/m3-04-validation.md)
 - [正式受理交接](docs/08_development/m3-03-tom-acceptance-handoff.md) · [受理 API／OpenAPI](docs/06_api/tom-acceptance.md)
 - [受理工程決策](docs/98_decisions/2026-11-26-tom-acceptance-engineering.md) · [M3-03 驗證](docs/09_testing/m3-03-validation.md)
 - [FMS 司機交接](docs/08_development/m3-02-fms-driver-handoff.md) · [司機 API／OpenAPI](docs/06_api/fms-drivers.md)
@@ -54,7 +56,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機及 V8 TOM 不可變受理事件結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件及 V9 TMS 派工／占用結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -197,3 +199,13 @@ DRIVER 由「本人司機資料」唯讀查詢目前帳號綁定的必要資料�
 UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。
+
+## TMS 派工與占用（M3-04）
+
+ADMIN／DISPATCHER 可查詢已受理任務、伺服器資源候選、目前派工與有界歷史，並透過獨立 API 指派、撤派及改派。每段以獨立 generation 控制版本，司機與所有車輛位置使用資料庫排他占用；撤改、釋放／取得、版本、事件及成功重播結果同交易，失敗保留原派工。M3-04 先交付 API，完整工作台在 M3-05 整合。
+
+只接受 OPEN＋ACCEPTED 的同單任務，後段須有可驗證的前置完成／交接證據；本階段沒有 M4 證據，不能以撤派、到時或無占用放行後段。DRIVER 本人端點每次依目前有效帳號與綁定，只回目前當段必要路線、聯絡及標的，不回整單、其他資源或歷史。
+
+**正式適格政策尚未核准，一般 DEV／正式 JAR 的新派工與改派預設拒絕。** FMS 行政可用不保證車種、配對、駕照、載重、檢驗或工時適格。正向工程驗收僅在 `xk_logistics_e2e` 載入另外編譯、明確合成的 test-only 政策，回應及快照標示 `SYNTHETIC_TEST_ONLY`；正式 JAR 沒有 override、launcher 或可開放資格的環境參數。隔離啟動依 [E2E README](tests/e2e/README.md) 加 `compose.e2e.yaml`，一般 DEV 不加該檔。
+
+占用中的 FMS 資源不能失去行政可用或直接修改配置依據，須先撤派／改派；名稱／聯絡校正仍保留歷史快照。V9 只為既有已受理任務衍生派工索引，沒有派工／占用／業務種子。D04／D05／D10 及正式政策仍待核准，沒有出發、完成、回報、照片、自動釋放或正式部署。
