@@ -60,6 +60,7 @@ interface ProjectFixture {
   execution?: ExecutionFixture
   progressEvidence?: ExecutionFixture
   exception?: ExecutionFixture
+  completion?: ExecutionFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -204,6 +205,18 @@ export function exceptionFixtureFor(project: string): ExecutionFixture {
     const type = group.vehicleTypes?.[key as keyof DispatchFixture['vehicleTypes']]
     return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
   })) throw new Error('Exception test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function completionFixtureFor(project: string): ExecutionFixture {
+  const group = fixtureFor(project).completion
+  if (!group || !['admin', 'dispatcher', 'driverA', 'driverB', 'temporary'].every((key) => {
+    const account = group[key as 'admin' | 'dispatcher' | 'driverA' | 'driverB' | 'temporary']
+    return account && ['id', 'username', 'password'].every((field) => typeof account[field as keyof DriverCredential] === 'string')
+  }) || !['DESKTOP', 'MOBILE'].includes(group.scope) || !['main', 'trailer', 'shared'].every((key) => {
+    const type = group.vehicleTypes?.[key as keyof DispatchFixture['vehicleTypes']]
+    return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
+  })) throw new Error('Completion test fixture is incomplete for this browser project.')
   return group
 }
 

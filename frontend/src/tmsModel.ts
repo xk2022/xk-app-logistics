@@ -1,8 +1,8 @@
 import { TmsApiError } from './tmsApi'
 import type { Assignment, AssignRequest, Blocker, DispatchDetail, ReassignRequest, ResourceCandidate, RevokeRequest, TaskSummary } from './tmsApi'
 
-export const blockerLabels: Record<Blocker, string> = { SOURCE_NOT_ACCEPTED: '來源已變更或尚未受理', PREREQUISITE_NOT_READY: '前置任務尚未就緒', POLICY_NOT_CONFIRMED: '派工政策尚未核准', ALREADY_ASSIGNED: '已有有效派工', ADMIN_UNAVAILABLE: '行政來源不可用', RESOURCE_OCCUPIED: '資源已被占用' }
-export const assignmentLabels = { ASSIGNED: '有效派工', REVOKED: '已撤派', SUPERSEDED: '已由新派工取代' } as const
+export const blockerLabels: Record<Blocker, string> = { SOURCE_NOT_ACCEPTED: '來源已變更或尚未受理', PREREQUISITE_NOT_READY: '前置任務尚未就緒', POLICY_NOT_CONFIRMED: '派工政策尚未核准', ALREADY_ASSIGNED: '已有派工記錄', ADMIN_UNAVAILABLE: '行政來源不可用', RESOURCE_OCCUPIED: '資源已被占用' }
+export const assignmentLabels = { ASSIGNED: '已建立派工記錄', REVOKED: '已撤派', SUPERSEDED: '已由新派工取代' } as const
 export const actionLabels = { assign: '指派', revoke: '撤派', reassign: '改派' } as const
 export type CommandMode = keyof typeof actionLabels
 export type DispatchCommand = { kind: 'assign'; taskId: string; body: AssignRequest } | { kind: 'revoke'; taskId: string; assignmentId: string; body: RevokeRequest } | { kind: 'reassign'; taskId: string; assignmentId: string; body: ReassignRequest }
@@ -44,8 +44,8 @@ export function makeDispatchCommand(mode: CommandMode, detail: DispatchDetail, s
   const current = detail.current
   const fields: Record<string, string> = {}
   if (!Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER) fields.expectedGeneration = '任務派工版本已達上限，請重新讀取並確認。'
-  if (mode !== 'assign' && (!current || current.status !== 'ASSIGNED')) fields.assignmentId = '目前沒有可撤派或改派的有效派工，請重新讀取。'
-  if (mode === 'assign' && current) fields.assignmentId = '此任務已有有效派工，請重新讀取。'
+  if (mode !== 'assign' && (!current || current.status !== 'ASSIGNED')) fields.assignmentId = '目前沒有可撤派或改派的派工記錄，請重新讀取。'
+  if (mode === 'assign' && current) fields.assignmentId = '此任務已有派工記錄，請重新讀取。'
   if (mode !== 'revoke') {
     if (!sourceAllowsNewDispatch(detail.task, mode === 'reassign')) fields.policy = '目前來源、前置任務或派工政策尚未允許此新派工。'
     for (const name of ['driverId', 'mainVehicleId'] as const) if (!selection[name]) fields[name] = name === 'driverId' ? '請選擇司機。' : '請選擇主車。'

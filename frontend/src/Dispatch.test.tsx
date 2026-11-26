@@ -170,7 +170,7 @@ describe('workbench receipt versus fresh state', () => {
     expect(screen.queryByRole('button', { name: '撤派任務' })).not.toBeInTheDocument()
     vi.mocked(getTaskDispatch).mockResolvedValueOnce(detail(assignment()))
     fireEvent.click(screen.getByRole('button', { name: '重新讀取目前派工' })); await screen.findByRole('button', { name: '撤派任務' })
-    expect(screen.getByRole('heading', { name: '目前有效派工' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: '目前派工記錄' })).toBeVisible()
   })
 
   it('aborts a historical read started before an unknown command and preserves the original retry', async () => {

@@ -1,6 +1,7 @@
 package com.xksystem.logistics.tom.internal;
 
 import com.xksystem.logistics.tom.TaskQueries;
+import com.xksystem.logistics.tom.TaskCompletionFacts;
 import com.xksystem.logistics.tom.TomFailure;
 import com.xksystem.logistics.upms.UpmsException;
 import java.util.ArrayList;
@@ -27,9 +28,10 @@ public class TaskQueryService implements TaskQueries {
     private static final String SCOPE="SINGLE_COMPANY";
     private final JdbcTemplate jdbc;
     private final TomOrderRepository orders;
+    private final TaskCompletionFacts completions;
 
-    public TaskQueryService(JdbcTemplate jdbc,TomOrderRepository orders) {
-        this.jdbc=jdbc;this.orders=orders;
+    public TaskQueryService(JdbcTemplate jdbc,TomOrderRepository orders,TaskCompletionFacts completions) {
+        this.jdbc=jdbc;this.orders=orders;this.completions=completions;
     }
 
     @Override public Optional<Current> find(UUID taskId) {
@@ -101,9 +103,13 @@ public class TaskQueryService implements TaskQueries {
                 selected.get("requiredTask").isNull()?null:selected.get("requiredTask").asBoolean());
         boolean accepted="OPEN".equals(order.get("lifecycleStatus").asString())
                 &&"ACCEPTED".equals(order.get("acceptanceStatus").asString());
-        // There is no M4 completion/handover evidence yet. Releasing a dispatch is not completion.
+        // Only immutable exact-source completion facts discharge a direct predecessor.
         JsonNode predecessors=selected.get("predecessorTaskIds");
-        boolean ready=predecessors!=null&&predecessors.isArray()&&predecessors.size()==0;
+        boolean ready=predecessors!=null&&predecessors.isArray();
+        var expected=new ArrayList<UUID>();var graph=new LinkedHashSet<UUID>();
+        for(JsonNode task:order.get("tasks"))graph.add(UUID.fromString(task.get("id").asString()));
+        if(ready)for(JsonNode predecessor:predecessors){UUID id=UUID.fromString(predecessor.asString());if(id.equals(taskId)||!graph.contains(id)){ready=false;break;}expected.add(id);}
+        for(int offset=0;ready&&offset<expected.size();offset+=100){var batch=expected.subList(offset,Math.min(expected.size(),offset+100));ready=completions.completed(source.orderId(),source.orderVersion(),batch).containsAll(batch);}
         return Optional.of(new Current(source,accepted,ready));
     }
 

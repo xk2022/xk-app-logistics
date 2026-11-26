@@ -106,9 +106,9 @@ async function newContext(browser: Browser, info: TestInfo): Promise<BrowserCont
 async function login(page: Page, credential: Credential): Promise<void> {
   await page.goto('/'); expect(new URL(page.url()).protocol).toBe('https:'); await signIn(page, credential)
 }
-async function navigate(page: Page, title: '訂單工作台' | '調度工作台' | '本人有效任務'): Promise<void> {
+async function navigate(page: Page, title: '訂單工作台' | '調度工作台' | '本人指派任務'): Promise<void> {
   await page.bringToFront()
-  await page.getByRole('navigation', { name: '主要導覽', exact: true }).getByRole('button', { name: title === '本人有效任務' ? '本人運輸任務' : title, exact: true }).click()
+  await page.getByRole('navigation', { name: '主要導覽', exact: true }).getByRole('button', { name: title === '本人指派任務' ? '本人運輸任務' : title, exact: true }).click()
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
 }
 function draft(customerId: string, scope: string, suffix: string): Body {
@@ -413,7 +413,7 @@ test('Dispatch UI joins accepted orders, explicit resource commands, replay and 
     const routeA = `合成UI取貨地點 ${suffix} 第1段（非真實地址）`, routeB = `合成UI取貨地點 ${suffix} 第2段（非真實地址）`
     const contactA = `合成UI聯絡 ${suffix} 第1段`, contactB = `合成UI聯絡 ${suffix} 第2段`
 
-    await navigate(driverA, '本人有效任務'); await navigate(driverB, '本人有效任務')
+    await navigate(driverA, '本人指派任務'); await navigate(driverB, '本人指派任務')
     await refreshOwn(driverA, []); await refreshOwn(driverB, [])
     await navigate(page, '調度工作台'); await navigate(dispatcher, '調度工作台')
     await verifyTaskPaging(page, order)
@@ -523,7 +523,7 @@ test('Dispatch UI joins accepted orders, explicit resource commands, replay and 
       await expect(driverA.getByRole('article', { name: /^本人任務 / })).toHaveCount(0)
       logout.release(); await expect(driverA.getByRole('heading', { name: '登入工作空間', exact: true })).toBeVisible()
     } finally { await logout.dispose() }
-    await login(driverA, fixture.driverA); await navigate(driverA, '本人有效任務'); await refreshOwn(driverA, [privateCurrent.assignment.id])
+    await login(driverA, fixture.driverA); await navigate(driverA, '本人指派任務'); await refreshOwn(driverA, [privateCurrent.assignment.id])
     let latestA = success(await api<Driver>(page, `/fms/drivers/${personA.id}`))
     latestA = success(await api<Driver>(page, `/fms/drivers/${personA.id}`, 'PATCH', { version: latestA.version, accountId: null }))
     await refreshOwn(driverA, [], 404)

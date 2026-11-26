@@ -249,3 +249,9 @@ M4-02 本機前端590／後端469（139 unit＋330 integration）／桌面與Pix
 一般新異常政策仍 UNCONFIRMED；正式例外、照片規則／provider／保存、安全解除及結案責任未核准，不新增開放參數。正向只在真實隔離測試 DB 載入明確 test-only 策略。管理 UI 區分目前事實與歷史收據，保留版本衝突原文並明確比較／採用；未知結果只重試同次請求，GET或讀照失敗不判定另一個POST回滾。私有預覽在關閉／撤權時清除，沒有公開照片網址。
 
 本機前端718／後端530（146 unit＋384 integration）／真實TLS桌面及手機E2E34（0 retries）、八份實際HTTP1,949筆／58檔全過；40表／V1～V12空庫與重啟、升級及100憑證報告隱私已驗證。最終受測source／merge／PR與main四項CI以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-03-exceptions+base%3Amain)及上述驗收文件為準；main四項通過才開始M4-04。
+
+M4-03交付完成：PR #25／source`508e1e41174623e39c25352d1ae7d77df3692c99`／merge`e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e`，PR CI45787301633與main CI45788390226 attempt1四項均成功；遠端各718／530／34，HTTP PR1,949／main1,947。
+
+## M4-04 任務完成與有效資源釋放
+
+[新契約](docs/06_api/tms-completion.md)、[工作包](docs/08_development/m4-04-task-completion-handoff.md)、[工程採用](docs/98_decisions/2026-11-26-m4-04-engineering.md)及[驗證進度](docs/09_testing/m4-04-validation.md)。由已通過CI的M4-03 main依序實作獨立完成API、原子有效解除、可信前置完成查詢與V13，不修改舊派工狀態／release欄位或API。舊UI明示指派紀錄，完整本人操作於M4-06交付；本機前端718／後端566（153 unit＋413 integration）／真TLS desktop＋Pixel7 E2E36（0 retries）與九份實際HTTP2,244／76檔全過；42表／13版本及重啟、39舊領域表升級、291正式class同源與110憑證隱私已驗。遠端source／merge／PR及main四項CI由[本包收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-04-task-completion+base%3Amain)核對，main四過才開M4-05。正式安全確認者／照片／provider與派工政策未核准，維持拒絕；無M5或正式部署。

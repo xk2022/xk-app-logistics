@@ -24,3 +24,7 @@ V11 追加 tms_execution_evidence、tms_execution_evidence_object、tms_executio
 ## M4-03 增量結構
 
 V12新增tms_exception／event／command／supplement_request／supplement_evidence／event_evidence六表，最新40；異常獨立counter、原始UTF8 bytea及json snapshot、typed/compositeFK／immutable history，無回填。既有Evidence只增phaseCHECK允AWAITING，原M4-02POST仍僅兩phase；photos共用同caller transaction provider，不另建公開儲存。33舊領域表及照片／收據保留之實測依[本包驗證](../09_testing/m4-03-validation.md)，不以DDL存在代替測試。
+
+## M4-04 增量結構
+
+V13新增tms_completion／tms_completion_command兩表，最新42；既有reservation只增nullable completion_id，有效索引predicate統一released_at IS NULL AND completion_id IS NULL，舊欄位／收據不改。完整typed terminal／event／witness／ledger／精確二三marker有互反deferred及reverse證明；新reservation INSERT及原選照link集合另封存，不能晚插破壞完成或歷史。具體DDL與[工程採用](../98_decisions/2026-11-26-m4-04-engineering.md)為準，無偽造完成backfill。

@@ -48,3 +48,7 @@ M4-02 本機590／469／32及七HTTP1,731全過；[本包驗證](../09_testing/m
 M4-02 PR #24／main四過收據已核對；M4-03從merge `4681f13b4dd1dc324632848e7b119147e0e43068` 依[本包交接](m4-03-exceptions-handoff.md)及[驗證紀錄](../09_testing/m4-03-validation.md)實作。其餘包依序保留前包main四過門檻。
 
 - LG-M4-03已完成本機前端718／後端530／E2E34／八HTTP1,949驗收，詳[驗證及四項遠端門檻](../09_testing/m4-03-validation.md)；main四項成功後依M4交接自動進M4-04，不提前完成／釋放或結案。
+
+- LG-M4-03 PR #25與main四項已成功，source508e1e4／merge e55ee4e；LG-M4-04由此獨立分支實作，依[交接](m4-04-task-completion-handoff.md)及[驗證](../09_testing/m4-04-validation.md)逐項核對，不提前M4-05／06或部署。
+
+- LG-M4-04完成本機718／566／36／九HTTP2,244驗收及隔離資料清理，依[本包收據](../09_testing/m4-04-validation.md)核對PR及main四項後才進M4-05。

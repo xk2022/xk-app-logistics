@@ -5,6 +5,7 @@ import com.xksystem.logistics.tms.DispatchEligibilityPolicy;
 import com.xksystem.logistics.tms.evidence.EvidenceStorage;
 import com.xksystem.logistics.tms.evidence.ExecutionEvidencePolicy;
 import com.xksystem.logistics.tms.exceptions.ExceptionPolicy;
+import com.xksystem.logistics.tms.completion.CompletionPolicy;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -58,6 +59,12 @@ public final class TmsE2eApplication {
                 catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated exception policy database",failure);}
             });
             registry.registerBeanDefinition("syntheticExceptionPolicy",exceptionPolicy);
+            var completionPolicy=new RootBeanDefinition(CompletionPolicy.class);completionPolicy.setPrimary(true);
+            completionPolicy.setInstanceSupplier(()->{
+                try{return SyntheticCompletionPolicy.create(context.getBean(DataSource.class));}
+                catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated completion policy database",failure);}
+            });
+            registry.registerBeanDefinition("syntheticCompletionPolicy",completionPolicy);
         });
         return application;
     }

@@ -180,7 +180,7 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
           curl --fail --silent --cacert infrastructure/dev-tls/localhost.crt https://localhost:8443/api/v1/status | jq --exit-status '.code == "0000" and .data.status == "UP"'
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''2'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_acceptance_event,order_core,order_draft_revision,task_dependency,tms_assignment,tms_dispatch_event,tms_exception,tms_exception_command,tms_exception_event,tms_exception_event_evidence,tms_exception_supplement_evidence,tms_exception_supplement_request,tms_execution,tms_execution_command,tms_execution_event,tms_execution_event_evidence,tms_execution_evidence,tms_execution_evidence_command,tms_execution_evidence_object,tms_idempotency,tms_resource_reservation,tms_task_dispatch,tom_order,transport_task,upms_account,upms_audit,upms_lock
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(tablename, '\'','\'' ORDER BY tablename) FROM pg_tables WHERE schemaname = '\''logistics'\''"')" = adm_change_log,adm_dict_category,adm_dict_item,adm_parameter,adm_parameter_definition,api_idempotency,cargo_item,crm_address,crm_contact,crm_customer,flyway_schema_history,fms_driver,fms_vehicle,order_acceptance_event,order_core,order_draft_revision,task_dependency,tms_assignment,tms_completion,tms_completion_command,tms_dispatch_event,tms_exception,tms_exception_command,tms_exception_event,tms_exception_event_evidence,tms_exception_supplement_evidence,tms_exception_supplement_request,tms_execution,tms_execution_command,tms_execution_event,tms_execution_event_evidence,tms_execution_evidence,tms_execution_evidence_command,tms_execution_evidence_object,tms_idempotency,tms_resource_reservation,tms_task_dispatch,tom_order,transport_task,upms_account,upms_audit,upms_lock
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''3'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(code, '\'','\'' ORDER BY code) FROM logistics.adm_dict_category"')" = CONTAINER_TYPE,DRIVER_LICENSE_TYPE,ORDER_TYPE,TASK_KIND,VEHICLE_TYPE
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT string_agg(i.code, '\'','\'' ORDER BY i.code) FROM logistics.adm_dict_item i JOIN logistics.adm_dict_category c ON c.id = i.category_id WHERE c.code = '\''ORDER_TYPE'\'' AND c.read_only"')" = EXPORT,IMPORT,LOCAL
@@ -230,10 +230,14 @@ jobs:
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_exception_supplement_evidence"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_exception_event_evidence"')" = 0
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''12'\'' AND success"')" = 1
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_completion"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_completion_command"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.tms_resource_reservation WHERE completion_id IS NOT NULL"')" = 0
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''13'\'' AND success"')" = 1
           docker compose restart backend
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
-          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 12
+          test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 13
       - name: Create independent isolated synthetic role groups with test-only runner
         working-directory: backend
         run: |
@@ -287,6 +291,12 @@ jobs:
           "$RUNNER_TEMP/xk-contract-env/bin/python"
           tests/contracts/validate_exception_contract.py
           --responses 'test-results/**/exception-contract-responses.json'
+      - name: Validate independent completion schemas and actual HTTP response artifacts
+        if: ${{ !cancelled() }}
+        run: >-
+          "$RUNNER_TEMP/xk-contract-env/bin/python"
+          tests/contracts/validate_completion_contract.py
+          --responses 'test-results/**/completion-contract-responses.json'
       - name: Reject browser artifacts containing temporary credentials
         id: report_privacy
         if: ${{ !cancelled() }}

@@ -50,3 +50,10 @@
 - [工程採用](98_decisions/2026-11-26-m4-03-engineering.md)
 - [獨立API](06_api/tms-exceptions.md)／[OpenAPI](06_api/tms-exceptions-openapi.yaml)
 - [M4-03驗證](09_testing/m4-03-validation.md)
+
+### M4-04 工程與驗證
+
+- [完成契約](06_api/tms-completion.md)及[獨立OpenAPI](06_api/tms-completion-openapi.yaml)
+- [工程採用](98_decisions/2026-11-26-m4-04-engineering.md)
+- [工作包](08_development/m4-04-task-completion-handoff.md)
+- [完成及有效釋放驗證](09_testing/m4-04-validation.md)

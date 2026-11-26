@@ -446,3 +446,73 @@ empty/malformed files or arrays, extra metadata, unknown schemas and body failur
 are nonzero. `--responses` and `--static-only` are mutually exclusive. No new
 package or scanner exception is introduced. Static tooling is not product HTTP or
 operational policy acceptance.
+
+## Independent M4-04 completion and effective-release checks
+
+`validate_completion_contract.py` reads the new `docs/06_api/tms-completion-openapi.yaml`
+only: exactly three operations / 29 schemas. It independently verifies seven
+preserved sources (the original four manifest entries plus frozen M401/M402/M403
+OpenAPI digests), seventeen copied component definitions and every original safe14
+source-field definition in the new sixteen-field detail. Prior contracts/tools and
+old14/15 DTOs remain unchanged. Public SHA-256 values use explicit YAML `!!str` and
+parenthesized complete Python literals from the start; no scanner exclusion or
+validation weakening is used.
+
+Static tooling contains 57 positives / 368 negatives and eight reference-rejection
+self-checks. It covers detail16/result4/witness5/policy8/requirements6, exact required
+keys, raw TOM NUL/NFD/space/decimal-scale/offset-microsecond/contact semantics,
+virtual WAITING and true COMPLETED nullability, literal safe confirmation, equal
+server completion/release timestamps, current policy mode versus historical
+witness mode, ALREADY_COMPLETED priority, no-null/empty-list policy waiver,
+canonical sorted bounded readiness IDs and case-insensitive duplicate request
+identities, exact mathematical integers and E20/common errors. Input numeric and
+reserved read-type examples do not authorize an otherwise invalid operation.
+
+The independent custom keywords enforce canonical UUID identity/order and matching
+public timestamp fields. Exact Decimal arithmetic rejects fractional/unsafe
+version boundaries while accepting JSON1/1.0/1e0. Safe local references are checked
+before an in-memory retrieval-denying registry is built; network/file/foreign refs
+and resource-ID overrides are rejected. Sanitized evidence parsing rejects
+non-JSON constants, duplicates, malformed Unicode/UTF-8, invalid extreme Decimal
+input, unknown envelopes and extra capture metadata. Diagnostics expose only
+schema/pointer/keyword, not submitted values or parser messages. Existing
+hash-pinned dependencies are reused.
+
+Accepted nonempty `completion-contract-responses.json` arrays contain only public
+synthetic `{schema,value}` JSON bodies named `CompletionDetailEnvelope`,
+`CompletionPolicyEnvelope`, `CompleteMyTaskEnvelope`, `ErrorEnvelope`. Original
+setup/older API responses keep their own artifacts and validators. No image,
+base64, request, key, Cookie, token, header, actor audit or trace is captured;
+existing recursive privacy/credential scans remain mandatory before upload.
+
+The normal CompletionPolicy is UNCONFIRMED, independent of a historical witness.
+Only isolated actual-DB-gated test-source policy may expose the named latest
+readiness-event count1/PNG/65536-byte/4096-pixel rule and synthetic safety decision.
+Checkboxtrue, RESOLVED, AWAITING, no occupation or an old release is not formal
+approval. Completed reads are a new narrow same-physical-driver/current-anchor
+capability; old current-only self APIs remain404 after release, and old14 discovery
+still returns recorded ASSIGNED anchors. This does not grant arbitrary historical
+photos or future closure authority.
+
+Schema declarations do not prove actual streamed JSON16KiB enforcement, original
+progress success receipt/set seals, complete2/3 marker identity, zero-case blocker
+root locking, source-version dependency readiness, original-session/binding
+freshness, same-actor receipt ordering, header/status/version+1 witness or atomic
+rollback. PostgreSQL/HTTPS IT/E2E must prove these, including direct-SQL constraints
+and upgrade original-column fingerprints. Body schemas cannot establish the V13
+seals or real product acceptance. The E2001/02/03/07/08/09 miss whitelist applies
+only to the SAME frozen POST; a read error never settles it and E2006/common errors
+are not proof of rollback.
+
+```sh
+# Static only, explicitly not actual HTTP acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_completion_contract.py --static-only
+# After isolated real HTTPS acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_completion_contract.py \
+  --responses 'test-results/**/completion-contract-responses.json'
+```
+
+The default response glob is mandatory without `--static-only`; missing matches,
+empty/malformed evidence, unknown schemas, extra metadata and body failures fail.
+`--static-only` and `--responses` are mutually exclusive. No new dependency or
+artifact-scanner exception is introduced.
