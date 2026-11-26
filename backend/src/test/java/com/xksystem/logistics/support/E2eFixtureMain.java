@@ -59,6 +59,18 @@ public final class E2eFixtureMain {
                 }
                 driverLicenseTypeCategoryId = category.getObject(1, UUID.class);
             }
+            // One global recovery/drill group, independent of both browser projects.
+            // Only UPMS accounts are seeded; the drill creates business data via HTTPS.
+            Map<String, Object> m4Integration = new LinkedHashMap<>();
+            for (String name : new String[] {"admin", "controlAdmin", "driver"}) {
+                String username = "m4-integration-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                String secret = UpmsTestData.password();
+                String role = name.equals("driver") ? "DRIVER" : "ADMIN";
+                UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                        secret, false, Instant.now());
+                m4Integration.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+            }
+            fixture.put("m4Integration", m4Integration);
             for (String project : new String[] {"chromium", "mobile-chromium"}) {
                 Map<String, Object> accounts = new LinkedHashMap<>();
                 for (String name : new String[] {"admin", "dispatcher", "driver"}) {

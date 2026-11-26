@@ -1,6 +1,6 @@
 # 文件索引｜M0 / M1 / M2 / M3 / M4
 
-日期：2026-11-26（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q47 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
+日期：2026-11-27（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q47 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
 
 | 分類 | 文件 |
 | --- | --- |
@@ -72,3 +72,10 @@
 - [工作包](08_development/m4-06-driver-ui-handoff.md)
 - [工程採用](98_decisions/2026-11-26-m4-06-engineering.md)
 - [實測紀錄](09_testing/m4-06-validation.md)
+
+### M4-07 全量整合驗收
+
+- [工作包](08_development/m4-07-integration-handoff.md)
+- [工程採用](98_decisions/2026-11-26-m4-07-engineering.md)
+- [本包驗證](09_testing/m4-07-validation.md)
+- [M4完整報告](09_testing/m4-integration-acceptance.md)

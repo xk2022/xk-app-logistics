@@ -11,3 +11,5 @@ artifacts/
 *.log
 .DS_Store
 infrastructure/dev-tls/
+__pycache__/
+*.py[cod]
