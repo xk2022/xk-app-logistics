@@ -168,7 +168,7 @@ jobs:
       - name: Compile and prepare isolated test-only TMS runtime
         run: |
           cd backend
-          ./mvnw --strict-checksums --batch-mode --no-transfer-progress test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
+          ./mvnw --strict-checksums --batch-mode --no-transfer-progress test-compile org.apache.maven.plugins:maven-dependency-plugin:3.10.0:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
           cd ..
           python3 tests/e2e/prepare-tms-runtime.py
       - name: Start full isolated stack with explicit synthetic test policy

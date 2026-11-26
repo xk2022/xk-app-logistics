@@ -80,3 +80,7 @@ npm view vitest@5.1.1 engines peerDependencies --json
 - [官方 npm registry](https://registry.npmjs.org/)；上述 `npm view` 以精確版本查詢。
 
 本文件未將尚未執行的前端 lint/typecheck/test/build、Maven verify、容器啟動或 CI 標為通過；交付驗收應以受測 commit、實際命令及 workflow run 為證據。精確版本鎖定提供重現性，依賴安全檢查及後續更新仍由 CI 與維運流程持續執行。
+
+## M4-05 CI 工具解析穩定化
+
+Maven Dependency Plugin固定使用完整goal座標`org.apache.maven.plugins:maven-dependency-plugin:3.10.0:build-classpath`。3.10.0為本專案既有成功classpath步驟實際解析版本（Java21／Maven3.9.16），不是升級產品相依。固定group/artifact/version避免前綴掃描多個plugin group的動態metadata；Maven Central429仍不會被忽略。完整座標、本機classpath一致性及遠端四項CI依[M4-05補正證據](../09_testing/m4-05-ci-stabilization.md)核對。

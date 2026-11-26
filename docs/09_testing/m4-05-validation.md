@@ -73,3 +73,7 @@ Pinned Testcontainers2.0.5 bytecode檢視確認startupAttempts預設1、沒有�
 本機證據 `/workspace/artifacts/lg-m4-05-evidence/` 含JUnit36 suites、frontend/e2e/HTTP/privacy/runtime/初始化/SBOM/OSV/source manifests、首輪失敗與修正證據，以及closure-desktop.png／closure-mobile.png。staged與最終commit history機密掃描、PR及精確merge main四項CI由本包交付收據補記；全部四項main成功後才開M4-06。
 
 正式派工、安全確認者、結案責任、D04／D05／D06／D10、provider／保存清理仍未核准，正常策略維持拒絕。UPMS單instance，無正式儲存或清除工作；JS615.40kB／gzip170.84kB有500kB advisory但build成功。完整DRIVER操作留M4-06，不做M5或正式部署。
+
+## main CI 穩定化補正
+
+PR #27四CI全過並合併28b26cd後，main的舊Vehicle單測出現1項focus時序失敗，Compose亦在E2E前遇Maven Central429；此結果沒有標為main成功。最小補正與新PR／精確main門檻見[CI穩定化](m4-05-ci-stabilization.md)；補正main四過才進M4-06。

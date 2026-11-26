@@ -42,3 +42,5 @@
 - LG-M4-05：管理確認與訂單結案實作中，普通兩策略仍UNCONFIRMED；保留legacy CLOSED及原五API，依[本包驗證](../09_testing/m4-05-validation.md)記錄實際門檻，不以草稿當成功。
 
 - LG-M4-05本機完整驗收：883 frontend／612 backend（161 unit＋451 IT）、38真TLS E2E／0 retries及十HTTP2,686／96檔全過，PG47／14初始化／重啟、V13→14 full41舊表、338正式classes同源、120憑證隱私與desktop/mobile畫面已驗。[本包收據](../09_testing/m4-05-validation.md)追蹤PR及main四項CI，main四過後才進M4-06。
+
+- M4-05 PR #27四CI全過並合併28b26cd；main首輪Vehicle焦點單測時序失敗，Compose另遇pre-E2E Maven Central429，正在[獨立補正](../09_testing/m4-05-ci-stabilization.md)。保持原focus斷言，不進M4-06，直到補正PR及最終main四過。
