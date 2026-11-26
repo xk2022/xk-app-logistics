@@ -34,3 +34,5 @@ PUT 省略可選值變 null、省略 items／tasks／predecessorRefs 變空。sh
 新成功 PUT 恰加一次版本；即使資料相同，新 key 仍是一次新保存。Idempotency-Replayed=false 代表新成功，true 重播原業務結果且產生新 traceId；POST 重播保留原 201 與 Location。重播先驗當前權限與 key，不先以原 expectedVersion 或客戶今日狀態拒絕。相同 key 不同 body／處理中 409，失敗可同 key 重試；期限未核准前不自動清理或復用。
 
 完整性檢核逐一對應原 ORD-P01–P03 及 40 欄 fieldId／JSON Pointer。缺項列 missingFields；COMPLETE 時必為空。pendingPolicyIds 保留相關未決例外，operationalAcceptance 永遠 NOT_GRANTED，且檢核不寫版本、稽核或訂單狀態。保留單號及 lifecycle／acceptance 讀值不代表提供轉態 API。
+
+後續工作：正式受理採獨立 [M3-03 API 規格](tom-acceptance.md)，其實作尚未完成；本頁所記五項草稿契約不被替換。

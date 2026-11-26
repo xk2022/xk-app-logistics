@@ -29,7 +29,7 @@ M1 已完成。M2 五包的實作與本機首片驗收已完成；最終 M2-05 P
 | --- | --- |
 | LG-M3-01 | [FMS 車輛管理](m3-01-fms-vehicle-handoff.md)，Q21–Q25 已核准，實作與驗收見 [M3-01 驗證](../09_testing/m3-01-validation.md) |
 | LG-M3-02 | [FMS 司機管理](m3-02-fms-driver-handoff.md)，Q26–Q30 已核准，實作與驗收見 [M3-02 驗證](../09_testing/m3-02-validation.md) |
-| LG-M3-03 | TOM 正式受理，待決議 |
+| LG-M3-03 | [TOM 正式受理](m3-03-tom-acceptance-handoff.md)，Q31–Q35 已核准，待實作 |
 | LG-M3-04 | TMS 派工與有效占用，待決議 |
 | LG-M3-05 | TMS 調度工作台 |
 | LG-M3-06 | 訂單與派車整合驗收 |
