@@ -1,4 +1,4 @@
-# 專案狀態｜2026-11-26（Asia/Taipei）
+# 專案狀態｜2026-11-27（Asia/Taipei）
 
 - M0：PR #1 已驗收並合併，merge commit `3f86a25c7b8311d753a53754a4b5898113d92ea4`。靜態規格、契約及 Q01–Q05 保留。
 - LG-M1：[PR #2](https://github.com/xk2022/xk-app-logistics/pull/2) 交付前後端工程基礎、Flyway 空庫基線、DEV Compose、測試與 CI；首輪 GitHub CI 四項全通過。實測、受測 SHA 與最終 CI／合併追蹤見 [M1 驗證](../09_testing/m1-validation.md)。
@@ -22,29 +22,7 @@
 - LG-M3-06／M3 工程驗收：前端 590、後端 369（124 unit＋245 integration）、桌面／Pixel 7 E2E 28（0 retries）與五份實際 HTTP 契約 1,244 筆全過；空庫／重啟、V8→V9 舊資料真 HTTPS 派工／重播、併發及回滾與本人隔離通過。最終 source／merge／四項 PR 及 main CI 以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Atest%2Flg-m3-06-integration+base%3Amain)與 [M3 最終報告](../09_testing/m3-integration-acceptance.md)為準。M3 當時停在後續規格決議；目前依新 M4 授權逐包交付，正式資格仍 UNCONFIRMED，不部署。
 
 
-- LG-M4：Q41–Q47 及全部七包已採用；[規格](../98_decisions/2026-11-26-m4-execution.md)、[工作包](../08_development/m4-execution-handoff.md)。M4-01 本機 590／418／30 與六份 HTTP 契約全過，遠端交付見本包收據，M4-02～07 依序待前包 main CI 四過後進行；不代表正式資格及保存政策核准，不部署。
-
-- M4 授權與前置：使用者核准 Q41–Q47、M4-01～07；規格 PR #22 已合併 `6e83663eac50256592e35713467d496cc5765235`，PR CI45759432687／main CI45760194712 attempt1 均四過。LG-M4-01 由此開始；實作與各包交付見 [M4 交接](../08_development/m4-execution-handoff.md)及 [M4-01 驗證](../09_testing/m4-01-validation.md)，不以 M3 結果代本包驗收。
-
-- LG-M4-01 交付完成：[PR #23](https://github.com/xk2022/xk-app-logistics/pull/23)，source `71dac55cdf568ddb6f46c043c0f74d81d3fafe07`／merge `daf26f979c1c03c078876f204a713578abe80a4e`；PR CI45768556588／main CI45769255127 均 attempt1 四項成功。前端590／後端418／E2E30；本機HTTP1,489、遠端各1,490。核對 main 後從該 merge 開始獨立 M4-02，照片等未核准政策仍預設拒絕。
-
-- LG-M4-02 本機驗收：590前端／469後端／32E2E／七HTTP1,731全過，V11最新34表、29舊領域表保留、私有bytes／回滾／本人隔離／預設拒絕已驗；[本包驗證](../09_testing/m4-02-validation.md)及唯一head PR追蹤遠端四項門檻，main四過後自動進M4-03。正式政策／provider／保存未核准，不部署。
-
-- LG-M4-02交付完成：[PR #24](https://github.com/xk2022/xk-app-logistics/pull/24)，source `b9647dfe4430e8d088362331c92d31de405c44a5`／merge `4681f13b4dd1dc324632848e7b119147e0e43068`，PR CI45775507970／main CI45776966300 attempt1均四過。由該merge開M4-03，進度及本包實測見[異常與補件驗證](../09_testing/m4-03-validation.md)；正式未決政策不自動核准。
-
-- LG-M4-03本機驗收：718前端／530後端／34E2E（0 retries）與八份實際HTTP1,949／58檔全過，V12最新40表、升級／空庫／重啟、私有照片及100憑證報告隱私通過；[本包驗證](../09_testing/m4-03-validation.md)與唯一head收據追蹤PR及main四項CI，main四過後自動進M4-04。
-
-- LG-M4-03交付完成：PR #25，source`508e1e41174623e39c25352d1ae7d77df3692c99`／merge`e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e`；PR45787301633及main45788390226 attempt1各四項成功。718／530／34；HTTP本機及PR1,949／main1,947。確認後由該merge開M4-04，詳[完成及有效釋放](../09_testing/m4-04-validation.md)。
-
-- LG-M4-04本機驗收：718前端／566後端／36真TLS E2E及九HTTP2,244／76檔全過，V13／42表、全39舊領域表升級、二三資源有效解除／依賴／再用／RR與回滾、110憑證隱私已驗；[驗證及遠端門檻](../09_testing/m4-04-validation.md)，main四過才開M4-05。
-
-- LG-M4-04交付完成：[PR #26](https://github.com/xk2022/xk-app-logistics/pull/26)，source `5112ae5842bd16c7a2f50c41cdc5ef83136a1534`／merge `a027dd1e38279449b6843fead9633236aa164b64`；PR CI45798797894 attempt1及main CI45800016961 attempt2四項成功，source／merge tree一致。main首輪Maven Central429、未執行測試，完成失敗後同SHA只重跑失敗Backend成功。718／566／36、HTTP2,244；由該merge開始M4-05。
-- LG-M4-05：管理確認與訂單結案實作中，普通兩策略仍UNCONFIRMED；保留legacy CLOSED及原五API，依[本包驗證](../09_testing/m4-05-validation.md)記錄實際門檻，不以草稿當成功。
-
-- LG-M4-05本機完整驗收：883 frontend／612 backend（161 unit＋451 IT）、38真TLS E2E／0 retries及十HTTP2,686／96檔全過，PG47／14初始化／重啟、V13→14 full41舊表、338正式classes同源、120憑證隱私與desktop/mobile畫面已驗。[本包收據](../09_testing/m4-05-validation.md)追蹤PR及main四項CI，main四過後才進M4-06。
-
-- M4-05 PR #27四CI全過並合併28b26cd；main首輪Vehicle焦點單測時序失敗，Compose另遇pre-E2E Maven Central429，正在[獨立補正](../09_testing/m4-05-ci-stabilization.md)。保持原focus斷言，不進M4-06，直到補正PR及最終main四過。
-
-- LG-M4-05 最終交付：PR #27 source7625d2817db6bbff036f7982c36a34705ca4cb00／merge28b26cd4068cfda642cb6ae4cf565884891491c0，PR45816721104四過；原main45818321672失敗保留。補正PR #28 source7324252264c2de39f1facc61fa77fd3a1e95d496／merge`a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`，PR45821675514及最終main45823239922 attempt1四過；883／612／38，HTTP PR2,686／main2,687。由最終merge開始M4-06，[司機完整工作台與實測](../09_testing/m4-06-validation.md)持續更新，M4-07仍需前包main四過。
-
-- LG-M4-06本機完整驗收：1,083 frontend／612 backend／40真TLS E2E（0 retries）與十HTTP3,075／116檔全過，130原始憑證隱私、PG47／14初始化重啟與338classes同源已驗；[本包驗證](../09_testing/m4-06-validation.md)追蹤獨立PR及精確main四CI，完成後自動M4-07。
+- M4授權與前置：Q41–Q47與全部七包已核准；規格PR #22／merge `6e83663eac50256592e35713467d496cc5765235`，PR45759432687及main45760194712 attempt1四項成功。
+- M4-01～06已依序完成獨立分支／PR／CI／合併／精確main四項CI；PR #23、#24、#25、#26、#27＋補正#28、#29。完整source／merge與run／attempt見[M4驗收報告](../09_testing/m4-integration-acceptance.md)，含原M4-05 main失敗及補正後成功收據，不覆蓋失敗歷史。
+- M4-07由前包main `e7c8acf1351caf379b7871c8078646671b307745` 四過後開始；最終前端四項／1,083 tests、後端613、工具12、桌面與手機E2E40（0 retries）、HTTP3,242／125檔、150原始secret patterns隱私全部通過。PG17.12／V9→V14、47表／67照片完整重啟還原、普通Jar預設拒絕與真Console init／recover全過；owned隔離資源清理且普通DEV保留。最後遠端PR／合併／精確main四項由[本包收據](../09_testing/m4-07-validation.md)記錄，完成才算全部交付。
+- 正式派工資格、照片provider／保存、現場例外、安全解除及管理責任仍未核准，正常UNCONFIRMED拒絕；正向僅隔離合成。無舊repo修改、M5或正式部署。

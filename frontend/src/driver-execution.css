@@ -48,4 +48,4 @@
 .driver-receipt > p[role=status] { color: #166534; font-weight: 600; }
 .driver-transmitting { background: #eff6ff; color: #1d4ed8; border-radius: 9px; padding: 16px 20px; font-size: 13px; line-height: 1.8; }
 @media(max-width:1050px) { .driver-data { grid-template-columns: 1fr 1fr; } }
-@media(max-width:680px) { .driver-data,.driver-route,.driver-photo-list { grid-template-columns: 1fr; } .driver-actions,.driver-pager > div { width: 100%; flex-wrap: wrap; } .driver-actions button,.driver-pager button { flex: 1; } .driver-warning,.driver-confirm,.driver-supplement,.driver-private-preview { padding: 17px; } .driver-execution-workspace input[type=file] { font-size: 12px; } }
+@media(max-width:680px) { .driver-data,.driver-route,.driver-photo-list { grid-template-columns: 1fr; } .driver-actions,.driver-pager > div { width: 100%; flex-wrap: wrap; } .driver-actions button,.driver-pager button { flex: 1; } .driver-execution-workspace .driver-actions button { flex: 1 1 100%; width: 100%; min-height: 44px; } .driver-warning,.driver-confirm,.driver-supplement,.driver-private-preview { padding: 17px; } .driver-execution-workspace input[type=file] { font-size: 12px; } }

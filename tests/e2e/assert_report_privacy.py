@@ -35,7 +35,7 @@ if not report.is_file():
     raise SystemExit("The browser report is required to check artifact privacy.")
 
 artifacts = []
-for directory in (Path("playwright-report"), Path("test-results")):
+for directory in (Path("playwright-report"), Path("test-results"), Path("artifacts")):
     for path in directory.rglob("*"):
         if path.is_file():
             if path.name == "trace.zip":

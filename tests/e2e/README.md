@@ -263,7 +263,7 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 130 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 133 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
 ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios, and independent
 five-actor execution/progress/exception/completion/closure/execution-UI groups in each browser
@@ -345,6 +345,43 @@ that new actor to establish legal stale-version orderings; no old credentials or
 mutable business records are shared. The runner seeds no operational facts or
 receipts. No new production policy, provider, migration or approval flag exists.
 
+M4-07 adds exactly three global UPMS actors once, bringing the total from 130
+to 133. The private JSON root contains `m4Integration` with exact keys `admin`,
+`controlAdmin` and `driver`; each credential is exactly `{id, username, password}`.
+The first two are distinct normal ADMIN accounts and the third is a normal
+DRIVER account. They are independent of both browser projects and are not
+repeated per viewport. TypeScript exposes `m4IntegrationFixture()` with no project
+parameter; the test-only backend drill reads the same root paths directly.
+
+The existing encoder/helper generates all three identities and passwords. No
+FMS binding, vehicle, customer, order, dispatch, photo, history or receipt is
+seeded. The drill creates its own IT-scope dictionary entries and source cohorts
+through real HTTPS APIs, rather than reusing browser actors or DESKTOP types.
+The original forty browser cases and every prior fixture field stay unchanged.
+The runner retains its local exact-database JDBC URL restriction and exclusive
+empty-account-table check: start a fresh isolated database; never append these
+accounts to an already populated 130-account run. The runner does not claim an
+actual-name SQL check; existing synthetic-policy factories retain that separate
+guard. Base credentials and any combined drill secret inventory remain private,
+separate files outside reports; the final privacy gate must cover all 133 initial
+passwords and every later generated drill secret before upload.
+
+The combined private inventory must exist before any browser starts, while
+`E2E_FIXTURE_PATH` continues to identify the original fixture. Set
+`M4_SECRET_INVENTORY_PATH` to its private 0600 copy. `syntheticPassword()` retains
+its original 24 random bytes/base64url generation, but synchronously registers
+each value under `_generatedSecrets: [{password: value}, ...]` before returning
+it. Missing inventory configuration fails closed. Two browser workers serialize
+atomic 0600 writes through an exclusive `.lock`, bounded to five seconds, and a
+fixed `.pending` file; file and directory synchronization precede return. Existing
+base fields, including `m4Integration`, remain unchanged. The Python drill reads
+the latest combined file and preserves this array alongside its own secrets.
+The original UPMS browser scenario makes six calls per viewport (twelve for the
+full suite); runtime inventory counts remain the actual evidence. Retain the
+inventory through the final privacy gate, then remove its private `.lock` and
+`.pending` remnants with the owned file. Never replace the original browser
+fixture with this growing inventory.
+
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
 Spring Boot `PropertiesLauncher`. `prepare-tms-runtime.py` copies only the
@@ -383,8 +420,25 @@ export E2E_BASE_URL="https://localhost:${HTTPS_PORT:-8443}"
 DB_URL="jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:-5432}/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
   java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
 cd ..
+export M4_SECRET_INVENTORY_PATH=/tmp/xk-m4-report-secrets.json
+python3 - <<'PY_INVENTORY'
+import json, os
+from pathlib import Path
+source = Path(os.environ['E2E_FIXTURE_PATH'])
+target = Path(os.environ['M4_SECRET_INVENTORY_PATH'])
+data = source.read_bytes()
+assert set(json.loads(data)['m4Integration']) == {'admin', 'controlAdmin', 'driver'}
+pending = Path(str(target) + '.pending')
+descriptor = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+with os.fdopen(descriptor, 'wb') as stream:
+    stream.write(data)
+    stream.flush()
+    os.fsync(stream.fileno())
+os.replace(pending, target)
+assert target.stat().st_mode & 0o777 == 0o600
+PY_INVENTORY
 xvfb-run --auto-servernum npm run test:e2e -- --headed --workers=2 --retries=0
-python3 tests/e2e/assert_report_privacy.py
+E2E_FIXTURE_PATH="$M4_SECRET_INVENTORY_PATH" python3 tests/e2e/assert_report_privacy.py
 ```
 
 Validate the original order contract and captured HTTP responses with the
@@ -469,7 +523,7 @@ error responses. Setup and competing manager operations continue to produce
 separate original order, acceptance and TMS artifacts; execution E17 errors never
 enter the old TMS validator. The real lost-response witness records only its
 actual upstream response body, never the request or headers. The existing privacy
-guard recursively checks all 130 fixture passwords and rejects traces; it is not a
+guard recursively checks all 133 initial fixture passwords and rejects traces; it is not a
 claim that every possible cookie, CSRF or key leak has been independently scanned.
 Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
 request logs, use generic forwarding failures and compare retry identities as
@@ -482,7 +536,7 @@ responses are binary and explicitly excluded from the collector; failed content
 responses are JSON errors. Runtime byte/hash/decode assertions do not pretend to
 be JSON Schema validation. Original order/acceptance/TMS/execution responses remain
 in their own artifacts and validators; new E18 codes never widen old contracts.
-The privacy guard recursively checks all 130 fixture passwords and refuses traces;
+The privacy guard recursively checks all 133 initial fixture passwords and refuses traces;
 raw photos, private storage information, request metadata and authentication
 values are never serialized by this case. Storage/transaction failure injection,
 zero-write GET and immutable DB history constraints are proved by backend IT,
@@ -623,7 +677,7 @@ buckets use their original schema allowlists; successful private binaries are
 excluded before JSON collection. Failed-response witnesses serialize only actual
 public synthetic response bodies. Original PNGs, Blob URLs, request bodies,
 headers, keys, auth values and credentials stay out of artifacts. The existing
-privacy check covers all 130 fixture passwords. Database atomicity, default
+privacy check covers all 133 initial fixture passwords. Database atomicity, default
 UNCONFIRMED policy, upgrade/seal/rollback and provenance matrices retain the
 existing backend and meaningful client/model test obligations; browser evidence
 is not a substitute for those checks.
@@ -642,7 +696,62 @@ completion. When finished with a local test database, remove only that isolated
 project:
 
 ```sh
-rm -f "$E2E_FIXTURE_PATH"
+rm -f "$E2E_FIXTURE_PATH" "$M4_SECRET_INVENTORY_PATH" "$M4_SECRET_INVENTORY_PATH.lock" "$M4_SECRET_INVENTORY_PATH.pending"
 docker compose --env-file /tmp/xk-e2e.env down --volumes --remove-orphans
 rm -f /tmp/xk-e2e.env
 ```
+
+## M4-07 required full integration drill
+
+The short browser command above is not the full M4 acceptance. Run the twelve
+stdlib CHECK comparison regression cases before integration, and the drill after
+all forty cases, using the same source project, fixture and combined inventory:
+
+```sh
+PYTHONPATH=tests/e2e python3 -m unittest -v test_m4_integration_db
+export M407_STATE_FILE=/tmp/xk-m407-owned.json
+export M407_WORK_DIR=/tmp/xk-m407-private
+python3 tests/e2e/m4-integration-drill.py \
+  --source-env /tmp/xk-e2e.env --base-url "$E2E_BASE_URL" \
+  --ca-cert infrastructure/dev-tls/localhost.crt \
+  --fixture "$E2E_FIXTURE_PATH" --secret-inventory "$M4_SECRET_INVENTORY_PATH" \
+  --state-file "$M407_STATE_FILE" --work-dir "$M407_WORK_DIR" --restore-port 8445
+```
+
+Use a fresh nonexistent private work directory and an unused loopback restore
+port. The stdlib-only tool validates the source Compose project and gateway,
+creates H/P/C/A cohorts using real HTTPS APIs, then verifies populated PG/backend
+restart, all 47 tables and logical schema, private photo integrity, a full PG17
+custom dump restored to a differently named database, and an unmodified normal
+production JAR. The wrong-actual-database synthetic factory must refuse startup;
+normal policy refuses fresh eligible operations while historical receipts and
+narrow completed reads remain valid. Real PTY init/recover exercise the production
+Console guard with independent account/audit allowlists and unchanged business
+facts. The twelve unit cases retain literal values, order, operators, metadata
+and unknown CHECK syntax while allowing only the two observed lossless enum
+ARRAY deparses. No SQL repair, trigger disabling or product policy change occurs.
+
+After the drill, run all ten existing response validators, collect diagnostics,
+and only then run `assert_report_privacy.py` with `E2E_FIXTURE_PATH` temporarily
+pointing to the combined inventory. It covers initial, browser-generated,
+Console/changed and database secret values, including superseded values, across
+reports, test-results, artifacts and embedded archives. Only a successful guard
+permits retention. Fixture identity count, actual account rows and secret value
+count are separate facts. Do not export private dumps, raw DB rows, password
+hashes, Console transcripts or successful photo bytes.
+
+Before the source Compose teardown, including on failure, run the idempotent
+owned-resource cleanup while its external registry and source env still exist:
+
+```sh
+python3 tests/e2e/m4-integration-drill.py --cleanup-only \
+  --state-file "$M407_STATE_FILE" --source-env /tmp/xk-e2e.env
+```
+
+Then remove private fixture/inventory/registry files and tear down only the
+isolated source project. Keep inventory until the final privacy gate has run.
+The CI performs this sequence as a required job, preserves cleanup failures,
+and retains the ordinary development project. Cleanup is not a claim of physical
+secure erasure or production RTO/RPO. The final mobile acceptance additionally
+checks five actual action-button boxes are full-width, at least 180×44 CSS pixels,
+ordered and nonoverlapping; all original forty case flows remain present.

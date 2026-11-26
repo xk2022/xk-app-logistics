@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M4-01～05 已交付；LG-M4-06 本機完整驗收通過，遠端交付中 |
+| 狀態 | development — M4 七包工程實作與全量本機驗收完成；遠端交付以逐包 PR／main CI 收據為準 |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,7 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [M4-07 整合交接](docs/08_development/m4-07-integration-handoff.md) · [驗證](docs/09_testing/m4-07-validation.md) · [M4 整合報告](docs/09_testing/m4-integration-acceptance.md)
 - [司機執行工作台](docs/08_development/m4-06-driver-ui-handoff.md) · [工程採用](docs/98_decisions/2026-11-26-m4-06-engineering.md) · [驗證](docs/09_testing/m4-06-validation.md)
 - [管理確認及結案](docs/08_development/m4-05-management-closure-handoff.md) · [API](docs/06_api/tom-closure.md) · [驗證](docs/09_testing/m4-05-validation.md)
 - [M4 七包交接](docs/08_development/m4-execution-handoff.md) · [M4-01 交接](docs/08_development/m4-01-driver-departure-handoff.md) · [M4-01 驗證](docs/09_testing/m4-01-validation.md)
@@ -263,3 +264,10 @@ M4-03交付完成：PR #25／source`508e1e41174623e39c25352d1ae7d77df3692c99`／
 ADMIN／DISPATCHER的「確認與結案」提供完成紀錄及管理確認、整單任務檢視與結案；原reason保留、來源版本與原次重試分開顯示。requiredTask未指定不代表可略過；命名合成驗收要求所有任務完成且管理確認、整單無有效占用及未解異常。正式確認與結案策略未核准，正常環境維持拒絕，不以checkbox當授權。舊CLOSED無新audit仍可讀，介面明示未有本階段紀錄；原五API及歷史OPEN重送格式保留。完整DRIVER操作留下一包M4-06。
 
 LG-M4-05本機驗收：前端883／後端612／真TLS桌面與Pixel7 E2E38（0 retries）、十份HTTP2,686全過，PG17.12／47表／14版與重啟已驗；完整收據、首輪修正及畫面證據見[驗證紀錄](docs/09_testing/m4-05-validation.md)。未確認正式政策維持拒絕。
+
+
+## M4-06／07 本人操作與全量整合驗收
+
+DRIVER「本人運輸任務」支援出發、私有照片、進度、異常與補件、完成並安全釋放；管理端另有異常處置、完成確認與整單結案。手機五項任務操作為全寬單欄且觸控高度至少44px。未知結果保留原body／bytes／版本／key，由本人明確重試；衝突不覆寫，登出／撤權／背景切換會清私有資料與預覽。正常資格、照片provider／保存、現場例外、安全及管理責任未核准，維持UNCONFIRMED拒絕；正向只在actual-DB-gated隔離合成環境。
+
+M4-06 PR #29已完成PR及精確main四CI。M4-07最終本機 lint／typecheck／1,083 frontend tests／build、613 backend tests、12工具units、40桌面／Pixel7 HTTPS E2E（0 retries）、十HTTP3,242筆／125檔及原始150secret patterns隱私全過。真V9→V14升級、47表／67照片完整重啟與不同DB還原、普通production Jar預設拒絕／歷史重播、真Console init／recover與隔離清理全過。所有原契約／Migration保留。逐包SHA、PR、CI、失敗修正及限制見[M4完整驗收報告](docs/09_testing/m4-integration-acceptance.md)；最後一包遠端交付由[唯一head PR收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Atest%2Flg-m4-07-integration-acceptance+base%3Amain)記錄，不以本機代遠端。未開發M5或正式部署。

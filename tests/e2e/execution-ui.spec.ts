@@ -201,6 +201,26 @@ async function openException(page: Page, scenario: Scenario, record: ExceptionRe
   await page.getByRole('button', { name: `開啟本人異常 ${scenario.taskNo} 1`, exact: true }).click(); await rawEqual(page.getByRole('region', { name: '本人異常明細', exact: true }).getByLabel('本人原始異常描述', { exact: true }), record.description)
 }
 async function privateStorageAbsent(page: Page, values: string[]) { expect(await page.evaluate(async (values) => { const stored = [...Object.values(localStorage), ...Object.values(sessionStorage)], forbidden = values.flatMap((value) => [value, JSON.stringify(value).slice(1, -1)]); return stored.every((value) => forbidden.every((privateValue) => !value.includes(privateValue))) && (await navigator.serviceWorker.getRegistrations()).length === 0 }, values)).toBe(true) }
+// M407 mobile tap-target acceptance begin.
+async function mobileActionTapTargets(page: Page, info: TestInfo) {
+  if (!info.project.use.isMobile) return
+  const panel = page.getByRole('region', { name: '本人任務操作', exact: true })
+  await expect(panel).toBeVisible(); await panel.scrollIntoViewIfNeeded()
+  await expect(panel.getByRole('button')).toHaveCount(5)
+  const availableWidth = await panel.evaluate((element) => { const style = getComputedStyle(element); return element.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth) })
+  expect(availableWidth).toBeGreaterThanOrEqual(180)
+  let first: { x: number; width: number } | undefined, previousBottom: number | undefined
+  for (const kind of ['depart', 'upload', 'progress', 'report', 'complete'] as const) {
+    const control = panel.getByRole('button', { name: buttons[kind].start, exact: true }); await expect(control).toBeVisible()
+    const box = await control.boundingBox(); expect(box).not.toBeNull(); if (!box) throw new Error('A visible mobile action must have a real tap target.')
+    expect(box.width).toBeGreaterThanOrEqual(180); expect(box.width).toBeGreaterThanOrEqual(availableWidth * 0.9); expect(box.height).toBeGreaterThanOrEqual(44)
+    if (first) { expect(Math.abs(box.x - first.x)).toBeLessThanOrEqual(1); expect(Math.abs(box.width - first.width)).toBeLessThanOrEqual(1) } else first = { x: box.x, width: box.width }
+    if (previousBottom !== undefined) expect(box.y + 0.5).toBeGreaterThanOrEqual(previousBottom)
+    previousBottom = box.y + box.height
+  }
+}
+// M407 mobile tap-target acceptance end.
+
 async function screenshot(page: Page, info: TestInfo, name: string) {
   await page.bringToFront(); await expect(page.getByRole('region', { name: '私有照片預覽', exact: true })).toHaveCount(0); await expect(page.locator('img[src^="blob:"]')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
@@ -360,7 +380,7 @@ test('DRIVER uses all seven real actions, recovers original bytes and receipts, 
     for (const [actor, status, code] of [[page, 403, 'E0403'], [dispatcher, 403, 'E0403'], [temporary, 403, 'E0403'], [anonymous, 401, 'E0401']] as const) rejected(await api(actor, `${base}/completion`), status, code)
     rejected(await api(driverB, `${base}/completion`), 404, 'E0404')
     for (const actor of [page, dispatcher, temporary]) await expect(actor.getByRole('navigation', { name: '主要導覽', exact: true }).getByRole('button', { name: '本人運輸任務', exact: true })).toHaveCount(0)
-    scenario.source = await openTask(driverA, scenario); expect(scenario.source.execution).toEqual({ phase: 'WAITING', version: 0, departedAt: null }); expect(scenario.source.completion).toBeNull(); await sourceUI(driverA, scenario); await screenshot(driverA, info, 'driver-ui-original-safe-source.png')
+    scenario.source = await openTask(driverA, scenario); expect(scenario.source.execution).toEqual({ phase: 'WAITING', version: 0, departedAt: null }); expect(scenario.source.completion).toBeNull(); await sourceUI(driverA, scenario); await mobileActionTapTargets(driverA, info); await screenshot(driverA, info, 'driver-ui-original-safe-source.png')
     await start(driverA, 'depart'); await reviewDriver(driverA, 'depart'); const departure = ok(await finalDriver<{ assignmentId: string; taskId: string; execution: Execution }>(driverA, 'depart', `${base}/depart`)); expect(departure.execution.phase).toBe('DEPARTED'); expect(departure.execution.version).toBe(1); const departedAt = departure.execution.departedAt; expect(departedAt).not.toBeNull(); await freshDriver(driverA, scenario)
     await choosePhoto(driverA, 'upload', red)
     const ordinaryLoss = await loseCommitted(driverA, `${base}/evidence`, { body: red, executionVersion: 1, group: 'progress', schema: 'EvidenceEnvelope', valid: (data) => data.assignmentId === scenario.assignment.id && data.taskId === scenario.taskId && data.sha256 === hash(red) && data.byteSize === red.length && data.executionVersion === 1 && data.phase === 'DEPARTED' }, collector)

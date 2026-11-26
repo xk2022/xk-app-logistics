@@ -1,6 +1,6 @@
 # LG-M4-06｜司機執行工作台驗證
 
-狀態：本機完整驗收通過，PR／main 遠端四項門檻待本包交付收據確認。基礎`a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`，前包PR #27／補正 #28，最終main CI45823239922 attempt1四過；本包獨立分支feat/lg-m4-06-driver-execution-ui。公司最新f1be01c0c5d8bc5b1238f250838e336bef47b149品牌過渡決議已核對，工程規範不變。
+狀態：本機及遠端完整驗收通過，PR #29與精確main四項CI已成功，交付完成。基礎`a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`，前包PR #27／補正 #28，最終main CI45823239922 attempt1四過；本包獨立分支feat/lg-m4-06-driver-execution-ui。公司最新f1be01c0c5d8bc5b1238f250838e336bef47b149品牌過渡決議已核對，工程規範不變。
 
 [工作包](../08_development/m4-06-driver-ui-handoff.md)與[工程採用](../98_decisions/2026-11-26-m4-06-engineering.md)。保留41份既有API／migration精確hash、M1～M4-05全部案例；新client避免碰既有FMS driverApi。
 
@@ -57,7 +57,7 @@ Xvfb有視窗模式仍有Playwright預設focus emulation，另一CDPsession無�
 
 實際PG17.12空庫47表／14versions／零業務資料、backend重啟與TLS健康通過，18匿名路由401。production JAR共338 main class完整集合及bytes與本機受測輸入一致，無support／synthetic policy／fixture；104前端產品輸入與14migration bytes完全相符。映像backend0667d93e98b3a918b247a0c99a1ffcb24a100660b0ff0d5603e9ef5f2f35de18、frontend828105eee201a4bc450afc0e01bffecc887d6fa650e534060ce6b1108338563b。
 
-root全依賴／production與frontend npm audit零；CycloneDX1.6實際144components，OSV四明確輸入共409packages（3＋255＋7＋144）零finding。staged／history機密掃描、actionlint與文件連結於commit前執行。沒有以套件掃描代替業務驗收。
+root全依賴／production與frontend npm audit零；CycloneDX1.6實際144components，OSV四明確輸入共409packages（3＋255＋7＋144）零finding。staged／history40commits機密掃描零finding，actionlint與116MD／690相對連結均通過。沒有以套件掃描代替業務驗收。
 
 安全證據位於workspace `/workspace/artifacts/lg-m4-06-evidence/`：frontend／backend／E2E／HTTP摘要、36份JUnit suites、來源manifest、116 JSON與78 PNG。桌面／手機主畫面為driver-execution-desktop.png、driver-execution-mobile.png；完成、原次恢復與結案後資源再用為driver-completed-recovery-desktop.png、driver-completed-recovery-mobile.png，均為真實後端畫面，保留失敗登出提示與業務結果的區別。無照片binary、帳號憑證、headers或可下載公開照片URL。
 
@@ -66,3 +66,9 @@ root全依賴／production與frontend npm audit零；CycloneDX1.6實際144compon
 ## 剩餘限制與交付門檻
 
 正式派工資格、照片provider／保存、現場例外、安全釋放及管理確認／結案責任仍UNCONFIRMED，正常策略預設拒絕；正向只隔離合成。手機為Chromium Pixel7 viewport而非實體裝置，JS690.08kB為既有build advisory；無正式部署。獨立PR四CI及精確merge main四CI成功才開始M4-07，不將本機成功當遠端成功。
+
+## 最終遠端交付收據
+
+PR #29 source `3709bb5ce91aaf1ae05735eb90892e9e4ed7318e`／merge `e7c8acf1351caf379b7871c8078646671b307745`，tree一致。PR CI45844612553 attempt2與精確main CI45847696751 attempt1四項皆成功。兩輪各1,083 frontend／612 backend（161 unit＋451 IT，0failure／error／skip）／40 E2E、0 retries；HTTP PR3,083／main3,078、各116檔，130原始隱私均通過。PR後端10:33、main07:36。PR首輪僅Backend在測試前下載Spring Boot Maven plugin4.1.3 POM遭Central429；整輪完成後同SHA只重跑該失敗工作，沒有程式或測試變更，失敗log保留。
+
+從此最終merge開始M4-07，依[整合交接](../08_development/m4-07-integration-handoff.md)執行，不以M4-06結果替代最後整合驗收。

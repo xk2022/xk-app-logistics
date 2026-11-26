@@ -993,6 +993,159 @@ class PlatformIT {
         }
     }
 
+    @Test
+    void upgradesV9DirectlyToV14PreservingEveryOriginalFactAndLegacyClosedOrderAcrossRepeatedInitialization() throws Exception {
+        String databaseName = "xk_m4_final_upgrade_test";
+        jdbc.execute("CREATE DATABASE " + databaseName);
+        String url = postgres.getJdbcUrl().replace("/" + postgres.getDatabaseName(), "/" + databaseName);
+        try {
+            Flyway previous = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("9").load();
+            assertThat(previous.migrate().migrationsExecuted).isEqualTo(9);
+            var dataSource = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                    url, postgres.getUsername(), postgres.getPassword());
+            var options = new java.util.Properties();
+            options.setProperty("options", "-c TimeZone=UTC -c DateStyle=ISO -c bytea_output=hex -c search_path=logistics,public -c statement_timeout=15000 -c lock_timeout=5000");
+            dataSource.setConnectionProperties(options);
+            var database = new JdbcTemplate(dataSource);
+            database.setQueryTimeout(15);
+            JsonNode dispatch = seedV9UpgradeDispatch(database, url);
+            JsonNode assignment = dispatch.get("assignment");
+            java.util.UUID order = java.util.UUID.fromString(assignment.get("orderId").asString());
+            java.util.UUID actor = java.util.UUID.fromString(assignment.get("assignedBy").asString());
+            java.util.UUID customer = database.queryForObject("SELECT customer_id FROM logistics.tom_order WHERE order_id=?", java.util.UUID.class, order);
+            JsonNode legacyClosed = seedV8UpgradeOrder(database, actor, customer,
+                    OffsetDateTime.parse("2026-11-17T09:00:00.123456Z"), "CLOSED", "ACCEPTED", "M407-LEGACY");
+            java.util.UUID legacyOrder = java.util.UUID.fromString(legacyClosed.get("id").asString());
+            var oldDomains = v9DomainTableOrders();
+            assertThat(oldDomains).hasSize(26);
+            var oldTables = new java.util.ArrayList<>(oldDomains.keySet());
+            oldTables.add("flyway_schema_history");
+            assertThat(database.queryForList("SELECT tablename FROM pg_tables WHERE schemaname='logistics'", String.class))
+                    .containsExactlyInAnyOrderElementsOf(oldTables).hasSize(27);
+            var oldDigests = new java.util.LinkedHashMap<String, String>();
+            var oldCounts = new java.util.LinkedHashMap<String, Long>();
+            oldDomains.forEach((table, ordering) -> {
+                Long count = database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class);
+                assertThat(count).as("The genuine V9 fixture populates %s before any M4 migration", table).isPositive();
+                oldCounts.put(table, count);
+                oldDigests.put(table, preservedDomainDigest(database, table, ordering));
+            });
+            int historyPrefix = database.queryForObject("SELECT max(installed_rank) FROM logistics.flyway_schema_history", Integer.class);
+            int historyRows = database.queryForObject("SELECT count(*) FROM logistics.flyway_schema_history", Integer.class);
+            String historyPredicate = " WHERE installed_rank<=" + historyPrefix;
+            String historyDigest = tableDigest(database, "flyway_schema_history", "installed_rank", historyPredicate);
+            var oldChecksums = database.queryForList("SELECT version,checksum FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank");
+            assertThat(oldChecksums).hasSize(9);
+            assertThat(database.queryForList("SELECT version FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank", String.class))
+                    .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+            var rawWitnessQueries = new java.util.LinkedHashMap<String, String>();
+            rawWitnessQueries.put("dispatch", "SELECT snapshot::text FROM logistics.tms_dispatch_event");
+            rawWitnessQueries.put("dispatchReceipt", "SELECT original_data::text FROM logistics.tms_idempotency");
+            rawWitnessQueries.put("source", "SELECT source_snapshot::text FROM logistics.tms_assignment");
+            rawWitnessQueries.put("remark", "SELECT encode(remark,'hex') FROM logistics.tom_order WHERE order_id='" + order + "'");
+            rawWitnessQueries.put("address", "SELECT encode(pickup_address,'hex') FROM logistics.transport_task WHERE id='" + dispatch.get("taskId").asString() + "'");
+            rawWitnessQueries.put("plannedWire", "SELECT planned_start_wire FROM logistics.transport_task WHERE id='" + dispatch.get("taskId").asString() + "'");
+            rawWitnessQueries.put("customerName", "SELECT customer_name FROM logistics.tom_order WHERE order_id='" + order + "'");
+            rawWitnessQueries.put("accepted", "SELECT snapshot::text FROM logistics.order_acceptance_event WHERE order_id='" + order + "'");
+            rawWitnessQueries.put("createReceipt", "SELECT original_data::text FROM logistics.api_idempotency WHERE order_id='" + order + "' AND canonical_path='/api/v1/orders'");
+            rawWitnessQueries.put("acceptReceipt", "SELECT original_data::text FROM logistics.api_idempotency WHERE order_id='" + order + "' AND canonical_path='/api/v1/orders/" + order + "/accept'");
+            rawWitnessQueries.put("legacyAccepted", "SELECT snapshot::text FROM logistics.order_acceptance_event WHERE order_id='" + legacyOrder + "'");
+            var rawWitnesses = new java.util.LinkedHashMap<String, String>();
+            rawWitnessQueries.forEach((name, query) -> rawWitnesses.put(name, database.queryForObject(query, String.class)));
+            assertThat(json.readTree(rawWitnesses.get("dispatch"))).isEqualTo(dispatch);
+            assertThat(json.readTree(rawWitnesses.get("source"))).isEqualTo(assignment.get("source"));
+            assertThat(json.readTree(rawWitnesses.get("legacyAccepted")).get("lifecycleStatus").asString()).isEqualTo("OPEN");
+            assertThat(rawWitnesses.get("plannedWire")).isEqualTo("1500-01-02T00:00:00.123456+08:00");
+            assertThat(rawWitnesses.get("customerName")).isEqualTo("合成歷史客戶");
+            var originalIdentity = database.queryForMap("SELECT id,task_id,order_id,driver_id,main_vehicle_id,assigned_by,assigned_at,status,version,assigned_generation,ended_generation,ended_at,ended_by FROM logistics.tms_assignment");
+            var originalBinding = database.queryForMap("SELECT id,account_id,driver_code,employment_status,duty_status,version FROM logistics.fms_driver");
+            var originalVehicle = database.queryForMap("SELECT id,plate_no,vehicle_type_id,administrative_status,capacity_ton,registration_date,inspection_due_date,version FROM logistics.fms_vehicle");
+            assertThat(database.queryForObject("SELECT enabled FROM logistics.crm_customer WHERE id=?", Boolean.class, customer)).isFalse();
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_assignment WHERE status='ASSIGNED' AND version=0 AND assigned_generation=1 AND ended_at IS NULL AND ended_by IS NULL", Long.class)).isEqualTo(1);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_resource_reservation WHERE released_at IS NULL AND release_reason IS NULL", Long.class)).isEqualTo(2);
+
+            Flyway upgrade = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("14").load();
+            assertThat(upgrade.migrate().migrationsExecuted).isEqualTo(5);
+            assertThat(upgrade.validateWithResult().validationSuccessful).isTrue();
+            assertThat(upgrade.migrate().migrationsExecuted).isZero();
+            oldDomains.forEach((table, ordering) -> {
+                assertThat(preservedDomainDigest(database, table, ordering)).as("Direct V9 to V14 preserves every original column of %s", table).isEqualTo(oldDigests.get(table));
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class)).isEqualTo(oldCounts.get(table));
+            });
+            assertThat(tableDigest(database, "flyway_schema_history", "installed_rank", historyPredicate)).isEqualTo(historyDigest);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.flyway_schema_history", Integer.class)).isEqualTo(historyRows + 5);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.flyway_schema_history WHERE NOT success", Long.class)).isZero();
+            assertThat(database.queryForList("SELECT version,checksum FROM logistics.flyway_schema_history WHERE installed_rank<=? AND success AND version IS NOT NULL ORDER BY installed_rank", historyPrefix)).isEqualTo(oldChecksums);
+            assertThat(database.queryForList("SELECT version FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank", String.class))
+                    .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14");
+            rawWitnessQueries.forEach((name, query) -> assertThat(database.queryForObject(query, String.class)).as("Preserved raw source/receipt witness %s", name).isEqualTo(rawWitnesses.get(name)));
+            assertThat(database.queryForMap("SELECT id,task_id,order_id,driver_id,main_vehicle_id,assigned_by,assigned_at,status,version,assigned_generation,ended_generation,ended_at,ended_by FROM logistics.tms_assignment")).isEqualTo(originalIdentity);
+            assertThat(database.queryForMap("SELECT id,account_id,driver_code,employment_status,duty_status,version FROM logistics.fms_driver")).isEqualTo(originalBinding);
+            assertThat(database.queryForMap("SELECT id,plate_no,vehicle_type_id,administrative_status,capacity_ton,registration_date,inspection_due_date,version FROM logistics.fms_vehicle")).isEqualTo(originalVehicle);
+            assertThat(database.queryForObject("SELECT lifecycle_status FROM logistics.order_core WHERE id=?", String.class, legacyOrder)).isEqualTo("CLOSED");
+            assertThat(database.queryForObject("SELECT acceptance_status FROM logistics.tom_order WHERE order_id=?", String.class, legacyOrder)).isEqualTo("ACCEPTED");
+            assertThat(database.queryForObject("SELECT enabled FROM logistics.crm_customer WHERE id=?", Boolean.class, customer)).isFalse();
+            var finalDomains = new java.util.LinkedHashMap<>(v13DomainTableOrders());
+            for (String table : java.util.List.of("tms_completion_confirmation", "tms_completion_confirmation_command", "tom_order_closure", "tom_order_closure_command")) finalDomains.put(table, "id");
+            finalDomains.put("tom_order_closure_task", "closure_id,task_id");
+            assertThat(finalDomains).hasSize(46);
+            var finalTables = new java.util.ArrayList<>(finalDomains.keySet());
+            finalTables.add("flyway_schema_history");
+            assertThat(database.queryForList("SELECT tablename FROM pg_tables WHERE schemaname='logistics'", String.class))
+                    .containsExactlyInAnyOrderElementsOf(finalTables).hasSize(47);
+            var newTables = new java.util.LinkedHashSet<>(finalDomains.keySet());
+            newTables.removeAll(oldDomains.keySet());
+            assertThat(newTables).hasSize(20);
+            for (String table : newTables) assertThat(database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class)).as("No M4 history is invented by the direct upgrade in %s", table).isZero();
+            assertNoExecutionRows(database);
+            assertNoEvidenceRows(database);
+            assertNoExceptionRows(database);
+            assertNoCompletionFacts(database);
+            assertNoManagementClosureFacts(database);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_resource_reservation WHERE released_at IS NULL AND completion_id IS NULL", Long.class)).isEqualTo(2);
+            String predicate = database.queryForObject("SELECT pg_get_expr(i.indpred,i.indrelid) FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='logistics' AND c.relname='tms_reservation_active_resource' AND i.indisunique", String.class);
+            assertThat(predicate).contains("released_at IS NULL", "completion_id IS NULL", "AND");
+            for (String trigger : java.util.List.of("tms_assignment_protected", "tms_reservation_protected", "tms_event_immutable", "tms_progress_evidence_sealed", "tms_completion_immutable", "tms_completion_command_immutable", "tms_confirmation_immutable", "tom_closure_immutable", "tom_closure_task_immutable", "a_owned_closure_core", "a_owned_closure_order", "a_owned_closure_assignment", "a_owned_closure_reservation", "a_owned_closure_exception"))
+                assertThat(database.queryForObject("SELECT t.tgenabled='O' FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='logistics' AND NOT t.tgisinternal AND t.tgname=?", Boolean.class, trigger)).as("Enabled retained/new SQL seal %s", trigger).isTrue();
+            for (String trigger : java.util.List.of("tms_completion_proof", "tms_completion_command_proof", "tms_completion_reservation_proof", "tms_completion_execution_proof", "tms_completion_event_proof", "tms_confirmation_proof", "tms_confirmation_receipt_proof", "tom_closure_proof", "tom_closure_task_proof", "tom_closure_receipt_proof"))
+                assertThat(database.queryForObject("SELECT t.tgenabled='O' AND t.tgdeferrable AND t.tginitdeferred FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='logistics' AND NOT t.tgisinternal AND t.tgname=?", Boolean.class, trigger)).as("Deferred typed proof trigger %s", trigger).isTrue();
+            for (String constraint : java.util.List.of("tms_reservation_completion_fk", "tms_completion_success_receipt_fk", "tms_confirmation_receipt_fk", "tom_closure_receipt_fk"))
+                assertThat(database.queryForObject("SELECT c.convalidated AND c.condeferrable AND c.condeferred FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace WHERE n.nspname='logistics' AND c.conname=?", Boolean.class, constraint)).as("Validated deferred reciprocal identity %s", constraint).isTrue();
+            for (String function : java.util.List.of("logistics.validate_tms_completion(uuid)", "logistics.tms_progress_success(uuid)", "logistics.validate_management_confirmation(uuid)", "logistics.validate_order_closure(uuid)", "logistics.management_ascii_metadata(json)", "logistics.guard_owned_closure_orders(uuid[],boolean)"))
+                assertThat(database.queryForObject("SELECT to_regprocedure(?) IS NOT NULL", Boolean.class, function)).as("Expected typed proof function %s", function).isTrue();
+
+            // Repeated initialization proves idempotence, not an application or PostgreSQL restart.
+            var fullTableOrders = new java.util.LinkedHashMap<>(finalDomains);
+            fullTableOrders.put("flyway_schema_history", "installed_rank");
+            var fullDigests = new java.util.LinkedHashMap<String, String>();
+            var fullCounts = new java.util.LinkedHashMap<String, Long>();
+            fullTableOrders.forEach((table, ordering) -> {
+                fullDigests.put(table, tableDigest(database, table, ordering));
+                fullCounts.put(table, database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class));
+            });
+            assertThat(fullDigests).hasSize(47);
+            var finalChecksums = database.queryForList("SELECT version,checksum FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank");
+            Flyway repeated = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("14").load();
+            assertThat(repeated.validateWithResult().validationSuccessful).isTrue();
+            assertThat(repeated.migrate().migrationsExecuted).isZero();
+            fullTableOrders.forEach((table, ordering) -> {
+                assertThat(tableDigest(database, table, ordering)).as("Repeat initialization preserves full V14 table %s", table).isEqualTo(fullDigests.get(table));
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class)).isEqualTo(fullCounts.get(table));
+            });
+            assertThat(database.queryForList("SELECT version,checksum FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank")).isEqualTo(finalChecksums);
+        } finally {
+            String cleanupUrl = postgres.getJdbcUrl() + (postgres.getJdbcUrl().contains("?") ? "&" : "?") + "connectTimeout=5&socketTimeout=10";
+            try (var connection = java.sql.DriverManager.getConnection(cleanupUrl, postgres.getUsername(), postgres.getPassword());
+                    var statement = connection.createStatement()) {
+                statement.setQueryTimeout(10);
+                statement.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
+            }
+        }
+    }
+
     /** Build and validate the real V13 reciprocal witness/receipt and exact marked reservation set, without booting V14. */
     private CompletionUpgradeFixture seedV13UpgradeCompletion(String url, JsonNode dispatch, JsonNode departure,
             ExceptionUpgradeFixture supplement) throws Exception {

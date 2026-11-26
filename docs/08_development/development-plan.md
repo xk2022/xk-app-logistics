@@ -37,22 +37,18 @@ M1 已完成。M2 五包的實作與本機首片驗收已完成；最終 M2-05 P
 2026-11-26 使用者採用剩餘 M3 工作，按 04→05→06 依序獨立驗收、PR、合併；未決政策與部署仍不自動核准。M3-01～06 工程實作與本機整合驗收完成；本包交付 PR／main 四過收據為遠端完成依據。M3 當時停在 M4 規格決議；現依新 M4 明確授權逐包交付。
 
 
-## M4 工作包規劃
+## M4 七工作包
 
-Q41–Q47 與 M4-01～07 已採用。依 [M4 七工作包交接](m4-execution-handoff.md) 逐包執行；[驗收計畫](../09_testing/m4-integration-acceptance.md)。規格 PR #22 與 main CI 已四過，M4-01 本機 590／418／30 與六份 HTTP 契約全過，遠端交付見 [本包驗證](../09_testing/m4-01-validation.md)，後續包依序待前包 main CI 四過後開始；未核准正式政策維持限制。
+Q41–Q47及全部七包已授權；前置規格PR #22與main四項CI成功後，依[M4交接](m4-execution-handoff.md)逐包獨立分支／PR／本機及CI全過／合併／精確main四過，才進下一包。
 
-M4-01 已由 [PR #23](https://github.com/xk2022/xk-app-logistics/pull/23) 合併，PR CI45768556588／main CI45769255127 attempt1 均四過；M4-02 從 merge `daf26f979c1c03c078876f204a713578abe80a4e` 開始，後續 03～07 保持前包 main 四過的順序門檻。
+| 工作包 | 工程與交付 |
+| --- | --- |
+| LG-M4-01 | 本人詳情與出發；PR #23及main四過 |
+| LG-M4-02 | 進度與私有照片；PR #24及main四過 |
+| LG-M4-03 | 異常、補件與管理處置；PR #25及main四過 |
+| LG-M4-04 | 完成與原子有效占用解除；PR #26及main四過 |
+| LG-M4-05 | 管理確認與整單結案；PR #27＋補正#28及最終main四過，原失敗保留 |
+| LG-M4-06 | 本人七命令／隱私預覽／原次重試與手機；PR #29及main四過 |
+| LG-M4-07 | [全量交接](m4-07-integration-handoff.md)；最終本機1,083／613／12工具units／40 E2E、HTTP3,242、150原始隱私及真47表還原／Console全部通過；最後PR／精確main四CI由[實際收據](../09_testing/m4-07-validation.md)記錄 |
 
-M4-02 本機590／469／32及七HTTP1,731全過；[本包驗證](../09_testing/m4-02-validation.md)追蹤 source／merge／PR與main四項CI，全部完成再進M4-03。正式照片／例外／釋放／結案責任仍未核准，正向只隔離合成。
-
-M4-02 PR #24／main四過收據已核對；M4-03從merge `4681f13b4dd1dc324632848e7b119147e0e43068` 依[本包交接](m4-03-exceptions-handoff.md)及[驗證紀錄](../09_testing/m4-03-validation.md)實作。其餘包依序保留前包main四過門檻。
-
-- LG-M4-03已完成本機前端718／後端530／E2E34／八HTTP1,949驗收，詳[驗證及四項遠端門檻](../09_testing/m4-03-validation.md)；main四項成功後依M4交接自動進M4-04，不提前完成／釋放或結案。
-
-- LG-M4-03 PR #25與main四項已成功，source508e1e4／merge e55ee4e；LG-M4-04由此獨立分支實作，依[交接](m4-04-task-completion-handoff.md)及[驗證](../09_testing/m4-04-validation.md)逐項核對，不提前M4-05／06或部署。
-
-- LG-M4-04完成本機718／566／36／九HTTP2,244驗收及隔離資料清理，依[本包收據](../09_testing/m4-04-validation.md)核對PR及main四項後才進M4-05。
-
-- LG-M4-05 已由PR #27及補正 #28交付，最終main45823239922四項成功；M4-06從a879f93獨立分支實作[司機完整介面](m4-06-driver-ui-handoff.md)，全部實測及PR／main四過後才進M4-07。
-
-- LG-M4-06已完成本機1,083／612／40與十HTTP3,075驗收、原始130值隱私及桌面／手機真畫面；待本包獨立PR及精確main四項CI成功後自動進入M4-07全量整合驗收。
+各包source／merge／CI run／attempt、測試數量與剩餘風險見[M4完整驗收報告](../09_testing/m4-integration-acceptance.md)。M4-07只修驗收發現的既有手機單欄要求，保留舊流程與API／Migration；沒有新業務政策核准。正常策略維持拒絕，不開M5、不動舊repo、不部署正式環境。
