@@ -49,7 +49,8 @@ public class UpmsSecurityConfiguration {
                 .csrfTokenRequestHandler(new HeaderOnlyCsrfRequestHandler(request->request.getMethod().equals("POST")
                         &&(request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/evidence")
                         ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/exceptions(?:/[^/]+/supplement-requests/[^/]+/(?:evidence|submit))?")
-                        ||request.getServletPath().matches("/api/v1/tms/exceptions/[^/]+/(?:supplement-requests|resolve)")))));
+                        ||request.getServletPath().matches("/api/v1/tms/exceptions/[^/]+/(?:supplement-requests|resolve)")
+                        ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/complete")))));
         http.exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, exception) -> responses.error(request,response,401,"UNAUTHENTICATED","無法登入或登入已失效，請確認資料後重新登入"))
                 .accessDeniedHandler((request, response, exception) -> responses.error(request,response,403,
@@ -70,6 +71,8 @@ public class UpmsSecurityConfiguration {
                         "/api/v1/tms/my-tasks/*/exceptions/*/history",
                         "/api/v1/tms/my-tasks/*/exceptions/*/supplement-requests/*/evidence",
                         "/api/v1/tms/my-tasks/*/exceptions/*/supplement-requests/*/submit").hasRole("DRIVER")
+                .requestMatchers("/api/v1/tms/my-tasks/*/completion","/api/v1/tms/my-tasks/*/completion-policy",
+                        "/api/v1/tms/my-tasks/*/complete").hasRole("DRIVER")
                 .requestMatchers("/api/v1/tms","/api/v1/tms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());

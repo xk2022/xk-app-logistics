@@ -33,3 +33,7 @@
 - LG-M4-02交付完成：[PR #24](https://github.com/xk2022/xk-app-logistics/pull/24)，source `b9647dfe4430e8d088362331c92d31de405c44a5`／merge `4681f13b4dd1dc324632848e7b119147e0e43068`，PR CI45775507970／main CI45776966300 attempt1均四過。由該merge開M4-03，進度及本包實測見[異常與補件驗證](../09_testing/m4-03-validation.md)；正式未決政策不自動核准。
 
 - LG-M4-03本機驗收：718前端／530後端／34E2E（0 retries）與八份實際HTTP1,949／58檔全過，V12最新40表、升級／空庫／重啟、私有照片及100憑證報告隱私通過；[本包驗證](../09_testing/m4-03-validation.md)與唯一head收據追蹤PR及main四項CI，main四過後自動進M4-04。
+
+- LG-M4-03交付完成：PR #25，source`508e1e41174623e39c25352d1ae7d77df3692c99`／merge`e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e`；PR45787301633及main45788390226 attempt1各四項成功。718／530／34；HTTP本機及PR1,949／main1,947。確認後由該merge開M4-04，詳[完成及有效釋放](../09_testing/m4-04-validation.md)。
+
+- LG-M4-04本機驗收：718前端／566後端／36真TLS E2E及九HTTP2,244／76檔全過，V13／42表、全39舊領域表升級、二三資源有效解除／依賴／再用／RR與回滾、110憑證隱私已驗；[驗證及遠端門檻](../09_testing/m4-04-validation.md)，main四過才開M4-05。

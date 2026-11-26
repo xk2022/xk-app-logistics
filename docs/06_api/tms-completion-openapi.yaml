@@ -1,0 +1,1123 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics TMS Completion / Effective Release API
+  version: 0.1.0
+  description: LG-M4-04獨立3操作，舊14/15/派工ASSIGNED及reservation null事實與舊API原文全保留。新16欄live/completed與witness提供真完成/effective釋放，保recorded14discovery。defaultUNCONFIRMED，synthetic
+    count1 PNG65536bytes4096pixels只actualisolatedDB，未批准正式安全責任/D04D05D06D10/provider。無新照片/完成照片豁免/結案/M5/UI或部署。重用ExecutionPhase說明中的M4-01scope指其歷史來源，本包僅新增AWAITING→COMPLETED，所有原enum/numeric/rawsource限制保持。
+servers:
+- url: /api/v1
+tags:
+- name: TMSCompletion
+security:
+- sessionCookie: []
+paths:
+  /tms/my-tasks/{assignmentId}/completion:
+    get:
+      operationId: getMyCompletion
+      tags:
+      - TMSCompletion
+      summary: getMyCompletion
+      description: DRIVER-only，先fresh正常帳號/原Session/目前同原physicaldriverbinding/同currentASSIGNEDanchor/company。live驗currentTOM+effective完整occupations；completed驗typed
+        witness/execution/精確markers，不依today sourceopen/policy/provider/已他用resources，不是任意revoked歷史。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      responses:
+        '200':
+          description: live/completed當前讀或原次完成4欄歷史收據；saved safe source不串新resourceowner。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks/{assignmentId}/completion-policy:
+    get:
+      operationId: getMyCompletionPolicy
+      tags:
+      - TMSCompletion
+      summary: getMyCompletionPolicy
+      description: DRIVER-only，先fresh正常帳號/原Session/目前同原physicaldriverbinding/同currentASSIGNEDanchor/company。live驗currentTOM+effective完整occupations；completed驗typed
+        witness/execution/精確markers，不依today sourceopen/policy/provider/已他用resources，不是任意revoked歷史。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      responses:
+        '200':
+          description: live/completed當前讀或原次完成4欄歷史收據；saved safe source不串新resourceowner。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionPolicyEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks/{assignmentId}/complete:
+    post:
+      operationId: completeMyTask
+      tags:
+      - TMSCompletion
+      summary: completeMyTask
+      description: DRIVER-only，先fresh正常帳號/原Session/目前同原physicaldriverbinding/同currentASSIGNEDanchor/company。live驗currentTOM+effective完整occupations；completed驗typed
+        witness/execution/精確markers，不依today sourceopen/policy/provider/已他用resources，不是任意revoked歷史。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: live/completed當前讀或原次完成4欄歷史收據；saved safe source不串新resourceowner。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteMyTaskEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRequest'
+      x-maxStreamBytes: 16384
+      x-replayRule: live-or-validcompleted scope BEFORE receipt；成功原key/hash先於phase/version/todaypolicy/provider/sourceopen/occupations，actor-key不跨人；newactor同physical
+        scope MISS只version/state拒絕，不借他人receipt。
+      x-versionRule: COMPLETED.execution.version==originalexpectedVersion+1≥4，departedAt原值；witness兩serverinstant相等，confirmSafeRelease輸入≠safeReleaseConfirmed輸出命名；不升assignment/generation/TOM/FMS。
+      x-postLedgerMissErrors:
+      - E2001
+      - E2002
+      - E2003
+      - E2007
+      - E2008
+      - E2009
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 與JSESSIONID為同一受保護HttpSession別名；Secure/HttpOnly/SameSite=Lax，正常帳號與首次改密限制保持。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+      description: 目前本人指派選擇器，不是身份override；canonical lowercase path入ledger。
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9._:-]{1,128}$
+        not:
+          pattern: '[^A-Za-z0-9._:-]'
+      description: 恰一個 case-sensitive header；未知結果固定原 key/body/path，不自動重送或換 key。
+  responses:
+    Error400:
+      description: strict UTF8/JSON/shape/query/confirmSafeRelease驗證，VALIDATION_ERROR+fields
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error401:
+      description: 未登入、過期/失效normal帳號或匿名CSRF，null data
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error403:
+      description: manager禁止代理或CSRF；reason-only FORBIDDEN/CSRF_INVALID，保留null兼容
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          examples:
+            csrf_invalid:
+              value:
+                code: E0403
+                message: 安全驗證或權限拒絕
+                data:
+                  reason: CSRF_INVALID
+                timestamp: '2026-11-26T10:00:00+08:00'
+            forbidden:
+              value:
+                code: E0403
+                message: 安全驗證或權限拒絕
+                data:
+                  reason: FORBIDDEN
+                timestamp: '2026-11-26T10:00:00+08:00'
+    Error404:
+      description: 非本人/失效assignment/source/occupation/evidence範圍，opaque null
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error405:
+      description: 未契約method含HEAD，不回photo bytes
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error409:
+      description: 獨立E2001–09：execution版本/狀態/政策/重送/關聯/證據/未解異常。
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error413:
+      description: 應用程式實際JSON stream超16384，E0413/null，非先無上限materialize後才檢查。
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error415:
+      description: 不支援media/encoding，null data
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error500:
+      description: 安全內部/DB/provider失敗摘要，null data，無路徑與cause
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+      description: 本文件 version、expectedVersion、actualVersion 只屬 execution，與 assignment.version／task generation／來源版本分開。
+    Timestamp:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,9})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+    CompanyTimestamp:
+      type: string
+      format: date-time
+      pattern: \+08:00$
+    SourceDateTime:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+      description: 保留原 TOM offset 與微秒字面，不改時區／trim／新增時窗或期限政策。
+    NullableSourceDateTime:
+      anyOf:
+      - $ref: '#/components/schemas/SourceDateTime'
+      - type: 'null'
+    NullableText:
+      anyOf:
+      - type: string
+        maxLength: 200
+        description: 原 TOM 文字，保留有效 NUL／NFD／空白／空字串，不修剪或正規化。
+      - type: 'null'
+    NullableAddress:
+      anyOf:
+      - type: string
+        maxLength: 1000
+      - type: 'null'
+    NullableDecimal:
+      anyOf:
+      - type: string
+        maxLength: 32
+        pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+        not:
+          pattern: '[^0-9.]'
+        description: 原 TOM 非負 decimal 字串與 scale，null 不同於已知0；不轉 JSON number。
+      - type: 'null'
+    PolicyMode:
+      type: string
+      enum:
+      - UNCONFIRMED
+      - SYNTHETIC_TEST_ONLY
+    ItemSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        itemKind:
+          type: string
+          enum:
+          - CONTAINER
+          - CARGO
+        containerType:
+          $ref: '#/components/schemas/NullableText'
+        containerNo:
+          $ref: '#/components/schemas/NullableText'
+        packageQty:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        grossWeight:
+          $ref: '#/components/schemas/NullableDecimal'
+        cbm:
+          $ref: '#/components/schemas/NullableDecimal'
+      required:
+      - itemKind
+      - containerType
+      - containerNo
+      - packageQty
+      - grossWeight
+      - cbm
+    SiteContact:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/NullableText'
+        phone:
+          $ref: '#/components/schemas/NullableText'
+      required:
+      - name
+      - phone
+      description: 整組 null 與存在且兩欄 null 的聯絡物件不合併。
+    ExecutionPhase:
+      type: string
+      enum:
+      - WAITING
+      - DEPARTED
+      - IN_PROGRESS
+      - AWAITING_COMPLETION
+      - COMPLETED
+      description: M4-01 只可 WAITING→DEPARTED；其餘為後續已授權工作包的讀取 enum 預留，本包不提供其命令或宣稱其政策已核准。
+    ExecutionView:
+      type: object
+      additionalProperties: false
+      properties:
+        phase:
+          $ref: '#/components/schemas/ExecutionPhase'
+        version:
+          $ref: '#/components/schemas/Version'
+        departedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+      required:
+      - phase
+      - version
+      - departedAt
+      allOf:
+      - if:
+          properties:
+            phase:
+              const: WAITING
+        then:
+          properties:
+            version:
+              const: 0
+            departedAt:
+              type: 'null'
+        else:
+          properties:
+            version:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            departedAt:
+              $ref: '#/components/schemas/Timestamp'
+      description: 無 execution row 的本人 GET 虛擬 WAITING/0/null，無 DB／event／receipt 寫入；首次出發才保存 DEPARTED/1。
+    IdempotencyReplayed:
+      type: string
+      enum:
+      - 'true'
+      - 'false'
+    CanonicalUuid:
+      allOf:
+      - $ref: '#/components/schemas/Uuid'
+      - not:
+          pattern: '[^0-9a-f-]'
+      description: 伺服器輸出 canonical lowercase UUID；request/path UUID 可大小寫，hash前正規化。
+    EvidenceIds:
+      type: array
+      items:
+        $ref: '#/components/schemas/Uuid'
+      minItems: 0
+      maxItems: 32
+      uniqueItems: true
+      x-uniqueCanonicalUuids: true
+      description: 技術上限32；依UUID lowercase後去重檢查並排序，數學集合，不含業務優先順序；重複拒絕、不默默dedupe。
+    CanonicalEvidenceIds:
+      type: array
+      items:
+        $ref: '#/components/schemas/CanonicalUuid'
+      minItems: 1
+      maxItems: 32
+      uniqueItems: true
+      x-canonicalUuidOrder: true
+      description: source readiness event已採用的exact canonical sorted UUID set；有界IDs供明確選照，不回event身份。
+    CompletionWitness:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        completedAt:
+          $ref: '#/components/schemas/Timestamp'
+        releasedAt:
+          $ref: '#/components/schemas/Timestamp'
+        policyMode:
+          const: SYNTHETIC_TEST_ONLY
+        safeReleaseConfirmed:
+          const: true
+      required:
+      - id
+      - completedAt
+      - releasedAt
+      - policyMode
+      - safeReleaseConfirmed
+      x-equalTimestampFields:
+      - completedAt
+      - releasedAt
+      description: 獨立不可變完成/實際解除占用事實；兩時間同次伺服器instant。safeReleaseConfirmed記錄明確confirmSafeRelease及合成server決策，不批准正式安全確認者責任。無actor/resource
+        IDs。
+    CompletionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        item:
+          $ref: '#/components/schemas/ItemSnapshot'
+        taskKind:
+          $ref: '#/components/schemas/NullableText'
+        pickupName:
+          $ref: '#/components/schemas/NullableText'
+        pickupAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        deliveryName:
+          $ref: '#/components/schemas/NullableText'
+        deliveryAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        siteContact:
+          anyOf:
+          - $ref: '#/components/schemas/SiteContact'
+          - type: 'null'
+        plannedStartAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        plannedEndAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        assignedAt:
+          $ref: '#/components/schemas/Timestamp'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+        execution:
+          $ref: '#/components/schemas/ExecutionView'
+        completion:
+          anyOf:
+          - $ref: '#/components/schemas/CompletionWitness'
+          - type: 'null'
+      required:
+      - assignmentId
+      - taskId
+      - taskNo
+      - item
+      - taskKind
+      - pickupName
+      - pickupAddress
+      - deliveryName
+      - deliveryAddress
+      - siteContact
+      - plannedStartAt
+      - plannedEndAt
+      - assignedAt
+      - policyMode
+      - execution
+      - completion
+      description: 新獨立16欄：原saved safe14+execution+completion；不是修改舊15。live完整current guard，completed窄scope需fresh正常/原Session/目前同原physicaldriverbinding/同currentanchor/validwitness，不依已釋放資源/新owner/provider/today
+        sourceopen。原NUL/NFD/decimal/offset/null語義不改。
+      allOf:
+      - if:
+          properties:
+            execution:
+              properties:
+                phase:
+                  const: COMPLETED
+        then:
+          properties:
+            completion:
+              $ref: '#/components/schemas/CompletionWitness'
+            execution:
+              properties:
+                version:
+                  minimum: 4
+        else:
+          properties:
+            completion:
+              type: 'null'
+    CompletionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        execution:
+          allOf:
+          - $ref: '#/components/schemas/ExecutionView'
+          - properties:
+              phase:
+                const: COMPLETED
+              version:
+                type: integer
+                minimum: 4
+                maximum: 9007199254740991
+        completion:
+          $ref: '#/components/schemas/CompletionWitness'
+      required:
+      - assignmentId
+      - taskId
+      - execution
+      - completion
+      description: 原次歷史收據4欄；version==原expectedVersion+1，departedAt不變，同assignment/task與witness由client/IT/E2E核對，非目前GET。
+    CompleteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          $ref: '#/components/schemas/Version'
+        evidenceIds:
+          $ref: '#/components/schemas/EvidenceIds'
+        confirmSafeRelease:
+          const: true
+      required:
+      - expectedVersion
+      - evidenceIds
+      - confirmSafeRelease
+      description: expectedVersion只execution；confirmSafeRelease真值是明確請求attestation非正式confirmer批准。IDs canonicalize/unique/sorted
+        hash；空集合型別有效但newmiss缺證據拒絕，需等server exact readiness selectedset。
+    CompletionRequirements:
+      type: object
+      additionalProperties: false
+      properties:
+        evidenceBasis:
+          const: LATEST_AWAITING_TRANSITION
+        minimumCount:
+          const: 1
+        allowedMediaTypes:
+          const:
+          - image/png
+        maxBytes:
+          const: 65536
+        maxPixels:
+          const: 4096
+        requiresSafeReleaseConfirmation:
+          const: true
+      required:
+      - evidenceBasis
+      - minimumCount
+      - allowedMediaTypes
+      - maxBytes
+      - maxPixels
+      - requiresSafeReleaseConfirmation
+      description: 明列隔離合成工程數值，非D06照片階段/數量/大小/provider或安全責任批准；沒有新upload/免照片/造exception取得補件路徑。
+    CompletionPolicyView:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        execution:
+          $ref: '#/components/schemas/ExecutionView'
+        mode:
+          $ref: '#/components/schemas/PolicyMode'
+        canComplete:
+          type: boolean
+        blocker:
+          enum:
+          - null
+          - POLICY_NOT_CONFIRMED
+          - UNSUPPORTED_PHASE
+          - UNRESOLVED_EXCEPTIONS
+          - EVIDENCE_REQUIRED
+          - EVIDENCE_INVALID
+          - ALREADY_COMPLETED
+        requirements:
+          anyOf:
+          - $ref: '#/components/schemas/CompletionRequirements'
+          - type: 'null'
+        requiredEvidenceIds:
+          anyOf:
+          - $ref: '#/components/schemas/CanonicalEvidenceIds'
+          - type: 'null'
+      required:
+      - assignmentId
+      - taskId
+      - execution
+      - mode
+      - canComplete
+      - blocker
+      - requirements
+      - requiredEvidenceIds
+      allOf:
+      - if:
+          properties:
+            canComplete:
+              const: true
+        then:
+          properties:
+            blocker:
+              type: 'null'
+            mode:
+              const: SYNTHETIC_TEST_ONLY
+            execution:
+              properties:
+                phase:
+                  const: AWAITING_COMPLETION
+                version:
+                  minimum: 3
+            requirements:
+              $ref: '#/components/schemas/CompletionRequirements'
+            requiredEvidenceIds:
+              $ref: '#/components/schemas/CanonicalEvidenceIds'
+        else:
+          properties:
+            blocker:
+              type: string
+            requirements:
+              type: 'null'
+            requiredEvidenceIds:
+              type: 'null'
+      - if:
+          properties:
+            execution:
+              properties:
+                phase:
+                  const: COMPLETED
+        then:
+          properties:
+            canComplete:
+              const: false
+            blocker:
+              const: ALREADY_COMPLETED
+            execution:
+              properties:
+                version:
+                  minimum: 4
+        else:
+          properties:
+            blocker:
+              not:
+                const: ALREADY_COMPLETED
+      - if:
+          properties:
+            mode:
+              const: UNCONFIRMED
+            execution:
+              properties:
+                phase:
+                  not:
+                    const: COMPLETED
+        then:
+          properties:
+            canComplete:
+              const: false
+            blocker:
+              const: POLICY_NOT_CONFIRMED
+      - if:
+          properties:
+            blocker:
+              const: UNSUPPORTED_PHASE
+        then:
+          properties:
+            mode:
+              const: SYNTHETIC_TEST_ONLY
+            execution:
+              properties:
+                phase:
+                  enum:
+                  - WAITING
+                  - DEPARTED
+                  - IN_PROGRESS
+      - if:
+          properties:
+            blocker:
+              enum:
+              - UNRESOLVED_EXCEPTIONS
+              - EVIDENCE_REQUIRED
+              - EVIDENCE_INVALID
+        then:
+          properties:
+            mode:
+              const: SYNTHETIC_TEST_ONLY
+            execution:
+              properties:
+                phase:
+                  const: AWAITING_COMPLETION
+                version:
+                  minimum: 3
+      description: mode為CURRENT CompletionPolicy，witness.policyMode是歷史決策兩者不互相提升。完成後ALREADY_COMPLETED優先(今日UNCONFIRMED亦然)且requirements/IDs
+        null。所有blocked null非空清單waiver；ready IDs恰immutable原progress成功採用set。投影非approval token。
+    ErrorData:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+        actualVersion:
+          $ref: '#/components/schemas/Version'
+        fields:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+      required: []
+      minProperties: 1
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0405
+          - E0413
+          - E0415
+          - E0500
+          - E2001
+          - E2002
+          - E2003
+          - E2004
+          - E2005
+          - E2006
+          - E2007
+          - E2008
+          - E2009
+        message:
+          type: string
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ErrorData'
+          - type: 'null'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+      allOf:
+      - if:
+          properties:
+            code:
+              const: E2001
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VERSION_CONFLICT
+                required:
+                - reason
+                - actualVersion
+      - if:
+          properties:
+            code:
+              const: E2002
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: INVALID_STATE
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2003
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: POLICY_NOT_CONFIRMED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2004
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_KEY_REUSED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2005
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_IN_PROGRESS
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2006
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: PROTECTED_RELATION
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2007
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: EVIDENCE_REQUIRED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2008
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: EVIDENCE_INVALID
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E2009
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: UNRESOLVED_EXCEPTIONS
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E0400
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VALIDATION_ERROR
+                required:
+                - reason
+                - fields
+      - if:
+          properties:
+            code:
+              enum:
+              - E0401
+              - E0404
+              - E0405
+              - E0413
+              - E0415
+              - E0500
+        then:
+          properties:
+            data:
+              type: 'null'
+      - if:
+          properties:
+            code:
+              const: E0403
+        then:
+          properties:
+            data:
+              anyOf:
+              - type: object
+                additionalProperties: false
+                properties:
+                  reason:
+                    enum:
+                    - CSRF_INVALID
+                    - FORBIDDEN
+                required:
+                - reason
+              - type: 'null'
+      description: 新E20 namespace。actualVersion只execution，不接受actualExecutionVersion/exception/generation/身份/storage/SQL/key/原body。E2001需actualVersion，403
+        reason-only兩值或null；common null規則保持。
+    CompletionDetailEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CompletionDetail'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    CompletionPolicyEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CompletionPolicyView'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    CompleteMyTaskEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CompletionResult'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+x-preservedSpecSha256:
+  tms-execution-openapi.yaml: !!str b260dd0a814f11d1dc28b874f79f4280d4edce2b9bc5ac75ca0d4f3f7bbc51d4
+  tms-progress-evidence-openapi.yaml: !!str fd062dd540f657dd48a172a8955ada62aa7dd80e8a0faa805d3e91dd3efbc791
+  tms-exceptions-openapi.yaml: !!str 34ac767897b8aa56cd121b80f17abc983a4133e51e89b0d1840b9d885feed965
+x-syntheticOnlyDecision:
+  database: xk_logistics_e2e
+  evidenceBasis: LATEST_AWAITING_TRANSITION
+  minimumCount: 1
+  allowedMediaTypes:
+  - image/png
+  maxBytes: 65536
+  maxPixels: 4096
+  requiresSafeReleaseConfirmation: true
+  formalSafetyApproval: false
+x-effectiveOccupation: released_at IS NULL AND completion_id IS NULL
+x-retainLegacy14RecordedMembership: true
+x-requiredSqlSeals:
+- reservation-after-completion-insert-refused-even-null-marker
+- readiness-selected-set-sealed-by-original-progress-success-receipt

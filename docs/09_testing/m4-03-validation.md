@@ -1,6 +1,6 @@
 # LG-M4-03 異常與補件驗證
 
-狀態：本機完整驗收已通過，PR及main四項CI待本包提交後核對。前包[PR #24](https://github.com/xk2022/xk-app-logistics/pull/24)／merge `4681f13b4dd1dc324632848e7b119147e0e43068` 的PR及main CI均attempt1四過後才開本包。公司核對 `9213a3d8dacb8774d87c26cb736c4a4315779e95`；[工程採用](../98_decisions/2026-11-26-m4-03-engineering.md)先凍結新契約。沒有把source review或靜態discovery當runtime通過。
+狀態：交付完成，PR #25及main四項CI均已通過。前包[PR #24](https://github.com/xk2022/xk-app-logistics/pull/24)／merge `4681f13b4dd1dc324632848e7b119147e0e43068` 的PR及main CI均attempt1四過後才開本包。公司核對 `9213a3d8dacb8774d87c26cb736c4a4315779e95`；[工程採用](../98_decisions/2026-11-26-m4-03-engineering.md)先凍結新契約。沒有把source review或靜態discovery當runtime通過。
 
 | 驗收 | 實際狀態 |
 | --- | --- |
@@ -10,7 +10,7 @@
 | V11→V12／40表空庫／重啟／映像同源 | Platform13案例全過；真實PG17.12空庫40表／12版本／零業務資料，重啟一致；268正式class集合與bytes、82前端輸入、12migration bytes比對相同；JAR無test support／fixture |
 | 真TLS desktop／Pixel7 E2E | 34／14files全過，2 workers／0 retries，3.0m；包含新增桌面與手機異常管理實際操作 |
 | npm／SBOM／OSV／gitleaks／隱私／工具 | root／frontend npm各0；SBOM1.6／144元件；OSV409套件無issue；100憑證報告隱私全過；staged gitleaks 0 findings／無排除；commit history於交付PR及CI另核對 |
-| source／PR／merge／PR及main四項CI | 尚未提交／建立PR，不以前包或本機結果替代 |
+| source／PR／merge／PR及main四項CI | PR #25 CI45787301633／main CI45788390226 attempt1均四項成功；不以前包或本機結果替代 |
 
 ## 邊界
 
@@ -59,3 +59,6 @@ D04／D05、D06／D10、正式provider／派工資格／安全釋放及結案責
 最終staged秘密掃描首輪4筆generic-api-key提示，逐一證明皆為新契約／validator內指向M401及M402公開OpenAPI檔的SHA-256 integrity pins，並非憑證。僅把新YAML的兩個值明確標str、Python的兩個完整literal加括號；root獨立比較整棵safe_load tree及整份Python AST完全相等、6個digest仍對應實際檔案，沒有切割雜湊、忽略／排除／suppression或放寬檢查。新validator65正／498反／8ref／6hash／17CLI與166筆實際異常回應重驗通過；正式產品來源／全部舊契約與migration未變，因此不無故重跑backend／frontend。
 
 公開pin等價修正後，完整staged diff秘密掃描已0 findings，沒有排除；八份實際HTTP共1,949／58檔重新驗證通過。最終提交前再核對文件、凍結來源及staged掃描。
+
+
+最終交付：[PR #25](https://github.com/xk2022/xk-app-logistics/pull/25)，source`508e1e41174623e39c25352d1ae7d77df3692c99`／merge`e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e`；[PR CI45787301633](https://github.com/xk2022/xk-app-logistics/actions/runs/45787301633)及[main CI45788390226](https://github.com/xk2022/xk-app-logistics/actions/runs/45788390226) attempt1各四項成功，source／merge樹相同。遠端各718／530／34全過；八HTTP PR1,949（異常166）、main1,947（異常164），各58檔且schema／隱私通過。受控遺失回應與競爭使收集數可不同，逐輪保留實際數。確認main後才開M4-04。最終本機staged及36commits全歷史gitleaks均0 findings／無排除。

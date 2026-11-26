@@ -24,3 +24,7 @@
 ## M4-03 異常與補件
 
 獨立異常OPEN0→NEEDS_SUPPLEMENT→OPEN明確提交→RESOLVED；每次新照片／要求／提交／處置各升異常版本，上傳不等提交。原報告／照片／歷史不覆寫，非RESOLVED導出blocking供後續完成／結案查核；處置不代表已可離場、安全釋放或結案。普通策略UNCONFIRMED，正向只隔離合成，D04／D05仍未核准。角色歷史／重播與鎖定精確規則見[工程採用](../98_decisions/2026-11-26-m4-03-engineering.md)。原M4-02進度不暗加未採用的暫停例外。
+
+## M4-04 完成與有效解除
+
+只在AWAITING_COMPLETION、版本匹配、無阻擋異常、原readiness照片及獨立安全策略均滿足後，同交易COMPLETED／+1並標記本次精確二三資源；原派工紀錄仍保留。成功舊收據不再解除新owner，依賴只接受同order／sourceVersion真witness，無自動派工。普通政策仍UNCONFIRMED；[精確採用](../98_decisions/2026-11-26-m4-04-engineering.md)與[實測](../09_testing/m4-04-validation.md)分開記錄。

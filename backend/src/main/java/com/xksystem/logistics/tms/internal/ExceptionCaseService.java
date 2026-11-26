@@ -135,7 +135,7 @@ public class ExceptionCaseService implements ExceptionQueries {
             var assignment=dispatch.assignment(state.value().assignmentId(),false);var source=tasks.find(state.value().taskId());
             return assignment.status().equals("ASSIGNED")&&dispatch.current(assignment.taskId()).filter(value->value.id().equals(assignment.id())).isPresent()
                     &&source.isPresent()&&source.get().accepted()&&source.get().source().equals(state.source())
-                    &&assignment.reservations().size()==(assignment.trailer()==null?2:3)&&assignment.reservations().stream().allMatch(value->value.releasedAt()==null);
+                    &&dispatch.effective(assignment);
         }catch(TmsFailure|UpmsException missing){if(missing instanceof UpmsException upms&&upms.status()!=404)throw missing;return false;}
     }
     private ExceptionDtos.Detail detail(ExceptionStore.State state,boolean management,boolean current) {

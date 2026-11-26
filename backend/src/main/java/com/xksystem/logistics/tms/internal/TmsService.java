@@ -89,7 +89,7 @@ public class TmsService {
         authorization.requireDispatchManager(principal);var anchor=store.anchor(query.taskId(),false);var source=tasks.find(query.taskId()).orElseThrow(TmsFailure::missing);
         UUID reusable=null;if(query.assignmentId()!=null){
             TmsDtos.Assignment assignment;try{assignment=store.assignment(query.assignmentId(),false);}catch(TmsFailure failure){if(failure.status()==404)throw TmsFailure.invalid("assignmentId","請提供此任務目前有效派工");throw failure;}
-            if(!assignment.taskId().equals(query.taskId())||!assignment.status().equals("ASSIGNED"))throw TmsFailure.invalid("assignmentId","改派資源候選需要此任務目前有效派工");reusable=assignment.id();}
+            if(!assignment.taskId().equals(query.taskId())||!assignment.status().equals("ASSIGNED")||!store.effective(assignment))throw TmsFailure.invalid("assignmentId","改派資源候選需要此任務目前有效派工");reusable=assignment.id();}
         final UUID own=reusable;
         if(query.position()==ResourcePosition.DRIVER){var page=drivers.pageForDispatch(query.page(),query.size(),query.q());
             return new TmsDtos.Page<>(page.getContent().stream().map(driver->candidate(driver.id(),ResourceKind.DRIVER,query.position(),driver.driverCode(),driver.name(),driver.version(),available(driver),policy.driverApproved(driver),anchor,source,own)).toList(),page.getNumber(),page.getSize(),page.getTotalElements(),page.getTotalPages());}
