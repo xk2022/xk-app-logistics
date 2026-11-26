@@ -46,7 +46,8 @@ public class UpmsSecurityConfiguration {
         // Security 7's explicit-authentication-strategy mode and reinstalls implicit handling.
         http.sessionManagement(session -> session.requireExplicitAuthenticationStrategy(true));
         http.csrf(csrf -> csrf.csrfTokenRepository(csrfTokens)
-                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
+                .csrfTokenRequestHandler(new HeaderOnlyCsrfRequestHandler(request->request.getMethod().equals("POST")
+                        &&request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/evidence"))));
         http.exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, exception) -> responses.error(request,response,401,"UNAUTHENTICATED","無法登入或登入已失效，請確認資料後重新登入"))
                 .accessDeniedHandler((request, response, exception) -> responses.error(request,response,403,
@@ -61,6 +62,8 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers("/api/v1/orders","/api/v1/orders/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers(HttpMethod.GET,"/api/v1/tms/my-tasks").hasRole("DRIVER")
                 .requestMatchers("/api/v1/tms/my-tasks/*","/api/v1/tms/my-tasks/*/depart").hasRole("DRIVER")
+                .requestMatchers("/api/v1/tms/my-tasks/*/progress-policy","/api/v1/tms/my-tasks/*/progress",
+                        "/api/v1/tms/my-tasks/*/evidence","/api/v1/tms/my-tasks/*/evidence/*/content").hasRole("DRIVER")
                 .requestMatchers("/api/v1/tms","/api/v1/tms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());

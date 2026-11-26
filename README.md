@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M4-01 本人詳情與出發本機驗收完成（逐包 CI 收據見下方） |
+| 狀態 | development — LG-M4-01 已合併、PR／main CI 全過；LG-M4-02 本機驗收完成（PR／main CI 收據另列） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -60,7 +60,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件、V9 TMS 派工／占用及 V10 獨立執行／事件／成功收據結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件、V9 TMS 派工／占用、V10 獨立執行／事件／成功收據及 V11 私有照片／選照關聯／原上傳收據結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -233,3 +233,11 @@ M3-01 車輛、M3-02 司機、M3-03 正式受理、M3-04 原子派工占用及 M
 Q41–Q47 與 M4-01～07 已獲使用者授權，依七包交接逐包獨立 PR／CI／合併／main CI 驗收。本包 M4-01 新增本人有效任務詳情與出發 API、獨立執行版本及 V10，不修改原 M3 十四欄本人摘要。完整手機操作 UI 在 M4-06 交付；精確契約、未核准政策拒絕與目前實測狀態見上述文件。
 
 M4-01 本機 frontend 590／backend 418／desktop＋Pixel 7 E2E 30 與六份實際 HTTP 契約 1,489 筆全過；V1–V10／30 表與升級、重啟、本人隔離及登出／撤改競爭已驗證。遠端交付以 [M4-01 PR 收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)及其 PR／main 四項 CI 為準，main 四過才進入 M4-02。
+
+## M4-02 進度與私有照片
+
+本包依[交接](docs/08_development/m4-02-progress-evidence-handoff.md)／[獨立 API](docs/06_api/tms-progress-evidence.md)加入本人進度與照片接口；實際執行狀態與結果見[驗證紀錄](docs/09_testing/m4-02-validation.md)。只開放 DEPARTED→IN_PROGRESS→AWAITING_COMPLETION，照片不能覆寫，也不會因上傳或進度自動釋放人車／解除前置。原本人列表、詳情、出發及既有模組契約不擴欄。
+
+正常啟動的照片策略／provider 維持 UNCONFIRMED／unavailable，沒有正式照片上傳或進度豁免開關。正向測試只在隔離 xk_logistics_e2e，用 test-classpath 政策及同 PostgreSQL 交易的私有 bytea 替身；PNG、數量、大小及像素值均為合成工程數值，不代表 D06／D10 或正式 provider 核准。不執行照片保存清理、正式安全釋放／結案、M5 或部署。完整手機操作 UI 依 M4-06 交付。
+
+M4-02 本機前端590／後端469（139 unit＋330 integration）／桌面與Pixel7 E2E32、七份實際HTTP契約1,731筆全過；空庫34表／V1–V11與重啟一致、234後端class／71前端產品建置檔逐byte同源、90憑證報告隱私通過後清理隔離環境。遠端 source／merge／四項PR及main CI 以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-02-progress-evidence+base%3Amain)為準；main四過才開M4-03。

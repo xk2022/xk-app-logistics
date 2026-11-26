@@ -14,3 +14,9 @@
 ## M4-01 精確基線
 
 V10 新增 tms_execution、tms_execution_event、tms_execution_command，並對既有 assignment 身分配對加一致性唯一約束；不回填、不改原 V1–V9／派工／占用資料。首次出發建立 DEPARTED/version1，未出發 GET 為虛擬 WAITING/version0，不寫資料。執行、不可變事件與原成功收據同交易，獨立版本；詳見[本包工程定義](../98_decisions/2026-11-26-m4-01-engineering.md)及 migration 唯一來源。後續進度、證據、釋放及結案各包再增量 migration，不預建業務紀錄。
+
+## M4-02 增量結構
+
+V11 追加 tms_execution_evidence、tms_execution_evidence_object、tms_execution_event_evidence、tms_execution_evidence_command 四張空表（最新共34），不改 V1–V10／舊資料或回填證據。metadata／原始私有 bytes／成功收據同交易；進度沿用 V10 execution／event／command，追加 immutable event↔evidence 關聯。個別上傳不升 execution.version，不改原 assignment／generation／reservation。
+
+合成 bytea adapter 只能用同 DataSource／caller transaction，正常 provider unavailable，不代表正式儲存選型；保存／清理未核准，沒有刪除工作。各 identity／phase／version／hash／不可變約束以 migration 及[本包工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)為準。

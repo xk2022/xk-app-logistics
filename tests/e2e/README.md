@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 30 cases: fifteen each for desktop Chromium and Pixel 7. The
+The suite has 32 cases: sixteen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -143,6 +143,44 @@ lock scheduling, insert-failure rollback, zero-GET-write and production-policy
 checks belong to the backend integration suite; HTTP/schema checks do not claim
 to establish those database properties alone.
 
+The independent M4-02 `progress-evidence.spec.ts` retains the preceding 30
+cases and adds one API scenario per viewport, using five new actors rather than
+the execution group's intentionally disabled/rebound accounts. It creates all
+business data with the real APIs, follows DEPARTED → IN_PROGRESS →
+AWAITING_COMPLETION, and verifies the current seven-field policy view. No next
+transition is advertised for unsupported phases; requirements stay null rather
+than implying a photo waiver. Normal unconfirmed policy and unavailable provider
+behavior, including replay after policy changes, are verified by controlled
+backend integration tests and the normal-runtime checks. No HTTP test toggle,
+client approval field, production provider or photo rule is introduced.
+
+The case generates real synthetic 2×2 PNG bytes from deterministic RGBA pixels,
+standard deflate, valid chunks and CRCs. The browser independently decodes the
+fixture before upload. It verifies raw image/png uploads, exact ten-field VERIFIED
+metadata, byte size and SHA-256, the strict execution-version header, MIME/CRC/
+truncation/pixel/byte/hard-cap rejection, paged metadata and private content.
+Successful binary bodies are compared, hashed and decoded only in browser memory;
+no PNG/base64/headers/filename is saved in JSON artifacts. Runtime assertions cover
+content length, no-store/private, nosniff, fixed safe disposition, absent public
+URLs/cache validators/ranges and refusal of HEAD/Range/foreign/expired requests.
+
+Both upload and progress really commit before controlled response loss. Their
+original bytes or JSON, execution-version metadata and keys remain in memory;
+manual retries first encounter a real CSRF403, then retrieve the stored receipt.
+Canonical UUID path and sorted unique UUID-set replay, differing-body conflicts,
+later-phase metadata receipts and historical departure/progress receipts are
+checked without replacing current state. Upload never increments execution
+version; only progress advances it. An upload racing different-key progress commands cannot attach a photo to a
+later stage or duplicate a transition.
+At AWAITING_COMPLETION, unsupported next-phase policy still permits authorized
+private reads of earlier evidence. Rebinding the same physical driver to another
+normal account preserves current read access without treating historical uploader
+identity as an extra authorization rule; command receipts remain actor-scoped.
+Unbinding, logout and account disabling must still refuse old data.
+Every step preserves the original fourteen-field list, fifteen-field detail,
+three-field departure receipt, TOM/FMS versions, task generation and reservations.
+It neither completes a task, releases resources nor unlocks a predecessor.
+
 Production eligibility stays fail-closed. Positive TMS browser checks explicitly
 use a separately mounted, test-only launcher and synthetic policy, never a
 production profile or approval flag. Every policy construction checks
@@ -154,7 +192,7 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 80 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 90 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
 ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios in each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
@@ -193,10 +231,19 @@ the runner never inserts an execution, departure time, event or command receipt.
 Departed resources remain occupied; later sub-scenarios create fresh resources
 and explicitly change only their own binding, rather than bypassing release gates.
 
+The M4-02 `progressEvidence` group adds five independent accounts per viewport,
+bringing the private fixture to 90 accounts. It reuses only the immutable
+DESKTOP/MOBILE synthetic type IDs. Physical driver codes use D3001 and above,
+with unique plates, customers, orders and assignments; the runner seeds no
+execution, progress, evidence, blob, event link or command receipt. Its positive
+policy/private bytea provider is strictly a test-classpath, database-name-guarded
+arrangement. PostgreSQL is not selected as the formal production photo provider.
+
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
-Spring Boot `PropertiesLauncher`. `prepare-tms-runtime.py` copies only the plain
-policy, its compiler-generated inner classes, and the launcher from test output;
+Spring Boot `PropertiesLauncher`. `prepare-tms-runtime.py` copies only the
+explicitly allowed synthetic policies/private provider, their compiler-generated
+inner classes, and the launcher from test output;
 it excludes the Boot test configuration, JUnit classes and fixture runner.
 Normal DEV uses no E2E override and continues to reject unapproved dispatch
 combinations. The production JAR contains none of these test-only classes.
@@ -250,6 +297,8 @@ python3 -m venv /tmp/xk-order-contract-env
   --responses 'test-results/**/tms-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_execution_contract.py \
   --responses 'test-results/**/execution-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_progress_evidence_contract.py \
+  --responses 'test-results/**/progress-evidence-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -305,17 +354,30 @@ error responses. Setup and competing manager operations continue to produce
 separate original order, acceptance and TMS artifacts; execution E17 errors never
 enter the old TMS validator. The real lost-response witness records only its
 actual upstream response body, never the request or headers. The existing privacy
-guard recursively checks all 80 fixture passwords and rejects traces; it is not a
+guard recursively checks all 90 fixture passwords and rejects traces; it is not a
 claim that every possible cookie, CSRF or key leak has been independently scanned.
 Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
 request logs, use generic forwarding failures and compare retry identities as
 booleans. The new API scenario takes no execution UI screenshot.
 
-CI validates health/status, Flyway V1–V10 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
-tables (30 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
+The progress/evidence case adds `progress-evidence-contract-responses.json`,
+restricted to original bodies using `ProgressPolicyEnvelope`, `ProgressEnvelope`,
+`EvidenceEnvelope`, `EvidencePageEnvelope` and `ErrorEnvelope`. Successful content
+responses are binary and explicitly excluded from the collector; failed content
+responses are JSON errors. Runtime byte/hash/decode assertions do not pretend to
+be JSON Schema validation. Original order/acceptance/TMS/execution responses remain
+in their own artifacts and validators; new E18 codes never widen old contracts.
+The privacy guard recursively checks all 90 fixture passwords and refuses traces;
+raw photos, private storage information, request metadata and authentication
+values are never serialized by this case. Storage/transaction failure injection,
+zero-write GET and immutable DB history constraints are proved by backend IT,
+not inferred from a JSON receipt or a browser hash alone.
+
+CI validates health/status, Flyway V1–V11 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
+tables (34 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
 vehicles, drivers, dispatch assignments/events/reservations, execution/event/command
-records, restart stability,
+records, evidence/objects/event-links/upload-ledgers, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

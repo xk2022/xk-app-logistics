@@ -25,3 +25,7 @@
 - LG-M4：Q41–Q47 及全部七包已採用；[規格](../98_decisions/2026-11-26-m4-execution.md)、[工作包](../08_development/m4-execution-handoff.md)。M4-01 本機 590／418／30 與六份 HTTP 契約全過，遠端交付見本包收據，M4-02～07 依序待前包 main CI 四過後進行；不代表正式資格及保存政策核准，不部署。
 
 - M4 授權與前置：使用者核准 Q41–Q47、M4-01～07；規格 PR #22 已合併 `6e83663eac50256592e35713467d496cc5765235`，PR CI45759432687／main CI45760194712 attempt1 均四過。LG-M4-01 由此開始；實作與各包交付見 [M4 交接](../08_development/m4-execution-handoff.md)及 [M4-01 驗證](../09_testing/m4-01-validation.md)，不以 M3 結果代本包驗收。
+
+- LG-M4-01 交付完成：[PR #23](https://github.com/xk2022/xk-app-logistics/pull/23)，source `71dac55cdf568ddb6f46c043c0f74d81d3fafe07`／merge `daf26f979c1c03c078876f204a713578abe80a4e`；PR CI45768556588／main CI45769255127 均 attempt1 四項成功。前端590／後端418／E2E30；本機HTTP1,489、遠端各1,490。核對 main 後從該 merge 開始獨立 M4-02，照片等未核准政策仍預設拒絕。
+
+- LG-M4-02 本機驗收：590前端／469後端／32E2E／七HTTP1,731全過，V11最新34表、29舊領域表保留、私有bytes／回滾／本人隔離／預設拒絕已驗；[本包驗證](../09_testing/m4-02-validation.md)及唯一head PR追蹤遠端四項門檻，main四過後自動進M4-03。正式政策／provider／保存未核准，不部署。
