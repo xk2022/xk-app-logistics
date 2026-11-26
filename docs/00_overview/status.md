@@ -14,6 +14,9 @@
 - LG-M3-03：依已合併 PR #16 與 Q31–Q35 實作獨立正式受理、原子版本／不可變事件／重送、受理後唯讀與待派車顯示；本機前端 426／後端 312／E2E 24 與實際 TOM 414／Acceptance 30／Vehicle 174／Driver 282 回應全過；實際驗收與交付狀態見 [M3-03 驗證](../09_testing/m3-03-validation.md)。
 - LG-M3-04：已完成七項 TMS API、原子占用／撤改、不可變歷史、本人最小查詢與 V9；本機前端 426／後端 369／E2E 26、五份實際回應驗證全過。production 政策未核准維持拒絕，正向驗收僅明確隔離合成政策；交付與 main CI 見 [M3-04 驗證](../09_testing/m3-04-validation.md)。
 - LG-M3-05：調度工作台、指派／撤改／歷史及 DRIVER 本人手機唯讀完成；本機前端 590／後端 369／E2E 28 與五份實際 HTTP 回應驗證全過，交付及 main CI 由 [M3-05 驗證](../09_testing/m3-05-validation.md)與產品 PR 追蹤。
-- 下一工作：M3-04 PR #19 與 main CI 已四項全過，由 merge `7180c1f8894baf0d6b878c435ce879863817f2ed` 完成本機 [M3-05](../08_development/m3-05-dispatch-ui-handoff.md) → [M3-06](../08_development/m3-06-integration-handoff.md) 依序實作、驗收；司機回報、照片、結案及其他 FMS 尚未開發，原四份訂單契約來源保持原樣。
 - 尚待確認：真實場景例外、照片提供者與保存、供應商／費用、正式帳號與部署、覆蓋率門檻與維運責任。無正式部署。
 - 歷史主要任務：[codex-xk-logistic Issue #4](https://github.com/xk2022/codex-xk-logistic/issues/4)。不更動舊庫。
+
+- LG-M3-05 交付完成：[PR #20](https://github.com/xk2022/xk-app-logistics/pull/20)，source `997950eb1ee80982bc455e29e8a8d7ecb52cdcbd`／merge `7acbd43f5e098a877af6a1458e5b32d81e390f41`；PR CI45751323496 attempt2、main CI45752348554 attempt1 四項全過。M3-06 依此為基礎完成全量整合驗收；完整狀態見 [M3 報告](../09_testing/m3-integration-acceptance.md)。
+
+- LG-M3-06／M3 工程驗收：前端 590、後端 369（124 unit＋245 integration）、桌面／Pixel 7 E2E 28（0 retries）與五份實際 HTTP 契約 1,244 筆全過；空庫／重啟、V8→V9 舊資料真 HTTPS 派工／重播、併發及回滾與本人隔離通過。最終 source／merge／四項 PR 及 main CI 以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Atest%2Flg-m3-06-integration+base%3Amain)與 [M3 最終報告](../09_testing/m3-integration-acceptance.md)為準。M3 完成後停在後續規格決議，正式資格仍 UNCONFIRMED，不實作 M4 或部署。

@@ -31,7 +31,7 @@ M1 已完成。M2 五包的實作與本機首片驗收已完成；最終 M2-05 P
 | LG-M3-02 | [FMS 司機管理](m3-02-fms-driver-handoff.md)，Q26–Q30 已核准，實作與驗收見 [M3-02 驗證](../09_testing/m3-02-validation.md) |
 | LG-M3-03 | [TOM 正式受理](m3-03-tom-acceptance-handoff.md)，Q31–Q35 已核准，實作與驗收見 [M3-03 驗證](../09_testing/m3-03-validation.md) |
 | LG-M3-04 | [TMS 派工與有效占用](m3-04-dispatch-handoff.md)，Q36–Q40 已核准，實作與交付見 [M3-04 驗證](../09_testing/m3-04-validation.md) |
-| LG-M3-05 | [TMS 調度工作台](m3-05-dispatch-ui-handoff.md)，本機完整驗收見 [M3-05 驗證](../09_testing/m3-05-validation.md)，須獨立 PR／main CI 全過後進入下一包 |
-| LG-M3-06 | [訂單與派車整合驗收](m3-06-integration-handoff.md)，M3-05 完成後 |
+| LG-M3-05 | [TMS 調度工作台](m3-05-dispatch-ui-handoff.md)，PR #20 與 main CI 四過；完整交付見 [M3-05 驗證](../09_testing/m3-05-validation.md) |
+| LG-M3-06 | [訂單與派車整合驗收](m3-06-integration-handoff.md)，最終 590／369／28 與五份 HTTP 契約全過；逐包交付見 [M3 最終報告](../09_testing/m3-integration-acceptance.md) |
 
-2026-11-26 使用者採用剩餘 M3 工作，按 04→05→06 依序獨立驗收、PR、合併；未決政策與部署仍不自動核准。
+2026-11-26 使用者採用剩餘 M3 工作，按 04→05→06 依序獨立驗收、PR、合併；未決政策與部署仍不自動核准。M3-01～06 工程實作與本機整合驗收完成；本包交付 PR／main 四過收據為遠端完成依據。後續停在 M4 規格決議，不自動開發。

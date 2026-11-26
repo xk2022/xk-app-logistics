@@ -17,6 +17,11 @@ public final class TmsE2eApplication {
                 throw new IllegalArgumentException("The isolated TMS browser launcher does not run account commands");
             }
         }
+        createApplication().run(args);
+    }
+
+    /** Keeps Boot's classpath-provided initializers, including test-component exclusion when present. */
+    public static SpringApplication createApplication() {
         var application = new SpringApplication(LogisticsApplication.class);
         application.addInitializers(context -> {
             if (!(context instanceof BeanDefinitionRegistry registry)) {
@@ -33,6 +38,6 @@ public final class TmsE2eApplication {
             });
             registry.registerBeanDefinition("syntheticDispatchEligibilityPolicy", definition);
         });
-        application.run(args);
+        return application;
     }
 }
