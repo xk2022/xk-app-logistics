@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M4-01／02 已合併、PR／main CI 全過；LG-M4-03 開發與驗證中 |
+| 狀態 | development — LG-M4-01～04 已交付；LG-M4-05 工程與本機驗收完成，遠端狀態依交付收據 |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,7 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [管理確認及結案](docs/08_development/m4-05-management-closure-handoff.md) · [API](docs/06_api/tom-closure.md) · [驗證](docs/09_testing/m4-05-validation.md)
 - [M4 七包交接](docs/08_development/m4-execution-handoff.md) · [M4-01 交接](docs/08_development/m4-01-driver-departure-handoff.md) · [M4-01 驗證](docs/09_testing/m4-01-validation.md)
 - [M4 工程定義](docs/98_decisions/2026-11-26-m4-01-engineering.md) · [M4 API](docs/06_api/tms-execution.md)
 - [M3 整合驗收報告](docs/09_testing/m3-integration-acceptance.md) · [M3-06 驗證](docs/09_testing/m3-06-validation.md)
@@ -60,7 +61,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件、V9 TMS 派工／占用、V10 獨立執行／事件／成功收據及 V11 私有照片／選照關聯／原上傳收據結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件、V9 TMS 派工／占用、V10 獨立執行／事件／成功收據、V11 私有照片／選照關聯／原上傳收據、V12 異常與補件、V13 完成及有效解除、V14 管理確認及訂單結案結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -255,3 +256,9 @@ M4-03交付完成：PR #25／source`508e1e41174623e39c25352d1ae7d77df3692c99`／
 ## M4-04 任務完成與有效資源釋放
 
 [新契約](docs/06_api/tms-completion.md)、[工作包](docs/08_development/m4-04-task-completion-handoff.md)、[工程採用](docs/98_decisions/2026-11-26-m4-04-engineering.md)及[驗證進度](docs/09_testing/m4-04-validation.md)。由已通過CI的M4-03 main依序實作獨立完成API、原子有效解除、可信前置完成查詢與V13，不修改舊派工狀態／release欄位或API。舊UI明示指派紀錄，完整本人操作於M4-06交付；本機前端718／後端566（153 unit＋413 integration）／真TLS desktop＋Pixel7 E2E36（0 retries）與九份實際HTTP2,244／76檔全過；42表／13版本及重啟、39舊領域表升級、291正式class同源與110憑證隱私已驗。遠端source／merge／PR及main四項CI由[本包收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-04-task-completion+base%3Amain)核對，main四過才開M4-05。正式安全確認者／照片／provider與派工政策未核准，維持拒絕；無M5或正式部署。
+
+## 管理完成確認及訂單結案
+
+ADMIN／DISPATCHER的「確認與結案」提供完成紀錄及管理確認、整單任務檢視與結案；原reason保留、來源版本與原次重試分開顯示。requiredTask未指定不代表可略過；命名合成驗收要求所有任務完成且管理確認、整單無有效占用及未解異常。正式確認與結案策略未核准，正常環境維持拒絕，不以checkbox當授權。舊CLOSED無新audit仍可讀，介面明示未有本階段紀錄；原五API及歷史OPEN重送格式保留。完整DRIVER操作留下一包M4-06。
+
+LG-M4-05本機驗收：前端883／後端612／真TLS桌面與Pixel7 E2E38（0 retries）、十份HTTP2,686全過，PG17.12／47表／14版與重啟已驗；完整收據、首輪修正及畫面證據見[驗證紀錄](docs/09_testing/m4-05-validation.md)。未確認正式政策維持拒絕。

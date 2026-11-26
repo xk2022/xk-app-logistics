@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 36 cases: eighteen each for desktop Chromium and Pixel 7. The
+The suite has 38 cases: nineteen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -263,9 +263,11 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 110 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 120 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
-ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios in each browser project. It accepts only
+ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios, and independent
+five-actor execution/progress/exception/completion/closure groups in each browser
+project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
@@ -326,6 +328,14 @@ exceptions and completion/release facts are created only through actual APIs.
 The fixture runner never seeds those business tables. The completion policy is
 another explicit test-only, actual-database-name-guarded decision; normal
 production remains UNCONFIRMED even when the caller sends confirmation=true.
+
+The M4-05 `closure` group adds five independent accounts per viewport, bringing
+the private fixture from 110 to 120. It shares only immutable synthetic types;
+D6001 and fresh plate/customer/order namespaces isolate the management flow. No
+completion confirmation, closure witness, task manifest, business record or
+receipt is seeded. Normal management-confirmation and order-closure policies
+remain UNCONFIRMED. Only named test-classpath policies, guarded by the actual
+isolated database name, enable the synthetic all-persisted-task cohort.
 
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
@@ -391,6 +401,8 @@ python3 -m venv /tmp/xk-order-contract-env
   --responses 'test-results/**/exception-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_completion_contract.py \
   --responses 'test-results/**/completion-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_closure_contract.py \
+  --responses 'test-results/**/closure-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -446,7 +458,7 @@ error responses. Setup and competing manager operations continue to produce
 separate original order, acceptance and TMS artifacts; execution E17 errors never
 enter the old TMS validator. The real lost-response witness records only its
 actual upstream response body, never the request or headers. The existing privacy
-guard recursively checks all 110 fixture passwords and rejects traces; it is not a
+guard recursively checks all 120 fixture passwords and rejects traces; it is not a
 claim that every possible cookie, CSRF or key leak has been independently scanned.
 Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
 request logs, use generic forwarding failures and compare retry identities as
@@ -459,7 +471,7 @@ responses are binary and explicitly excluded from the collector; failed content
 responses are JSON errors. Runtime byte/hash/decode assertions do not pretend to
 be JSON Schema validation. Original order/acceptance/TMS/execution responses remain
 in their own artifacts and validators; new E18 codes never widen old contracts.
-The privacy guard recursively checks all 110 fixture passwords and refuses traces;
+The privacy guard recursively checks all 120 fixture passwords and refuses traces;
 raw photos, private storage information, request metadata and authentication
 values are never serialized by this case. Storage/transaction failure injection,
 zero-write GET and immutable DB history constraints are proved by backend IT,
@@ -486,11 +498,58 @@ headers, cookies, key or PNG bytes. New conditional DTOs and seven source pins
 are independently validated; same-transaction release, evidence-set sealing,
 zero-case root locking and SQL rollback remain direct IT/runtime proof obligations.
 
-CI validates health/status, Flyway V1–V13 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
-tables (42 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
+The independent M4-05 `closure.spec.ts` adds one real management UI scenario per
+viewport, preserving all previous 36 cases. ADMIN and DISPATCHER use the actual
+pending/confirmed completion lists, explicit raw-reason confirmation, order
+closure worklist, current facts, paged task review and immutable histories. The
+accepted source has two persisted tasks: one `requiredTask=true` and one
+`requiredTask=null`. Both genuinely depart, upload in-memory PNGs, progress,
+complete and receive separate administrative confirmations. NULL is displayed as
+unspecified, never an approved optional-task waiver. Unfinished or unconfirmed
+tasks block closure; no task is silently skipped, cancelled or released.
+
+Administrative version 0→1 leaves execution version 4, dispatch history,
+reservations and TOM unchanged. Closure uses the distinct accepted TOM version
+2→3, persists real CLOSED+ACCEPTED status and preserves child identities, raw
+source fields and historical customer snapshots. Disabled/renamed CRM records
+are not treated as new customer selections. Real stale UI submissions expose the
+correct administrative/order version units and retain local reasons until
+explicit fresh-data adoption. Both management commands actually commit at the
+HTTPS backend before controlled response loss; manual retries encounter a real
+CSRF refusal, retain the same frozen request/key and recover historical receipts.
+A receipt is kept separate from fresh current detail.
+
+After closure, the original order GET/list still use their original TOM envelopes;
+create/PUT/accept replays retain their original OPEN snapshots. The narrow M4-04
+completed read/receipt survives closure and physical resource reuse, while older
+current-only driver APIs remain opaque 404. Manager historical facts are separate
+from current physical-driver binding, and fresh role revocation refuses even an
+original receipt. Explicit desktop/Pixel 7 screenshots contain the truthful
+management records, with no private photo preview or original binary saved.
+Normal-policy refusal, legacy CLOSED with no invented audit, populated upgrades,
+root locking, full manifest/set seals and SQL rollback are backend integration
+proofs, not claims inferred from these browser requests.
+
+The new `closure-contract-responses.json` contains only `{schema, value}` entries
+from the nine new operations, with `CompletionConfirmationSummaryPageEnvelope`,
+`CompletionConfirmationDetailEnvelope`, `ConfirmCompletionEnvelope`,
+`ManagementConfirmationHistoryPageEnvelope`, `ClosureSummaryPageEnvelope`,
+`OrderClosureEnvelope`, `ClosureTaskReviewPageEnvelope`,
+`OrderClosureHistoryPageEnvelope`, `CloseOrderEnvelope` and `ErrorEnvelope`.
+The nine older artifact buckets retain their own validators. Ordinary CLOSED
+GET/list bodies enter the original order bucket; `/accept` historical OPEN
+receipts enter the acceptance bucket. Successful binary responses are excluded.
+No request reason/body, headers, auth values, keys, cookies or private bytes are
+serialized as request metadata. The saved loss witness is only the actual public
+synthetic upstream response. JSON validation does not claim transaction proof.
+
+CI validates health/status, Flyway V1–V14 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
+tables (47 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
 vehicles, drivers, dispatch assignments/events/reservations, execution/event/command
-records, evidence/objects/event-links/upload-ledgers, restart stability,
+records, evidence/objects/event-links/upload-ledgers, exception/supplement facts,
+completion/release ledgers, administrative confirmation facts and closure
+witnesses/manifests/ledgers, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

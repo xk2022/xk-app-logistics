@@ -37,3 +37,8 @@
 - LG-M4-03交付完成：PR #25，source`508e1e41174623e39c25352d1ae7d77df3692c99`／merge`e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e`；PR45787301633及main45788390226 attempt1各四項成功。718／530／34；HTTP本機及PR1,949／main1,947。確認後由該merge開M4-04，詳[完成及有效釋放](../09_testing/m4-04-validation.md)。
 
 - LG-M4-04本機驗收：718前端／566後端／36真TLS E2E及九HTTP2,244／76檔全過，V13／42表、全39舊領域表升級、二三資源有效解除／依賴／再用／RR與回滾、110憑證隱私已驗；[驗證及遠端門檻](../09_testing/m4-04-validation.md)，main四過才開M4-05。
+
+- LG-M4-04交付完成：[PR #26](https://github.com/xk2022/xk-app-logistics/pull/26)，source `5112ae5842bd16c7a2f50c41cdc5ef83136a1534`／merge `a027dd1e38279449b6843fead9633236aa164b64`；PR CI45798797894 attempt1及main CI45800016961 attempt2四項成功，source／merge tree一致。main首輪Maven Central429、未執行測試，完成失敗後同SHA只重跑失敗Backend成功。718／566／36、HTTP2,244；由該merge開始M4-05。
+- LG-M4-05：管理確認與訂單結案實作中，普通兩策略仍UNCONFIRMED；保留legacy CLOSED及原五API，依[本包驗證](../09_testing/m4-05-validation.md)記錄實際門檻，不以草稿當成功。
+
+- LG-M4-05本機完整驗收：883 frontend／612 backend（161 unit＋451 IT）、38真TLS E2E／0 retries及十HTTP2,686／96檔全過，PG47／14初始化／重啟、V13→14 full41舊表、338正式classes同源、120憑證隱私與desktop/mobile畫面已驗。[本包收據](../09_testing/m4-05-validation.md)追蹤PR及main四項CI，main四過後才進M4-06。

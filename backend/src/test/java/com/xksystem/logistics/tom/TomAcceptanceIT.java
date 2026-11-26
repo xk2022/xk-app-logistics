@@ -65,7 +65,7 @@ class TomAcceptanceIT {
     @Container
     static final PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse(
             "postgres:17.12-bookworm@sha256:1eff563f6c868b9b433566e9f3cf6e5c79fbd3b95bf70ec7277d376cdbfc50d7")
-            .asCompatibleSubstituteFor("postgres"));
+            .asCompatibleSubstituteFor("postgres")).withStartupAttempts(3);
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -91,7 +91,7 @@ class TomAcceptanceIT {
 
     @BeforeEach
     void isolateSyntheticAccountsCustomersAndOrders() throws Exception {
-        jdbc.execute("TRUNCATE TABLE logistics.tms_completion_command,logistics.tms_completion,logistics.tms_exception_event_evidence,logistics.tms_exception_supplement_evidence,logistics.tms_exception_command,logistics.tms_exception_event,logistics.tms_exception_supplement_request,logistics.tms_exception,logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, " + TABLES.stream().map(table -> "logistics." + table).collect(java.util.stream.Collectors.joining(","))
+        jdbc.execute("TRUNCATE TABLE logistics.tom_order_closure_command,logistics.tom_order_closure_task,logistics.tom_order_closure,logistics.tms_completion_confirmation_command,logistics.tms_completion_confirmation,logistics.tms_completion_command,logistics.tms_completion,logistics.tms_exception_event_evidence,logistics.tms_exception_supplement_evidence,logistics.tms_exception_command,logistics.tms_exception_event,logistics.tms_exception_supplement_request,logistics.tms_exception,logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, " + TABLES.stream().map(table -> "logistics." + table).collect(java.util.stream.Collectors.joining(","))
                 + ", logistics.crm_contact, logistics.crm_address, logistics.crm_customer, logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");
         clock.reset(); actor = account("ADMIN", false); admin = new Browser(); login(admin, actor);
         int index = 0;

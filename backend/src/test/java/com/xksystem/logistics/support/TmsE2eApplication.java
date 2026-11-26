@@ -6,6 +6,8 @@ import com.xksystem.logistics.tms.evidence.EvidenceStorage;
 import com.xksystem.logistics.tms.evidence.ExecutionEvidencePolicy;
 import com.xksystem.logistics.tms.exceptions.ExceptionPolicy;
 import com.xksystem.logistics.tms.completion.CompletionPolicy;
+import com.xksystem.logistics.tms.confirmation.ManagementCompletionPolicy;
+import com.xksystem.logistics.tom.closure.OrderClosurePolicy;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -65,6 +67,12 @@ public final class TmsE2eApplication {
                 catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated completion policy database",failure);}
             });
             registry.registerBeanDefinition("syntheticCompletionPolicy",completionPolicy);
+            var managementPolicy=new RootBeanDefinition(ManagementCompletionPolicy.class);managementPolicy.setPrimary(true);
+            managementPolicy.setInstanceSupplier(()->{try{return SyntheticManagementPolicies.confirmation(context.getBean(DataSource.class));}catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated management policy database",failure);}});
+            registry.registerBeanDefinition("syntheticManagementCompletionPolicy",managementPolicy);
+            var closurePolicy=new RootBeanDefinition(OrderClosurePolicy.class);closurePolicy.setPrimary(true);
+            closurePolicy.setInstanceSupplier(()->{try{return SyntheticManagementPolicies.closure(context.getBean(DataSource.class));}catch(java.sql.SQLException failure){throw new IllegalStateException("Unable to verify isolated closure policy database",failure);}});
+            registry.registerBeanDefinition("syntheticOrderClosurePolicy",closurePolicy);
         });
         return application;
     }

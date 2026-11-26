@@ -28,3 +28,7 @@
 ## M4-04 完成與有效解除
 
 只在AWAITING_COMPLETION、版本匹配、無阻擋異常、原readiness照片及獨立安全策略均滿足後，同交易COMPLETED／+1並標記本次精確二三資源；原派工紀錄仍保留。成功舊收據不再解除新owner，依賴只接受同order／sourceVersion真witness，無自動派工。普通政策仍UNCONFIRMED；[精確採用](../98_decisions/2026-11-26-m4-04-engineering.md)與[實測](../09_testing/m4-04-validation.md)分開記錄。
+
+## M4-05 管理確認與訂單結案
+
+真實完成及安全解除後，管理員／調度員可依當前獨立策略記錄一次行政確認，不再釋放資源；命名合成策略對全部persisted true／null任務完成及確認、整單零blocking exceptions／零有效占用重新檢核後，才寫不可變結案manifest及CLOSED＋ACCEPTED／TOMversion+1。普通策略仍UNCONFIRMED。新audit與舊無audit CLOSED分別RECORDED／LEGACY_CLOSED，不推造actor或時間。見[獨立契約](../06_api/tom-closure.md)。

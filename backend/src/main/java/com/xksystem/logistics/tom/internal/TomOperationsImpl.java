@@ -107,6 +107,13 @@ class TomOperationsImpl implements TomOperations {
         // Do not rebuild children, refresh customerName, or alter any historical/raw draft fields.
         return read(id,scope,false);
     }
+    @Override public ObjectNode close(UUID id,String scope,UUID actor,Instant now,long previousVersion){
+        if(jdbc.update("UPDATE logistics.order_core SET lifecycle_status='CLOSED',updated_at=?,updated_by=? WHERE id=? AND company_scope=? AND lifecycle_status='OPEN'",timestamp(now),actor,id,scope)!=1)
+            throw com.xksystem.logistics.tom.closure.ClosureFailure.conflict("INVALID_STATE","目前訂單無法結案");
+        if(jdbc.update("UPDATE logistics.tom_order SET version=version+1,updated_at=?,updated_by=? WHERE order_id=? AND acceptance_status='ACCEPTED' AND version=? AND version<?",timestamp(now),actor,id,previousVersion,DraftCodec.MAX_VERSION)!=1)
+            throw com.xksystem.logistics.tom.closure.ClosureFailure.conflict("INVALID_STATE","目前訂單無法結案");
+        return read(id,scope,false);
+    }
     private LinkedHashMap<String,Object> rootFields(ObjectNode draft,String name){
         var values=new LinkedHashMap<String,Object>();values.put("order_type",draft.get("type").asString());values.put("customer_id",UUID.fromString(draft.get("customerId").asString()));values.put("customer_name",name);
         values.put("customer_reference",bytes(draft.get("customerReference")));values.put("remark",bytes(draft.get("remark")));

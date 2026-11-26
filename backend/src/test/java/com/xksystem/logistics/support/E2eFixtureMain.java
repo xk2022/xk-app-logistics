@@ -249,6 +249,23 @@ public final class E2eFixtureMain {
                 // Only immutable definitions are shared; no completion or release facts are seeded.
                 completion.put("vehicleTypes", dispatch.get("vehicleTypes"));
                 accounts.put("completion", completion);
+                Map<String, Object> closure = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB", "temporary"}) {
+                    String username = "closure-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, name.equals("temporary"), Instant.now());
+                    closure.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                closure.put("scope", dispatchScope);
+                // Only immutable definitions are shared; no confirmation, closure or business facts are seeded.
+                closure.put("vehicleTypes", dispatch.get("vehicleTypes"));
+                accounts.put("closure", closure);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();

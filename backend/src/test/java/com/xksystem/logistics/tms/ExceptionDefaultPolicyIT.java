@@ -50,7 +50,7 @@ import tools.jackson.databind.node.ObjectNode;
 class ExceptionDefaultPolicyIT {
     @Container static final PostgreSQLContainer postgres=new PostgreSQLContainer(DockerImageName.parse(
             "postgres:17.12-bookworm@sha256:1eff563f6c868b9b433566e9f3cf6e5c79fbd3b95bf70ec7277d376cdbfc50d7")
-            .asCompatibleSubstituteFor("postgres")).withDatabaseName("xk_logistics_e2e");
+            .asCompatibleSubstituteFor("postgres")).withStartupAttempts(3).withDatabaseName("xk_logistics_e2e");
     @DynamicPropertySource static void database(DynamicPropertyRegistry registry){
         registry.add("spring.datasource.url",postgres::getJdbcUrl);registry.add("spring.datasource.username",postgres::getUsername);
         registry.add("spring.datasource.password",postgres::getPassword);TlsTestSupport.register(registry);
