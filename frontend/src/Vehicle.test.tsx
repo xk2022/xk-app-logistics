@@ -223,7 +223,7 @@ describe('vehicle form', () => {
     expect(screen.getByLabelText('車牌', { exact: true })).toBeEnabled()
     expect(screen.getByLabelText('車牌', { exact: true })).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByLabelText('車牌', { exact: true })).toHaveAccessibleDescription(/合成重複車牌/)
-    expect(screen.getByLabelText('車牌', { exact: true })).toHaveFocus()
+    await waitFor(() => expect(screen.getByLabelText('車牌', { exact: true })).toHaveFocus())
     expect(screen.getByRole('button', { name: existing ? '儲存車輛' : '建立車輛' })).toBeEnabled()
     expect(screen.queryByRole('heading', { name: '車輛資料衝突，本機內容已保留' })).not.toBeInTheDocument()
     fill('車牌', 'CORRECTED')

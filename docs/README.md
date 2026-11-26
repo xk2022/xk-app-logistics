@@ -64,3 +64,5 @@
 - [工程採用](98_decisions/2026-11-26-m4-05-engineering.md)
 - [獨立API](06_api/tom-closure.md)／[OpenAPI](06_api/tom-closure-openapi.yaml)
 - [驗證](09_testing/m4-05-validation.md)
+
+- [M4-05 main CI焦點穩定化](09_testing/m4-05-ci-stabilization.md)

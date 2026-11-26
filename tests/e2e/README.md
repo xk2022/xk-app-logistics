@@ -359,7 +359,7 @@ npm ci
 npx playwright install --with-deps chromium
 
 cd backend
-./mvnw test-compile dependency:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
+./mvnw test-compile org.apache.maven.plugins:maven-dependency-plugin:3.10.0:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
 cd ..
 python3 tests/e2e/prepare-tms-runtime.py
 docker compose --env-file /tmp/xk-e2e.env up --build -d --wait
