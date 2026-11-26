@@ -256,3 +256,61 @@ Without arguments the response glob is mandatory. Missing matches, empty files o
 arrays, unknown envelope names, extra metadata and schema failures all fail the
 command. `--static-only` and `--responses` are mutually exclusive. The commands use
 the existing temporary virtual environment and hashed install described above.
+
+## Independent M4-01 driver execution contract checks
+
+`validate_execution_contract.py` reads the frozen independent
+`docs/06_api/tms-execution-openapi.yaml`: exactly two operations and 22 component
+schemas, DRIVER-only roles (both management roles denied), Session/CSRF, required
+assignment path and write idempotency header, strict query rejection, request JSON
+and success/error declarations. The new GET is the original fourteen-field MyTask
+projection plus a three-field execution member; the POST returns a minimal
+three-field departure receipt. The old fourteen-field list and all M1–M3 source
+contracts/validators remain unchanged. The four original source fingerprints are
+independently verified using the existing unchanged SHA-256 manifest.
+
+Static checks contain 32 positives / 111 negatives and eight reference-rejection
+self-checks. They cover virtual WAITING/0/null, DEPARTED/1 and reserved later read
+enum values, independent execution-version bounds, exact mathematical integers,
+minimal receipt narrowing, raw TOM NUL/NFD/decimal/offset/microsecond/contact
+semantics, structured E17 errors and privacy-specific field exclusions. Future
+phase static examples validate the reserved read type; they do not mean that
+progress, photos, completion, release or closure were implemented or exercised.
+
+The tool reuses the existing hash-pinned PyYAML/jsonschema/referencing packages,
+explicit Gregorian/date-time checks and a retrieval-denying in-memory registry.
+External/relative/file/network references, unresolved local references and resource
+identity overrides are rejected. Evidence parsing rejects duplicate keys, non-JSON
+constants, invalid UTF-8/Unicode, extreme invalid Decimal input, unknown envelope
+names and extra capture metadata. Exact Decimal arithmetic prevents a fractional
+safe-version boundary from passing through binary-float rounding. Error diagnostics
+show schema/pointer/keyword, never submitted values, parser messages, credentials,
+request bodies, headers or private storage details.
+
+New captures are nonempty `execution-contract-responses.json` arrays of public
+synthetic `{schema,value}` response bodies only, with schema names
+`MyTaskExecutionEnvelope`, `DepartMyTaskEnvelope` or `ErrorEnvelope`. E17 errors
+belong only in this artifact; old setup/order/acceptance/TMS/FMS operations retain
+their original collectors and validators. No Cookie, CSRF token, key, raw request,
+authentication header, password or trace is recorded. Existing recursive fixture
+credential/privacy checks remain required before upload.
+
+A body-only schema cannot prove current-person/current-assignment authority,
+source/occupation freshness, replay priority, transaction rollback, zero GET
+mutation, or HTTP200/header/path/expectedVersion+1 witnesses. IT/E2E verify those
+directly. Static tooling is not real HTTP or operational-policy acceptance; normal
+UNCONFIRMED departure is still blocked and no formal evidence/release/closure
+policy is inferred from a positive synthetic case.
+
+```sh
+# Static only; explicitly reports actual HTTP acceptance as not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_execution_contract.py --static-only
+# After the isolated real HTTPS browser run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_execution_contract.py \
+  --responses 'test-results/**/execution-contract-responses.json'
+```
+
+The default HTTP glob is mandatory without `--static-only`. Missing files, empty
+files/arrays, malformed JSON/Unicode, unknown schemas, extra metadata and schema
+failures fail the command. `--static-only` and `--responses` are mutually exclusive.
+No new dependency or scanner exclusion is added.

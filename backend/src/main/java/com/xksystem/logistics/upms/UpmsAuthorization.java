@@ -35,6 +35,9 @@ public class UpmsAuthorization {
     /** A lock-capable read: coordinates the caller's own binding lookup with account lifecycle changes. */
     @Transactional(propagation=Propagation.MANDATORY)
     public AccountDto requireDriverSelfWithLocks(SessionPrincipal principal) { return service.authorizeDriverSelfWithLocks(principal); }
+    /** Preliminary identity check only; commands must still lock/revalidate before reading a receipt. */
+    @Transactional(readOnly=true)
+    public AccountDto requireDriverSelf(SessionPrincipal principal) { return service.authorizeDriverSelf(principal); }
     @Transactional(readOnly=true)
     public AccountDto requireDispatchManager(SessionPrincipal principal) { return service.authorizeOrderManager(principal,false); }
     @Transactional(propagation=Propagation.MANDATORY)

@@ -32,6 +32,7 @@ interface DispatchFixture {
   scope: 'DESKTOP' | 'MOBILE'
   vehicleTypes: Record<'main' | 'trailer' | 'shared', { id: string; code: string; label: string }>
 }
+interface ExecutionFixture extends DispatchFixture { temporary: DriverCredential }
 interface DriverFixture {
   admin: DriverCredential
   dispatcher: DriverCredential
@@ -56,6 +57,7 @@ interface ProjectFixture {
   acceptance?: TomFixture
   dispatch?: DispatchFixture
   dispatchUi?: DispatchFixture
+  execution?: ExecutionFixture
 }
 
 export function fixtureFor(project: string): ProjectFixture {
@@ -164,6 +166,18 @@ export function dispatchUiFixtureFor(project: string): DispatchFixture {
     const type = group.vehicleTypes?.[key as keyof DispatchFixture['vehicleTypes']]
     return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
   })) throw new Error('Dispatch UI test fixture is incomplete for this browser project.')
+  return group
+}
+
+export function executionFixtureFor(project: string): ExecutionFixture {
+  const group = fixtureFor(project).execution
+  if (!group || !['admin', 'dispatcher', 'driverA', 'driverB', 'temporary'].every((key) => {
+    const account = group[key as 'admin' | 'dispatcher' | 'driverA' | 'driverB' | 'temporary']
+    return account && ['id', 'username', 'password'].every((field) => typeof account[field as keyof DriverCredential] === 'string')
+  }) || !['DESKTOP', 'MOBILE'].includes(group.scope) || !['main', 'trailer', 'shared'].every((key) => {
+    const type = group.vehicleTypes?.[key as keyof DispatchFixture['vehicleTypes']]
+    return type && ['id', 'code', 'label'].every((field) => typeof type[field as keyof typeof type] === 'string')
+  })) throw new Error('Execution test fixture is incomplete for this browser project.')
   return group
 }
 

@@ -181,6 +181,23 @@ public final class E2eFixtureMain {
                 // Shared immutable synthetic definitions; actors and all business records remain separate.
                 dispatchUi.put("vehicleTypes", dispatch.get("vehicleTypes"));
                 accounts.put("dispatchUi", dispatchUi);
+                Map<String, Object> execution = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB", "temporary"}) {
+                    String username = "execution-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, name.equals("temporary"), Instant.now());
+                    execution.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                execution.put("scope", dispatchScope);
+                // Reuse immutable definitions, never identities, assignments or execution state.
+                execution.put("vehicleTypes", dispatch.get("vehicleTypes"));
+                accounts.put("execution", execution);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();
