@@ -1,6 +1,6 @@
 # LG-M4-02 進度與私有照片驗證
 
-狀態：本機驗收完成；遠端門檻另依[本包唯一工作分支交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-02-progress-evidence+base%3Amain)記錄 source／PR／merge／PR及main四項 CI。前包精確收據見 [M4-01](m4-01-validation.md)；本包從 merge `daf26f979c1c03c078876f204a713578abe80a4e` 開工，先核對公司 `9213a3d8dacb8774d87c26cb736c4a4315779e95` 及 [工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)。
+狀態：PR #24已合併，PR CI45775507970與main CI45776966300 attempt1均四項成功；精確收據依[本包唯一工作分支交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-02-progress-evidence+base%3Amain)記錄 source／PR／merge／PR及main四項 CI。前包精確收據見 [M4-01](m4-01-validation.md)；本包從 merge `daf26f979c1c03c078876f204a713578abe80a4e` 開工，先核對公司 `9213a3d8dacb8774d87c26cb736c4a4315779e95` 及 [工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)。
 
 | 驗收 | 實際狀態 |
 | --- | --- |

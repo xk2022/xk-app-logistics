@@ -516,3 +516,76 @@ The default response glob is mandatory without `--static-only`; missing matches,
 empty/malformed evidence, unknown schemas, extra metadata and body failures fail.
 `--static-only` and `--responses` are mutually exclusive. No new dependency or
 artifact-scanner exception is introduced.
+
+## Independent M4-05 management-confirmation and TOM-closure checks
+
+`validate_closure_contract.py` reads only the new
+`docs/06_api/tom-closure-openapi.yaml`: exactly nine operations / 49 schemas. It
+independently verifies eight preserved sources (the original four manifest entries
+plus frozen M401/M402/M403/M404 OpenAPI digests), twelve copied components and the
+original taskNo/orderNo field definitions. Public SHA-256 pins use explicit YAML
+`!!str` and parenthesized complete Python literals. Old schemas, validators,
+requirements and checksum manifests remain unchanged; no scanner exclusions.
+
+Static tooling contains 99 positives / 603 negatives and eight reference-rejection
+self-checks. It covers administrative counter0/1 versus TOM/source/execution units,
+summary11/fact6/detail5/confirmation-result6, closure-view9/counts6/policy4/
+requirements4/task-review14/witness9/result6, raw NUL/NFD/space/newline/Unicode
+codepoint boundaries, exact required keys, manager-only actor snapshots, conditional
+current mode versus recorded mode, ALREADY_CONFIRMED/CLOSED priority, honest legacy
+CLOSED/null audit, all-task true|null semantics, literal confirmations, page metadata
+arithmetic, one-step closure versions and matching typed witness fields. No public
+or client proof digest, false requiredTask waiver or E2111 is accepted.
+
+Independent custom keywords enforce original raw nonblank Unicode semantics,
+matching public witness fields, completion/release timestamp equality, exact TOM
+version increments, ordered task counts and bounded page arithmetic. Decimal
+arithmetic accepts JSON1/1.0/1e0 and rejects fractional/unsafe version boundaries.
+E2101 requires exactly one actualConfirmationVersion0/1 or actualOrderVersion;
+route-specific units must additionally be checked by strict clients and actual
+HTTP tests. Other business/common errors cannot smuggle counters, identity, SQL,
+storage or another module's error namespace. Canonical local-only references are
+checked before an in-memory retrieval-denying registry; network/file/foreign refs
+and resource-ID overrides fail without retrieval.
+
+Sanitized evidence parsing rejects duplicates, malformed UTF-8/Unicode, non-JSON
+constants, invalid extreme Decimal input, unknown envelopes, empty arrays/files,
+extra capture metadata and body failures. Diagnostics print only schema, pointer
+and keyword, never submitted values or parser messages. The normal policies are
+UNCONFIRMED; the named isolated actual-DB-gated test cohort requires ALL persisted
+true|null tasks genuinely complete and management-confirmed, with zero whole-order
+blocking exceptions/effective occupations. It does not approve formal confirmer
+responsibility, unspecified-task handling, photos/provider or operational release.
+
+Accepted nonempty `closure-contract-responses.json` arrays contain only public
+synthetic `{schema,value}` bodies named `CompletionConfirmationSummaryPageEnvelope`,
+`CompletionConfirmationDetailEnvelope`, `ConfirmCompletionEnvelope`,
+`ManagementConfirmationHistoryPageEnvelope`, `ClosureSummaryPageEnvelope`,
+`OrderClosureEnvelope`, `ClosureTaskReviewPageEnvelope`,
+`OrderClosureHistoryPageEnvelope`, `CloseOrderEnvelope`, `ErrorEnvelope`. Public
+synthetic actor role/displayName are allowed projections; account/actor IDs,
+requests, keys, Cookie/token/header/trace/SQL/private-storage data and images/base64
+are not captured. Existing recursive privacy/credential scans remain mandatory.
+Original ordinary CLOSED GET/list use the old order artifact and OrderEnvelope/
+OrderPageEnvelope; original accept success/replay keep their OPEN acceptance schema.
+
+Static checks cannot prove streamed JSON16KiB enforcement, original-session role
+freshness, same-actor ledger priority, exact whole-order/source proof, typed
+reciprocal FKs/manifest, new-owned-only root/graph/TMS membership seals, legacy SQL
+upgrade compatibility, PostgreSQL NOWAIT/RR behavior or atomic CLOSED revision.
+They also cannot prove headers/status/replay witnesses or real product acceptance.
+These require IT/E2E and source/privacy evidence. Only the SAME frozen POST's
+E2101/02/03/07/08/09/10 after successful-ledger MISS may settle a prior unknown;
+GET/common/key/in-progress/protected-relation errors do not prove rollback.
+
+```sh
+# Static only, explicitly not actual HTTP acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_closure_contract.py --static-only
+# After isolated real HTTPS acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_closure_contract.py \
+  --responses 'test-results/**/closure-contract-responses.json'
+```
+
+The default response glob is mandatory without `--static-only`; missing, empty or
+malformed evidence fails. `--static-only` and `--responses` are mutually exclusive.
+No new dependency, runtime-policy switch or artifact-scanner exception is added.

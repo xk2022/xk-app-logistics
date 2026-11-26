@@ -17,7 +17,7 @@
 | M4-01 | PR #23 已合併；PR CI45768556588／main CI45769255127 attempt1 四過；本機 590／418／30、HTTP1,489（遠端1,490） | [M4-01 驗證](m4-01-validation.md)及[PR／main CI 收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)；main 四過才進入 M4-02 |
 | M4-02 | PR #24已合併；PR CI45775507970／main CI45776966300 attempt1四過；本機590／469／32、HTTP1,731（PR1,733／main1,734） | [進度及私有照片驗證](m4-02-validation.md)，main四過才開M4-03 |
 | M4-03 | PR #25／source508e1e4／merge e55ee4e；PR45787301633及main45788390226 attempt1四過；718／530／34，本機及PR HTTP1,949／main1,947 | [異常與補件驗證](m4-03-validation.md)，main四過後開M4-04 |
-| M4-04 | 本機718／566／36（0 retries）及九HTTP2,244／76檔全過；PR及main四項CI待核對 | [完成及有效釋放驗證](m4-04-validation.md)，main四過後開M4-05 |
-| M4-05 | 未開始；需前包 main CI 四過 | 管理確認及結案 |
+| M4-04 | PR #26／source5112ae5／merge a027dd1；PR45798797894 attempt1／main45800016961 attempt2四過；718／566／36及九HTTP2,244／76檔全過 | [完成及有效釋放驗證](m4-04-validation.md)，main四過後開M4-05 |
+| M4-05 | 本機883／612／38及十HTTP2,686全過；PG47／14、120憑證隱私通過，PR及main四CI依交付收據 | [管理確認及結案驗證](m4-05-validation.md) |
 | M4-06 | 未開始；需前包 main CI 四過 | 手機完整操作 |
 | M4-07 | 未開始；需前包 main CI 四過 | 最終全量回歸 |

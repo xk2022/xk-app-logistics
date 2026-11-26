@@ -1,6 +1,6 @@
 # LG-M4-04 完成與有效釋放驗證
 
-狀態：本機完整驗收已通過，PR及main四項CI待本包提交後核對。前包[PR #25](https://github.com/xk2022/xk-app-logistics/pull/25)的source508e1e41174623e39c25352d1ae7d77df3692c99／merge e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e，PR CI45787301633及main CI45788390226 attempt1各四項成功後開始；公司再次核對9213a3d8dacb8774d87c26cb736c4a4315779e95。
+狀態：PR #26已合併，PR CI45798797894 attempt1與main CI45800016961 attempt2均四項成功。前包[PR #25](https://github.com/xk2022/xk-app-logistics/pull/25)的source508e1e41174623e39c25352d1ae7d77df3692c99／merge e55ee4ecdf98d6f314b60e45c96b0b18d9e5489e，PR CI45787301633及main CI45788390226 attempt1各四項成功後開始；公司再次核對9213a3d8dacb8774d87c26cb736c4a4315779e95。
 
 [工程採用](../98_decisions/2026-11-26-m4-04-engineering.md)先釘住舊API相容、nullable completion marker、完整交易／reverse typed證明及兩個SQL封存入口；提案與source review不算runtime通過。原35份API／migration輸入hash保護。
 
@@ -12,7 +12,7 @@
 | 升級／初始化／重啟 | Platform14全過，V12→V13保留39領域表／照片／收據；真PG17.12空庫42表／13版／零業務，重啟一致，291正式class集合與bytes／82前端輸入／13migration同源 |
 | 真TLS桌面／手機 | 36／15files全過，2workers／0retries，3.3m；前端與契約作者crossreview通過；110臨時憑證reportprivacy通過 |
 | 安全／隱私／source同源 | npm兩端0；SBOM1.6／144；OSV409／4來源無issue；staged預檢gitleaks0／無排除；110憑證隱私及runtime同源全過；最終staged gitleaks 0 findings／無排除；commit history於交付PR及CI另核對 |
-| source／PR／merge／四項PR及main CI | 未提交本包；由[唯一head收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-04-task-completion+base%3Amain)追蹤 |
+| source／PR／merge／四項PR及main CI | PR #26；source5112ae5842bd16c7a2f50c41cdc5ef83136a1534／merge a027dd1e38279449b6843fead9633236aa164b64；PR45798797894 a1／main45800016961 a2四過 |
 
 正式安全確認者、D04／D05／D06／D10、provider、派工資格與結案責任未核准，正常策略維持拒絕，正向僅隔離合成。完整管理確認／DRIVER操作分別留M4-05／06；不做M5或正式部署。
 
@@ -51,6 +51,10 @@
 
 ## 交付與剩餘風險
 
-本包source／PR／merge及四項PR與main CI由[唯一head收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-04-task-completion+base%3Amain)追蹤；不在提交前宣稱遠端通過。main四項成功後才自動進M4-05。
+本包source／PR／merge及四項PR與main CI由[唯一head收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-04-task-completion+base%3Amain)追蹤且已四過；精確main merge核對後已自動從a027dd1開始M4-05。
 
 正式派工、D04／D05、D06／D10、provider、安全確認者／釋放責任及結案政策仍未核准，普通策略維持拒絕。沿用UPMS單instance，沒有正式儲存／清除工作。bundle561.03kB／gzip157.28kB有500kB advisory，build成功。管理確認／結案及完整DRIVER UI分別留M4-05／06，不做M5或部署。
+
+## 合併後收據
+
+[PR #26](https://github.com/xk2022/xk-app-logistics/pull/26)，source `5112ae5842bd16c7a2f50c41cdc5ef83136a1534`／merge `a027dd1e38279449b6843fead9633236aa164b64`；PR CI45798797894 attempt1及main CI45800016961 attempt2四項成功，source／merge tree一致。main attempt1僅Backend在測試前下載Spring Boot Maven plugin4.1.3 POM遇Maven Central HTTP429，另外三項成功；整個workflow完成失敗後，只重跑失敗job、同SHA且不改碼，attempt2 Backend153＋413＝566全過。PR及main均36 E2E／2,244 HTTP；main執行回應188／異常194，總量與本機一致。最終history scanner實際掃37 commits、0 findings、無排除。由該merge開始M4-05。

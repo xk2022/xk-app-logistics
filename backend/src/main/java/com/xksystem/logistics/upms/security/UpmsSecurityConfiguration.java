@@ -50,7 +50,9 @@ public class UpmsSecurityConfiguration {
                         &&(request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/evidence")
                         ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/exceptions(?:/[^/]+/supplement-requests/[^/]+/(?:evidence|submit))?")
                         ||request.getServletPath().matches("/api/v1/tms/exceptions/[^/]+/(?:supplement-requests|resolve)")
-                        ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/complete")))));
+                        ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/complete")
+                        ||request.getServletPath().matches("/api/v1/tms/completions/[^/]+/confirm")
+                        ||request.getServletPath().matches("/api/v1/orders/[^/]+/close")))));
         http.exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, exception) -> responses.error(request,response,401,"UNAUTHENTICATED","無法登入或登入已失效，請確認資料後重新登入"))
                 .accessDeniedHandler((request, response, exception) -> responses.error(request,response,403,

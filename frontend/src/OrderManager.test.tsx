@@ -35,7 +35,12 @@ describe('order workspace', () => {
     expect(screen.getByText('進口', { exact: true })).toBeVisible()
     expect(fetch.mock.calls.some(([path]) => path.startsWith('/api/v1/orders?'))).toBe(true)
     expect(fetch.mock.calls.some(([path]) => path === `/api/v1/orders/${summary.id}`)).toBe(false)
-    expect(screen.queryByRole('button', { name: /正式受理|派車|結案/ })).not.toBeInTheDocument()
+    const workspace = screen.getByRole('heading', { name: '訂單工作台' }).closest('section')
+    expect(workspace).not.toBeNull()
+    expect(workspace).toHaveClass('order-workspace')
+    expect(within(workspace!).queryByRole('button', { name: /正式受理|派車|結案/ })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: '主要導覽' })).getByRole('button', { name: '確認與結案' })).toBeVisible()
+    expect(fetch.mock.calls.some(([path]) => path.startsWith('/api/v1/tms/completions') || path.startsWith('/api/v1/orders/closure-worklist'))).toBe(false)
   })
 
   it('never loads orders or exposes an order entry for DRIVER', async () => {

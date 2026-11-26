@@ -1,0 +1,49 @@
+.closure-workspace { min-width: 0; }
+.closure-workspace .card { margin-bottom: 24px; }
+.closure-tabs { display: flex; gap: 8px; border-bottom: 1px solid #dbe2ea; margin: 0 0 28px; flex-wrap: wrap; }
+.closure-tabs button { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #64748b; font: inherit; font-size: 14px; font-weight: 600; padding: 14px 20px; min-height: 48px; cursor: pointer; }
+.closure-tabs button[aria-selected=true] { border-color: #2563eb; color: #1d4ed8; }
+.closure-tabs button:disabled { opacity: .5; cursor: wait; }
+.closure-workspace :is(button,input,select,textarea,summary):focus-visible { outline: 3px solid #2563eb66; outline-offset: 3px; }
+.closure-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 20px; }
+.closure-section-heading h2 { font-size: 23px; margin: 0; }
+.closure-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.closure-query { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(200px, 1.4fr) 130px auto; align-items: end; gap: 16px; }
+.closure-query label,.closure-command form > label { display: block; color: #334155; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.closure-query :is(input,select),.closure-command textarea { display: block; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 7px; color: #172554; background: #fff; font: inherit; font-size: 14px; }
+.closure-command textarea:disabled { background: #f1f5f9; color: #64748b; }
+.closure-command form { margin-top: 25px; padding-top: 25px; border-top: 1px solid #e2e8f0; }
+.closure-command > h2 { font-size: 22px; margin-top: 0; }
+.closure-case-list,.closure-task-list,.closure-history-list { padding: 0; margin: 0 0 24px; list-style: none; display: grid; gap: 20px; }
+.closure-case-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.closure-case-list article { height: 100%; }
+.closure-case-list h3 { color: #172554; font-size: 21px; margin: 18px 0 10px; overflow-wrap: anywhere; }
+.closure-case-list p { font-size: 13px; color: #475569; line-height: 1.8; overflow-wrap: anywhere; }
+.closure-case-list button { margin-top: 12px; }
+.closure-tag { display: inline-block; border-radius: 6px; padding: 5px 9px; font-size: 12px; font-weight: 600; color: #1d4ed8; background: #eff6ff; }
+.closure-policy { border: 1px solid #ddd6fe; border-radius: 11px; background: #f5f3ff; color: #5b21b6; padding: 20px 22px; margin-bottom: 24px; }
+.closure-policy-closed { border-color: #fde68a; background: #fffbeb; color: #78350f; }
+.closure-policy strong { display: block; font-size: 14px; }
+.closure-policy p { margin: 9px 0 0; font-size: 13px; line-height: 1.8; }
+.closure-muted { color: #64748b; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.closure-data { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; margin: 24px 0; }
+.closure-data > div { min-width: 0; }
+.closure-data dt { color: #64748b; font-size: 12px; }
+.closure-data dd { margin: 8px 0 0; color: #172554; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.closure-workspace h3 { overflow-wrap: anywhere; }
+.closure-raw { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; line-height: 1.85; color: #334155; margin: 18px 0; }
+.closure-identity { font-size: 12px; color: #64748b; overflow-wrap: anywhere; margin: 18px 0; }
+.closure-identity summary { padding: 11px 0; min-height: 44px; cursor: pointer; }
+.closure-identity code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.closure-warning,.closure-confirm { border: 1px solid #fcd34d; border-radius: 10px; padding: 20px 22px; background: #fffbeb; color: #78350f; margin: 20px 0; font-size: 13px; line-height: 1.85; }
+.closure-warning h2,.closure-warning h3,.closure-confirm h3 { margin: 0 0 12px; font-size: 18px; }
+.closure-warning button + button { margin-left: 9px; }
+.closure-confirm { border-color: #bfdbfe; background: #f8fbff; color: #334155; }
+.closure-task-list > li,.closure-history-list > li { border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; min-width: 0; }
+.closure-task-list h3,.closure-history-list h3 { margin: 0 0 14px; color: #334155; font-size: 17px; }
+.closure-receipt { border-color: #bbf7d0; }
+.closure-receipt > p[role=status] { color: #166534; font-weight: 600; font-size: 14px; }
+.closure-pager { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 24px 0; color: #64748b; font-size: 12px; }
+.closure-pager > div { display: flex; gap: 10px; }
+@media(max-width:1050px) { .closure-query { grid-template-columns: 1fr 1fr; } .closure-data { grid-template-columns: 1fr 1fr; } }
+@media(max-width:680px) { .closure-query,.closure-data,.closure-case-list { grid-template-columns: 1fr; } .closure-tabs button { flex: 1; padding: 13px 10px; } .closure-actions,.closure-pager > div { width: 100%; flex-wrap: wrap; } .closure-actions button,.closure-pager button { flex: 1; } .closure-warning,.closure-confirm,.closure-policy { padding: 17px; } }

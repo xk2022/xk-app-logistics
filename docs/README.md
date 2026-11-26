@@ -57,3 +57,10 @@
 - [工程採用](98_decisions/2026-11-26-m4-04-engineering.md)
 - [工作包](08_development/m4-04-task-completion-handoff.md)
 - [完成及有效釋放驗證](09_testing/m4-04-validation.md)
+
+### M4-05 工程與驗證
+
+- [管理確認及結案交接](08_development/m4-05-management-closure-handoff.md)
+- [工程採用](98_decisions/2026-11-26-m4-05-engineering.md)
+- [獨立API](06_api/tom-closure.md)／[OpenAPI](06_api/tom-closure-openapi.yaml)
+- [驗證](09_testing/m4-05-validation.md)

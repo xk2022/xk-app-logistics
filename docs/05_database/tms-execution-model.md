@@ -28,3 +28,7 @@ V12新增tms_exception／event／command／supplement_request／supplement_evide
 ## M4-04 增量結構
 
 V13新增tms_completion／tms_completion_command兩表，最新42；既有reservation只增nullable completion_id，有效索引predicate統一released_at IS NULL AND completion_id IS NULL，舊欄位／收據不改。完整typed terminal／event／witness／ledger／精確二三marker有互反deferred及reverse證明；新reservation INSERT及原選照link集合另封存，不能晚插破壞完成或歷史。具體DDL與[工程採用](../98_decisions/2026-11-26-m4-04-engineering.md)為準，無偽造完成backfill。
+
+## M4-05 管理確認及結案
+
+V14新增五表（最新47）：completion confirmation／owncommand，以及order closure／typedtaskmanifest／owncommand。詳細[工程採用](../98_decisions/2026-11-26-m4-05-engineering.md)。行政counter0→1不改execution，結案真正CLOSED／TOMversion+1並保存完整revision；typed sourceVersion仍指原不可變受理版。新witness+manifest+reciprocalledger保原子，owned結案後兩root及整個graph／typedanchor／active membership封存；legacy CLOSED無audit合法，不補歷史、不套全域反向稽核要求。reason以bytea保原UTF8；完整json快照保原字面並以::text交Java解碼，避免jsonb。兩新ledger採versioned Base64原文字段codec，對外仍原文。

@@ -59,7 +59,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(webEnvironment=SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(FmsVehicleIT.TimeConfiguration.class)
 class FmsVehicleIT {
-    @Container static final PostgreSQLContainer postgres=new PostgreSQLContainer(DockerImageName.parse("postgres:17.12-bookworm@sha256:1eff563f6c868b9b433566e9f3cf6e5c79fbd3b95bf70ec7277d376cdbfc50d7").asCompatibleSubstituteFor("postgres"));
+    @Container static final PostgreSQLContainer postgres=new PostgreSQLContainer(DockerImageName.parse("postgres:17.12-bookworm@sha256:1eff563f6c868b9b433566e9f3cf6e5c79fbd3b95bf70ec7277d376cdbfc50d7").asCompatibleSubstituteFor("postgres")).withStartupAttempts(3);
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",postgres::getJdbcUrl);registry.add("spring.datasource.username",postgres::getUsername);registry.add("spring.datasource.password",postgres::getPassword);TlsTestSupport.register(registry);}
     @TestConfiguration static class TimeConfiguration {@Bean @Primary MutableTestClock fmsClock(){return new MutableTestClock();}}
     @LocalServerPort int port;
@@ -77,7 +77,7 @@ class FmsVehicleIT {
     private static final List<String> OPTION_FIELDS=List.of("id","plateNo","vehicleType","vehicleTypeCode","vehicleTypeLabel","vehicleTypeEnabled","capacityTon","version");
 
     @BeforeEach void isolateSyntheticVehiclesAccountsAndTypeCatalog()throws Exception{
-        jdbc.execute("TRUNCATE TABLE logistics.tms_completion_command,logistics.tms_completion,logistics.tms_exception_event_evidence,logistics.tms_exception_supplement_evidence,logistics.tms_exception_command,logistics.tms_exception_event,logistics.tms_exception_supplement_request,logistics.tms_exception,logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
+        jdbc.execute("TRUNCATE TABLE logistics.tom_order_closure_command,logistics.tom_order_closure_task,logistics.tom_order_closure,logistics.tms_completion_confirmation_command,logistics.tms_completion_confirmation,logistics.tms_completion_command,logistics.tms_completion,logistics.tms_exception_event_evidence,logistics.tms_exception_supplement_evidence,logistics.tms_exception_command,logistics.tms_exception_event,logistics.tms_exception_supplement_request,logistics.tms_exception,logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
         jdbc.update("DELETE FROM logistics.adm_dict_item WHERE NOT read_only");
         jdbc.update("UPDATE logistics.adm_dict_category SET enabled=true,version=0 WHERE code='VEHICLE_TYPE'");
         category=jdbc.queryForObject("SELECT id FROM logistics.adm_dict_category WHERE code='VEHICLE_TYPE'",UUID.class);
@@ -374,7 +374,7 @@ class FmsVehicleIT {
                 for(String forbidden:List.of("com/xksystem/logistics/adm/internal/","com/xksystem/logistics/upms/internal/","com/xksystem/logistics/crm/internal/","com/xksystem/logistics/tom/internal/","com/xksystem/logistics/tms/internal/"))assertThat(constants.contains(forbidden)).as("FMS owns its persistence: %s",file.getFileName()).isFalse();
             }
         }
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'",Long.class)).isEqualTo(42);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'",Long.class)).isEqualTo(47);
     }
 
     private Map<String,Object> minimal(){return fields("plateNo",plate(),"vehicleType",types.get(0).toString());}
