@@ -10,3 +10,5 @@
 狀態模型候選：訂單高階生命週期、訂單受理、任務及派工狀態分開；不可直接沿用舊文件互相矛盾的車輛狀態名稱。待定：可離場確認者、在途異常、預約時窗、合載、板車、獨立任務、照片規則及特殊進出口例外。
 
 參考：[已採用建單規則](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/FIRST_SLICE_ORDER_SPEC.md)、[領域流程](https://github.com/xk2022/codex-xk-logistic/blob/7092510c7e63a3f5781e1f0a24787a32e3248ac4/docs/04-domain-and-workflows.md)。
+
+M3-04～06 採用 [Q36–Q40](../98_decisions/2026-11-26-tms-dispatch.md)，派工操作與占用見 [TMS 流程](tms-dispatch-workflow.md)。未決的正式資格與例外維持待核准。
