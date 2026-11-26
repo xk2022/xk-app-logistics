@@ -44,3 +44,7 @@
 backend映像 `sha256:70432f853ba7fdfbcc1f8a9db46a9a9d3d63f973b961026dbc12ae71f35e940c`、frontend `sha256:7b9e4b981af4ee857473de2d5c01c426a67b8f7cde29765d6de65f423f0c478e`；234個main編譯class相同、71產品建置檔相同、11migration bytes相同，外掛僅7個明確白名單test class。本包沒有新增操作UI，截圖是既有工作台回歸；完整司機操作畫面留M4-06。普通DEV維持既有M3服務／資料，正常M4應用拒絕策略由DefaultPolicyIT真TLS獨立證明，不把普通DEV冒稱為本包新映像。
 
 交付前公司最新再次核對 `9213a3d8dacb8774d87c26cb736c4a4315779e95`，與開工相同。未核准策略保持拒絕，不修改舊Repo、不正式部署；M4-03須本包PR及main四項全過才開始。
+
+## 最終交付收據（M4-03 開工前核對）
+
+[PR #24](https://github.com/xk2022/xk-app-logistics/pull/24)，source `b9647dfe4430e8d088362331c92d31de405c44a5`／merge `4681f13b4dd1dc324632848e7b119147e0e43068`，Git tree相同。[PR CI45775507970](https://github.com/xk2022/xk-app-logistics/actions/runs/45775507970)及[main CI45776966300](https://github.com/xk2022/xk-app-logistics/actions/runs/45776966300)均attempt1四項成功；遠端各139 unit＋330 integration、32 E2E全過、0測試略過。七HTTP實採本機1,731／PR1,733／main1,734（Execution171／173／174，其餘六份相同、皆42files），依各run實際競爭回應數量記錄。精確main head核對完成後才從merge開M4-03。

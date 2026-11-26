@@ -20,3 +20,7 @@ V10 新增 tms_execution、tms_execution_event、tms_execution_command，並對�
 V11 追加 tms_execution_evidence、tms_execution_evidence_object、tms_execution_event_evidence、tms_execution_evidence_command 四張空表（最新共34），不改 V1–V10／舊資料或回填證據。metadata／原始私有 bytes／成功收據同交易；進度沿用 V10 execution／event／command，追加 immutable event↔evidence 關聯。個別上傳不升 execution.version，不改原 assignment／generation／reservation。
 
 合成 bytea adapter 只能用同 DataSource／caller transaction，正常 provider unavailable，不代表正式儲存選型；保存／清理未核准，沒有刪除工作。各 identity／phase／version／hash／不可變約束以 migration 及[本包工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)為準。
+
+## M4-03 增量結構
+
+V12新增tms_exception／event／command／supplement_request／supplement_evidence／event_evidence六表，最新40；異常獨立counter、原始UTF8 bytea及json snapshot、typed/compositeFK／immutable history，無回填。既有Evidence只增phaseCHECK允AWAITING，原M4-02POST仍僅兩phase；photos共用同caller transaction provider，不另建公開儲存。33舊領域表及照片／收據保留之實測依[本包驗證](../09_testing/m4-03-validation.md)，不以DDL存在代替測試。

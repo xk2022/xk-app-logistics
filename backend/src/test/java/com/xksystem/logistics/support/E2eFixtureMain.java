@@ -215,6 +215,23 @@ public final class E2eFixtureMain {
                 // Reuse immutable definitions, never identities, assignments or progress/evidence state.
                 progressEvidence.put("vehicleTypes", dispatch.get("vehicleTypes"));
                 accounts.put("progressEvidence", progressEvidence);
+                Map<String, Object> exception = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB", "temporary"}) {
+                    String username = "exception-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, name.equals("temporary"), Instant.now());
+                    exception.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                exception.put("scope", dispatchScope);
+                // Reuse immutable synthetic classifications only; no business records or identities.
+                exception.put("vehicleTypes", dispatch.get("vehicleTypes"));
+                accounts.put("exception", exception);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();

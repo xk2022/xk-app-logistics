@@ -20,3 +20,7 @@
 依[本包工程採用](../98_decisions/2026-11-26-m4-02-engineering.md)新增 DEPARTED→IN_PROGRESS→AWAITING_COMPLETION 兩個相鄰命令。照片上傳只建立原始不可變證據，不推進版本；進度以同次指派／目前 phase／execution version 的明確 VERIFIED 照片集合檢核，成功事件保留選照關聯。照片、進度及回放均重驗本人原 Session／目前綁定／來源與完整占用，不以舊 actor 或 UUID 當授權。
 
 正式照片規則及 provider／保存仍 UNCONFIRMED；獨立 policy/provider 預設拒絕依賴動作。只有隔離合成策略可正向驗證，原照片與歷史收據不覆寫。AWAITING_COMPLETION 不是完成或安全釋放；本包不解前置／資源，不處置例外或結案。完整操作 UI 留 M4-06。
+
+## M4-03 異常與補件
+
+獨立異常OPEN0→NEEDS_SUPPLEMENT→OPEN明確提交→RESOLVED；每次新照片／要求／提交／處置各升異常版本，上傳不等提交。原報告／照片／歷史不覆寫，非RESOLVED導出blocking供後續完成／結案查核；處置不代表已可離場、安全釋放或結案。普通策略UNCONFIRMED，正向只隔離合成，D04／D05仍未核准。角色歷史／重播與鎖定精確規則見[工程採用](../98_decisions/2026-11-26-m4-03-engineering.md)。原M4-02進度不暗加未採用的暫停例外。

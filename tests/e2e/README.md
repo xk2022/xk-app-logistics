@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 32 cases: sixteen each for desktop Chromium and Pixel 7. The
+The suite has 34 cases: seventeen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -181,6 +181,38 @@ Every step preserves the original fourteen-field list, fifteen-field detail,
 three-field departure receipt, TOM/FMS versions, task generation and reservations.
 It neither completes a task, releases resources nor unlocks a predecessor.
 
+The M4-03 exception scenario adds independent manager UI coverage per viewport,
+retaining all earlier 32 cases. ADMIN and DISPATCHER use the real list, status and
+assignment filters, detail, raw report, explicit request/resolve confirmation,
+paged history and exception-linked photo preview. DRIVER report, raw PNG upload
+and explicit supplement submission are setup/API checks only; no DRIVER execution
+product UI is introduced before M4-06. Original report, NFD/NUL text and outer
+whitespace remain distinct from later request, submission and resolution facts.
+
+Both management commands commit at the real HTTPS backend before controlled
+response loss. A real invalid-CSRF retry preserves the frozen reason, version,
+path and key; the next explicit retry retrieves the historical receipt. A driver
+can fulfill a requested supplement before the manager retrieves that original
+request receipt; the UI must show it as history and explicitly reload current GET
+state before another action. Real stale-version UI handling retains the local
+reason until explicit adoption. Legal races are request versus resolve on OPEN
+after fulfilled evidence, or upload versus submit on NEEDS_SUPPLEMENT after a
+valid linked photo exists. Resolve is never treated as legal on NEEDS_SUPPLEMENT.
+No exception operation completes execution, releases resources or unlocks a
+predecessor; old M4-02 uploads still reject AWAITING_COMPLETION while the new
+request-scoped supplement route may accept it under the isolated test policy.
+
+Private exception PNG content is read only through the new manager route;
+metadata links cannot authorize another exception's or an ordinary task photo.
+Actual bytes, SHA-256, browser decode, cache/privacy headers and objectURL
+revocation are checked in memory. Manager historical access remains independent
+of a driver's current binding; self routes retain the stricter current scope.
+Revoking a manager's account while previewing must clear all protected facts and
+revoke the objectURL. This file disables automatic failure screenshots to avoid
+capturing private previews; it explicitly saves safe manager screenshots only
+after closing previews and checking no blob image remains. No original PNG,
+base64, request headers, cookies, CSRF or key is saved as an artifact.
+
 Production eligibility stays fail-closed. Positive TMS browser checks explicitly
 use a separately mounted, test-only launcher and synthetic policy, never a
 production profile or approval flag. Every policy construction checks
@@ -192,7 +224,7 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 90 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 100 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
 ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios in each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
@@ -238,6 +270,15 @@ with unique plates, customers, orders and assignments; the runner seeds no
 execution, progress, evidence, blob, event link or command receipt. Its positive
 policy/private bytea provider is strictly a test-classpath, database-name-guarded
 arrangement. PostgreSQL is not selected as the formal production photo provider.
+
+The M4-03 `exception` group adds another five separate accounts per viewport,
+bringing the private fixture from 90 to 100 accounts. It reuses only immutable
+synthetic classifications; driver codes start at D4001, with fresh plates,
+customers, accepted orders and assignments created through real APIs. The runner
+creates no exception, supplemental request, image/link, submission or disposition
+fact. Its independently named exception policy is test-only, same-scope and
+actual-database-name guarded; no HTTP/profile/parameter flag approves a formal
+exception or provider.
 
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
@@ -299,6 +340,8 @@ python3 -m venv /tmp/xk-order-contract-env
   --responses 'test-results/**/execution-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_progress_evidence_contract.py \
   --responses 'test-results/**/progress-evidence-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_exception_contract.py \
+  --responses 'test-results/**/exception-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -354,7 +397,7 @@ error responses. Setup and competing manager operations continue to produce
 separate original order, acceptance and TMS artifacts; execution E17 errors never
 enter the old TMS validator. The real lost-response witness records only its
 actual upstream response body, never the request or headers. The existing privacy
-guard recursively checks all 90 fixture passwords and rejects traces; it is not a
+guard recursively checks all 100 fixture passwords and rejects traces; it is not a
 claim that every possible cookie, CSRF or key leak has been independently scanned.
 Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
 request logs, use generic forwarding failures and compare retry identities as
@@ -367,14 +410,25 @@ responses are binary and explicitly excluded from the collector; failed content
 responses are JSON errors. Runtime byte/hash/decode assertions do not pretend to
 be JSON Schema validation. Original order/acceptance/TMS/execution responses remain
 in their own artifacts and validators; new E18 codes never widen old contracts.
-The privacy guard recursively checks all 90 fixture passwords and refuses traces;
+The privacy guard recursively checks all 100 fixture passwords and refuses traces;
 raw photos, private storage information, request metadata and authentication
 values are never serialized by this case. Storage/transaction failure injection,
 zero-write GET and immutable DB history constraints are proved by backend IT,
 not inferred from a JSON receipt or a browser hash alone.
 
-CI validates health/status, Flyway V1–V11 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
-tables (34 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
+The exception case writes `exception-contract-responses.json` containing only
+original public synthetic bodies in its eight independent envelope schemas.
+Successful private content is excluded; JSON refusals use only the new error
+schema. Setup responses remain separated into the original order, acceptance,
+TMS, vehicle, driver, execution and progress/evidence artifacts. New E19 errors
+never widen old schemas. Its Node forwarding witness records only the actual
+upstream response body, while retry identities are compared as booleans in
+memory. The original four source pins and independent M4-01/M4-02 schema pins
+remain checked by the independent validator. Browser schema validation is not a
+claim of database transaction, provider or legal-policy correctness.
+
+CI validates health/status, Flyway V1–V12 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
+tables (40 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
 vehicles, drivers, dispatch assignments/events/reservations, execution/event/command
 records, evidence/objects/event-links/upload-ledgers, restart stability,

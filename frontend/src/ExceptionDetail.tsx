@@ -1,0 +1,4 @@
+import type { ExceptionDetail as Detail } from './exceptionApi'
+import { exceptionPhaseLabels } from './exceptionModel'
+import { ExceptionRecordView } from './ExceptionShared'
+export default function ExceptionDetail({ detail }: { detail: Detail }) { return <><aside className={`exception-policy ${detail.actions.mode === 'UNCONFIRMED' ? 'exception-policy-closed' : 'exception-policy-synthetic'}`} aria-label="異常處置政策"><strong>{detail.actions.mode === 'UNCONFIRMED' ? '異常處置政策尚未核准' : '合成測試政策・僅供工程驗收'}</strong><p>{detail.actions.mode === 'UNCONFIRMED' ? '原始事實與歷程仍可在授權範圍內查閱；依賴此政策的處置不開放。' : '此為隔離合成情境，不代表正式現場例外、免除照片、完成責任或安全釋放規則已核准。'}</p></aside><section className="card"><ExceptionRecordView record={detail.exception} /><p className="exception-current-execution">本次讀取的執行階段：{exceptionPhaseLabels[detail.execution.phase]} · 執行版本 {detail.execution.version}。異常版本與執行版本分別管理。</p></section></> }

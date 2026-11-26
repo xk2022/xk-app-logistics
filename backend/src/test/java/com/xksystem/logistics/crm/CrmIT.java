@@ -79,7 +79,7 @@ class CrmIT {
 
     @BeforeEach
     void isolateSyntheticCrmAndAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+        jdbc.execute("TRUNCATE TABLE logistics.tms_exception_event_evidence,logistics.tms_exception_supplement_evidence,logistics.tms_exception_command,logistics.tms_exception_event,logistics.tms_exception_supplement_request,logistics.tms_exception,logistics.tms_execution_evidence_command,logistics.tms_execution_event_evidence,logistics.tms_execution_evidence,logistics.tms_execution_evidence_object,logistics.tms_execution_command,logistics.tms_execution_event,logistics.tms_execution,logistics.tms_resource_reservation,logistics.tms_dispatch_event,logistics.tms_idempotency,logistics.tms_assignment,logistics.tms_task_dispatch,logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
                 + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
                 + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");

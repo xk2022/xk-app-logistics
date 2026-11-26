@@ -47,7 +47,9 @@ public class UpmsSecurityConfiguration {
         http.sessionManagement(session -> session.requireExplicitAuthenticationStrategy(true));
         http.csrf(csrf -> csrf.csrfTokenRepository(csrfTokens)
                 .csrfTokenRequestHandler(new HeaderOnlyCsrfRequestHandler(request->request.getMethod().equals("POST")
-                        &&request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/evidence"))));
+                        &&(request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/evidence")
+                        ||request.getServletPath().matches("/api/v1/tms/my-tasks/[^/]+/exceptions(?:/[^/]+/supplement-requests/[^/]+/(?:evidence|submit))?")
+                        ||request.getServletPath().matches("/api/v1/tms/exceptions/[^/]+/(?:supplement-requests|resolve)")))));
         http.exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, exception) -> responses.error(request,response,401,"UNAUTHENTICATED","無法登入或登入已失效，請確認資料後重新登入"))
                 .accessDeniedHandler((request, response, exception) -> responses.error(request,response,403,
@@ -64,6 +66,10 @@ public class UpmsSecurityConfiguration {
                 .requestMatchers("/api/v1/tms/my-tasks/*","/api/v1/tms/my-tasks/*/depart").hasRole("DRIVER")
                 .requestMatchers("/api/v1/tms/my-tasks/*/progress-policy","/api/v1/tms/my-tasks/*/progress",
                         "/api/v1/tms/my-tasks/*/evidence","/api/v1/tms/my-tasks/*/evidence/*/content").hasRole("DRIVER")
+                .requestMatchers("/api/v1/tms/my-tasks/*/exceptions","/api/v1/tms/my-tasks/*/exceptions/*",
+                        "/api/v1/tms/my-tasks/*/exceptions/*/history",
+                        "/api/v1/tms/my-tasks/*/exceptions/*/supplement-requests/*/evidence",
+                        "/api/v1/tms/my-tasks/*/exceptions/*/supplement-requests/*/submit").hasRole("DRIVER")
                 .requestMatchers("/api/v1/tms","/api/v1/tms/**").hasAnyRole("ADMIN","DISPATCHER")
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .anyRequest().permitAll());

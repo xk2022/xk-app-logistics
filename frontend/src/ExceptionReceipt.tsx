@@ -1,0 +1,3 @@
+import type { ExceptionWriteResult } from './exceptionApi'
+import { ExceptionRecordView } from './ExceptionShared'
+export default function ExceptionReceipt({ result }: { result: ExceptionWriteResult }) { return <section className="card exception-receipt" aria-labelledby="exception-receipt-heading"><p className="eyebrow">COMMAND RECEIPT</p><h2 id="exception-receipt-heading">本次異常操作收據</h2><p role="status">{result.replayed ? '已取回原次歷史成功結果；這不是目前異常狀態。' : '本次異常操作已確認成功，以下為操作完成當時結果。'}</p><p>重播不會重新處置或建立補件要求。下一次操作前，請明確重新讀取目前異常，不以歷史收據取代目前資料。</p><ExceptionRecordView record={result.data} historical /></section> }

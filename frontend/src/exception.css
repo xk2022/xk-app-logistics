@@ -1,0 +1,64 @@
+.exception-workspace { min-width: 0; }
+.exception-heading { align-items: flex-start; gap: 18px; }
+.exception-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.exception-actions > button { justify-content: center; }
+.exception-scope, .exception-policy { padding: 19px 22px; border: 1px solid #dbeafe; border-radius: 12px; background: #eff6ff; color: #172554; margin-bottom: 24px; }
+.exception-scope strong, .exception-policy strong { display: block; font-size: 14px; }
+.exception-scope p, .exception-policy p { color: #475569; font-size: 13px; line-height: 1.8; margin: 7px 0 0; }
+.exception-policy-closed { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+.exception-policy-synthetic { background: #f5f3ff; border-color: #ddd6fe; color: #5b21b6; }
+.exception-workspace > .card { margin-bottom: 24px; }
+.exception-query-card { margin-bottom: 26px; }
+.exception-query { display: grid; grid-template-columns: minmax(130px, .6fr) minmax(240px, 1.4fr) 110px auto; gap: 16px; align-items: end; }
+.exception-query label, .exception-reason-form > label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+.exception-query input, .exception-query select, .exception-reason-form textarea { width: 100%; min-width: 0; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 7px; padding: 10px 12px; background: white; color: #101828; font: inherit; font-size: 14px; }
+.exception-workspace :is(input,select,textarea,summary):focus-visible { outline: 3px solid #2563eb55; outline-offset: 3px; border-color: #2563eb; }
+.exception-workspace [aria-invalid=true] { border-color: #b91c1c; }
+.exception-workspace :is(input,select,textarea):disabled { background: #f1f5f9; color: #64748b; }
+.exception-case-list, .exception-photo-list, .exception-history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+.exception-case-list, .exception-photo-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.exception-case-list article { height: 100%; }
+.exception-case-list h3 { margin: 16px 0 6px; color: #172554; font-size: 19px; overflow-wrap: anywhere; }
+.exception-case-list small { color: #64748b; font-size: 11px; }
+.exception-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.exception-section-heading h2 { font-size: 22px; margin: 0; }
+.exception-section-heading p { font-size: 13px; color: #64748b; margin: 0; }
+.exception-status { display: inline-block; padding: 5px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.exception-status-OPEN { background: #eff6ff; color: #1d4ed8; }
+.exception-status-NEEDS_SUPPLEMENT { background: #fffbeb; color: #92400e; }
+.exception-status-RESOLVED { background: #f0fdf4; color: #166534; }
+.exception-muted { color: #64748b; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.exception-raw { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; line-height: 1.85; color: #334155; margin: 16px 0; }
+.exception-identity { color: #64748b; font-size: 12px; margin: 16px 0; overflow-wrap: anywhere; }
+.exception-identity summary, .exception-history summary { cursor: pointer; padding: 10px 0; min-height: 44px; line-height: 1.7; }
+.exception-identity code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.exception-data-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 22px 0; }
+.exception-data-grid > div { min-width: 0; }
+.exception-data-grid dt { color: #64748b; font-size: 12px; }
+.exception-data-grid dd { margin: 7px 0 0; color: #172554; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.exception-active-request { margin-top: 24px; padding: 18px 20px; border: 1px solid #fde68a; background: #fffbeb; border-radius: 9px; }
+.exception-active-request h3 { font-size: 17px; color: #78350f; margin: 0; }
+.exception-active-request > p { color: #92400e; font-size: 13px; line-height: 1.8; }
+.exception-current-execution { margin: 25px 0 0; border-top: 1px solid #e2e8f0; padding-top: 18px; color: #64748b; font-size: 12px; line-height: 1.8; }
+.exception-warning, .exception-confirm { padding: 20px 22px; margin: 20px 0; border: 1px solid #fcd34d; border-radius: 10px; background: #fffbeb; color: #78350f; font-size: 13px; line-height: 1.8; }
+.exception-warning h2, .exception-warning h3, .exception-confirm h3 { margin: 0 0 10px; font-size: 18px; }
+.exception-warning p, .exception-confirm p { margin: 8px 0 14px; }
+.exception-confirm { border-color: #bfdbfe; background: #f8fbff; color: #334155; }
+.exception-command > h2 { font-size: 22px; margin-top: 0; }
+.exception-action-hints { padding-left: 18px; color: #64748b; font-size: 12px; line-height: 1.8; }
+.exception-reason-form { margin-top: 24px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+.exception-pager { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 22px; color: #64748b; font-size: 12px; }
+.exception-pager > div { display: flex; gap: 9px; flex-wrap: wrap; }
+.exception-history-list > li, .exception-photo-list > li { border: 1px solid #e2e8f0; border-radius: 9px; padding: 18px; min-width: 0; }
+.exception-history-list h3, .exception-photo-list h3 { font-size: 15px; color: #334155; margin: 0 0 10px; overflow-wrap: anywhere; }
+.exception-history-list article > p:not(.exception-muted) { color: #475569; font-size: 13px; }
+.exception-photo-state { color: #64748b; font-size: 12px; }
+.exception-photo-preview { margin: 24px 0 0; padding: 22px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; }
+.exception-photo-preview img { display: block; max-width: 100%; max-height: 70vh; object-fit: contain; margin: 18px auto 0; }
+.exception-receipt { border-color: #bbf7d0; }
+.exception-receipt > h2 { font-size: 22px; }
+.exception-receipt > p[role=status] { color: #166534; font-weight: 600; }
+.exception-receipt > p { color: #475569; font-size: 13px; line-height: 1.8; }
+.exception-receipt .exception-record { margin-top: 22px; padding-top: 22px; border-top: 1px solid #e2e8f0; }
+@media(max-width: 1050px) { .exception-query { grid-template-columns: 1fr 1fr; } .exception-data-grid { grid-template-columns: 1fr 1fr; } }
+@media(max-width: 680px) { .exception-query, .exception-data-grid, .exception-case-list, .exception-photo-list { grid-template-columns: 1fr; } .exception-heading > .exception-actions { width: 100%; } .exception-heading > .exception-actions > button { flex: 1; } .exception-pager > div { width: 100%; } .exception-pager button { flex: 1; } .exception-scope, .exception-policy, .exception-warning, .exception-confirm, .exception-photo-preview { padding: 17px; } }
