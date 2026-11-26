@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 38 cases: nineteen each for desktop Chromium and Pixel 7. The
+The suite has 40 cases: twenty each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -263,10 +263,10 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 120 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 130 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
 ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios, and independent
-five-actor execution/progress/exception/completion/closure groups in each browser
+five-actor execution/progress/exception/completion/closure/execution-UI groups in each browser
 project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
@@ -337,6 +337,14 @@ receipt is seeded. Normal management-confirmation and order-closure policies
 remain UNCONFIRMED. Only named test-classpath policies, guarded by the actual
 isolated database name, enable the synthetic all-persisted-task cohort.
 
+The M4-06 `executionUi` group adds five independent actors per viewport,
+bringing the fixture from 120 to 130. D7001 and higher plus unique plates,
+customers, accepted orders and task kinds isolate its real DRIVER interface
+scenario from every previous actor group. Additional browser sessions reuse only
+that new actor to establish legal stale-version orderings; no old credentials or
+mutable business records are shared. The runner seeds no operational facts or
+receipts. No new production policy, provider, migration or approval flag exists.
+
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
 Spring Boot `PropertiesLauncher`. `prepare-tms-runtime.py` copies only the
@@ -357,6 +365,9 @@ export COMPOSE_PROJECT_NAME=xk-logistics-e2e
 ./infrastructure/generate-dev-tls.sh
 npm ci
 npx playwright install --with-deps chromium
+# Linux headed verification also requires xvfb-run and xauth on PATH.
+command -v xvfb-run
+command -v xauth
 
 cd backend
 ./mvnw test-compile org.apache.maven.plugins:maven-dependency-plugin:3.10.0:build-classpath -Dmdep.outputFile=target/e2e-classpath.txt -Dmdep.includeScope=test
@@ -372,7 +383,7 @@ export E2E_BASE_URL="https://localhost:${HTTPS_PORT:-8443}"
 DB_URL="jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:-5432}/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
   java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
 cd ..
-npm run test:e2e
+xvfb-run --auto-servernum npm run test:e2e -- --headed --workers=2 --retries=0
 python3 tests/e2e/assert_report_privacy.py
 ```
 
@@ -458,7 +469,7 @@ error responses. Setup and competing manager operations continue to produce
 separate original order, acceptance and TMS artifacts; execution E17 errors never
 enter the old TMS validator. The real lost-response witness records only its
 actual upstream response body, never the request or headers. The existing privacy
-guard recursively checks all 120 fixture passwords and rejects traces; it is not a
+guard recursively checks all 130 fixture passwords and rejects traces; it is not a
 claim that every possible cookie, CSRF or key leak has been independently scanned.
 Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
 request logs, use generic forwarding failures and compare retry identities as
@@ -471,7 +482,7 @@ responses are binary and explicitly excluded from the collector; failed content
 responses are JSON errors. Runtime byte/hash/decode assertions do not pretend to
 be JSON Schema validation. Original order/acceptance/TMS/execution responses remain
 in their own artifacts and validators; new E18 codes never widen old contracts.
-The privacy guard recursively checks all 120 fixture passwords and refuses traces;
+The privacy guard recursively checks all 130 fixture passwords and refuses traces;
 raw photos, private storage information, request metadata and authentication
 values are never serialized by this case. Storage/transaction failure injection,
 zero-write GET and immutable DB history constraints are proved by backend IT,
@@ -542,6 +553,80 @@ receipts enter the acceptance bucket. Successful binary responses are excluded.
 No request reason/body, headers, auth values, keys, cookies or private bytes are
 serialized as request metadata. The saved loss witness is only the actual public
 synthetic upstream response. JSON validation does not claim transaction proof.
+
+M4-06 `execution-ui.spec.ts` preserves the previous 38 cases and adds one full
+DRIVER UI flow each on desktop and Pixel 7. It opens the original fourteen-field
+assignment record into the sixteen-field live/completed detail and performs all
+seven command types through the actual product: departure, ordinary PNG upload,
+progress, raw exception report, supplemental PNG upload, explicit supplement
+submission and safe-release completion. ADMIN/DISPATCHER use their separate
+existing interfaces for supplement requests, resolution, administrative
+confirmation and real order closure. Setup and later physical-resource reuse use
+the normal manager APIs, never business-table fixtures or a policy toggle.
+
+Ordinary upload, supplemental upload, submit and complete each genuinely commit
+at the HTTPS backend before the response is deliberately lost. Explicit retries
+first reach a real CSRF refusal, then recover the same original bytes/body,
+versions, path and key. True stale responses are produced by holding an already
+user-confirmed request unchanged while another legal UI operation changes its
+version; responses and tokens are not fabricated. The exception counter and
+execution counter remain distinct. Raw NFD/NUL/whitespace text is preserved,
+upload is not submission, submission is not resolution, and completion is not
+whole-order closure. The completion set is exactly the previous successful
+AWAITING transition's chosen ordinary evidence, excluding supplemental photos.
+
+Private photo previews compare the real response bytes, hash, headers and decode
+in memory. Close and actual tab visibility changes revoke URLs; a late genuine
+binary response cannot recreate a preview after its context is hidden. Linux
+verification uses Xvfb and xauth. Headed mode alone retains Playwright's focus
+emulation, so only this real-visibility subcheck uses `native-browser.ts`: an
+owned raw Chromium process on its own Xvfb display, attached through the public
+`connectOverCDP({noDefaults:true})` existing default context. Its viewport matches
+the project, while the original desktop/Pixel 7 contexts retain the complete
+seven-command flow and device settings. No document-state override or synthetic
+visibility event is used.
+
+The native subcheck signs in normally as DRIVER A's third session, within the
+existing three-session limit, and reads the same assignment/photo through the
+actual UI. It genuinely logs out afterward without revoking the other sessions.
+Its profile is a private 0700 temporary directory, CDP binds random loopback,
+local TLS trusts only the generated DEV certificate public-key pin, and no global
+certificate bypass or `context.request` is used. The helper closes only its owned
+browser/Xvfb process group and removes its profile in `finally`. Its private
+Xauthority file is 0600 inside the 0700 profile; other workers cannot steal its
+real display focus, and the caller's DISPLAY is unchanged. Profiles, cookies
+and browser-control endpoints never enter report artifacts. Native login first
+requires actual foreground focus, then observes the real normal-DRIVER login
+response after a keyboard submission. A failed native login clears its password
+DOM and navigates away before the case asserts failure, so an automatic error
+snapshot cannot retain the input. The unchanged privacy guard must still pass
+before artifact upload. An incapable runner fails the genuine visibility
+assertion; it is not silently skipped.
+
+A deliberately failed logout never reaches the backend; authenticated actor
+continuity is checked in memory while the same unknown note, original intent and
+navigation guard survive. A successful logout or fresh authorization loss clears
+private data, without claiming an earlier POST rolled back.
+
+A complete receipt can remain unknown while managers genuinely confirm, close
+the source order and reuse its human/vehicle resources. The original completed
+read and explicit same-intent replay remain narrow historical facts; older
+current-only endpoints remain opaque 404. Rebinding the same physical driver to
+a different normal account grants the narrow read without transferring the old
+actor's receipt or pending intent. The completed UI stops old progress/photo/
+exception reads and exposes no manager, full-order, customer or resource details.
+Explicit screenshots contain only safe source, recovered supplement and completed
+views, with all private previews closed; automatic screenshots and traces are off.
+
+No new schema or validator is introduced for M4-06. All ten existing response
+buckets use their original schema allowlists; successful private binaries are
+excluded before JSON collection. Failed-response witnesses serialize only actual
+public synthetic response bodies. Original PNGs, Blob URLs, request bodies,
+headers, keys, auth values and credentials stay out of artifacts. The existing
+privacy check covers all 130 fixture passwords. Database atomicity, default
+UNCONFIRMED policy, upgrade/seal/rollback and provenance matrices retain the
+existing backend and meaningful client/model test obligations; browser evidence
+is not a substitute for those checks.
 
 CI validates health/status, Flyway V1–V14 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
 tables (47 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,

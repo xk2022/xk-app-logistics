@@ -4,7 +4,7 @@ import App from './App'
 import type { Account, Role } from './api'
 
 vi.mock('./DispatchManager', () => ({ default: ({ onDirtyChange, onBusyChange, onExpired }: { onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; onExpired: () => void }) => <section><h1>派工導覽測試</h1><label>導覽合成派工內容<input onChange={() => onDirtyChange?.(true)} /></label><button onClick={() => onDirtyChange?.(true)}>模擬派工結果未知</button><button onClick={() => { onDirtyChange?.(true); onBusyChange?.(true) }}>模擬同次派工傳送中</button><button onClick={() => { onBusyChange?.(false); onDirtyChange?.(false) }}>模擬原次派工確認成功</button><button onClick={onExpired}>模擬調度授權失效</button></section> }))
-vi.mock('./MyTasks', () => ({ default: ({ onExpired }: { onExpired: () => void }) => <section><h1>本人任務唯讀測試</h1><p>合成敏感路線與聯絡資訊</p><button onClick={onExpired}>模擬本人任務授權失效</button></section> }))
+vi.mock('./DriverWorkspace', () => ({ default: ({ onExpired, logoutPending }: { onExpired: () => void; logoutPending?: boolean }) => logoutPending ? <section className="card" role="status">正在安全登出…</section> : <section><h1>本人任務唯讀測試</h1><p>合成敏感路線與聯絡資訊</p><button onClick={onExpired}>模擬本人任務授權失效</button></section> }))
 vi.mock('./DriverSelf', () => ({ default: () => <h1>原本人司機資料測試</h1> }))
 
 const account: Account = { id: '00000000-0000-4000-8000-000000000001', username: 'synthetic.dispatch.ui', displayName: '合成調度使用者', role: 'ADMIN', enabled: true, mustChangePassword: false, version: 0 }
@@ -121,7 +121,7 @@ it('removes private own-task content when authorization expires', async () => {
   expect(screen.queryByText('合成敏感路線與聯絡資訊')).not.toBeInTheDocument()
 })
 
-it('unmounts private own tasks immediately during logout and shows the login page on success', async () => {
+it('hides private own tasks immediately during logout and shows the login page on success', async () => {
   let release: ((response: Response) => void) | undefined
   const response = new Promise<Response>((resolve) => { release = resolve })
   const fetch = transport('DRIVER', false, () => response)

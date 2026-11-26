@@ -18,6 +18,10 @@ export class ApiError extends Error {
 interface Csrf { token: string; headerName: string }
 let csrf: Csrf | null = null
 
+function checkSignal(signal?: AbortSignal) {
+  if (signal?.aborted) throw new ApiError(0, '連線逾時或中斷，請稍後重試。')
+}
+
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
@@ -38,16 +42,20 @@ export async function request(path: string, method = 'GET', body?: unknown, sign
   if (signal?.aborted) controller.abort()
   const timeout = window.setTimeout(abort, 10000)
   try {
+    checkSignal(controller.signal)
     const response = await fetch(`/api/v1${path}`, {
       method,
       credentials: 'same-origin',
+      redirect: 'error',
       headers: { Accept: 'application/json', ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...(method !== 'GET' && csrf ? { [csrf.headerName]: csrf.token } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: controller.signal,
     })
+    checkSignal(controller.signal)
     let payload: unknown
     try { payload = await response.json() } catch { throw new ApiError(response.status, '服務回應格式不正確，請稍後重試。') }
+    checkSignal(controller.signal)
     if (!record(payload) || typeof payload.code !== 'string' || typeof payload.message !== 'string' ||
       typeof payload.timestamp !== 'string' || Number.isNaN(Date.parse(payload.timestamp)) || !payload.timestamp.endsWith('+08:00')) {
       throw new ApiError(response.status, '服務回應格式不正確，請稍後重試。')
@@ -67,24 +75,30 @@ export async function request(path: string, method = 'GET', body?: unknown, sign
 }
 
 export async function refreshCsrf(signal?: AbortSignal): Promise<void> {
+  checkSignal(signal)
   csrf = null
   const data = await request('/auth/csrf', 'GET', undefined, signal)
+  checkSignal(signal)
   if (!record(data) || typeof data.token !== 'string' || !data.token || data.headerName !== 'X-CSRF-TOKEN') {
     throw new ApiError(0, '無法取得安全驗證，請重新操作。')
   }
   csrf = { token: data.token, headerName: data.headerName }
 }
 export async function getCsrfHeaders(signal?: AbortSignal): Promise<Record<string, string>> {
+  checkSignal(signal)
   if (!csrf) await refreshCsrf(signal)
+  checkSignal(signal)
   if (!csrf) throw new ApiError(0, '無法取得安全驗證，請重新操作。')
   return { [csrf.headerName]: csrf.token }
 }
-export async function write(path: string, method: string, body?: unknown): Promise<unknown> {
-  if (!csrf) await refreshCsrf()
-  try { return await request(path, method, body) } catch (error) {
-    if (error instanceof ApiError && error.status === 403) {
+export async function write(path: string, method: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
+  checkSignal(signal)
+  if (!csrf) await refreshCsrf(signal)
+  checkSignal(signal)
+  try { return await request(path, method, body, signal) } catch (error) {
+    if (error instanceof ApiError && error.status === 403 && !signal?.aborted) {
       // A rejected write is never replayed automatically: the caller decides when to submit again.
-      try { await refreshCsrf() } catch { csrf = null }
+      try { await refreshCsrf(signal) } catch { if (!signal?.aborted) csrf = null }
     }
     throw error
   }
@@ -96,10 +110,11 @@ export async function login(username: string, password: string) {
   try { await refreshCsrf() } catch { csrf = null }
   return account
 }
-export async function logout() {
-  await write('/auth/logout', 'POST')
+export async function logout(signal?: AbortSignal) {
+  await write('/auth/logout', 'POST', undefined, signal)
+  checkSignal(signal)
   csrf = null
-  try { await refreshCsrf() } catch { csrf = null }
+  try { await refreshCsrf(signal) } catch { if (!signal?.aborted) csrf = null }
 }
 export async function changePassword(currentPassword: string, newPassword: string) {
   await write('/auth/password', 'POST', { currentPassword, newPassword })

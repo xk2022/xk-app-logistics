@@ -9,3 +9,7 @@ Compose的dependency前綴解析遇HTTP429；fixture與瀏覽器未開始，不�
 補正分支`fix/lg-m4-05-ci-stabilization`，source／PR／merge及精確main四項CI由[補正交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afix%2Flg-m4-05-ci-stabilization+base%3Amain)核對。本機Vehicle30／ESLint與完整lint／typecheck／883 tests（34files）／build全過，產出仍為BPgE5AH9.js／615.40kB。125其他前端輸入、263 backend／203 main、38 E2E及Nginx均不變；HTTP-E2E輸入只改README，系統輸入只改CI插件指令。原612 Maven與38真TLS本機功能驗收對應相同產品bytes，補正PR及main仍完整執行全部四CI。
 
 完整座標驗證、actionlint、相對文件連結及staged／commit-history機密掃描為補正門檻；本機記錄位於`/workspace/artifacts/lg-m4-05-evidence/ci-stabilization/`。最終main四項成功前不進M4-06。既有[M4-05完整驗證](m4-05-validation.md)及隔離合成策略、正常未核准政策拒絕保持，不做M5或正式部署。
+
+## 最終遠端收據
+
+補正 [PR #28](https://github.com/xk2022/xk-app-logistics/pull/28) source `7324252264c2de39f1facc61fa77fd3a1e95d496`，merge `a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`；PR CI45821675514及精確main CI45823239922均attempt1四項成功，source／merge tree相同。兩者883前端／612後端（161unit＋451IT）／38E2E全過，HTTP PR2,686／main2,687，各96檔，報告隱私通過。main後端07:19，0failure／error／skip。原main45818321672失敗保留，最終門檻由補正main完成，隨後才從a879f93開始M4-06。完整literal收據與原失敗保留於PR #27／#28及本機delivery.json，不將首次merge冒充main全過。

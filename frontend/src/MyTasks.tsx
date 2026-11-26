@@ -19,7 +19,7 @@ function TimeValue({ value, assigned = false }: { value: string | null; assigned
   try { preview = taipeiPreview(value) } catch { /* The original value stays visible if a device cannot format it. */ }
   return <div className="my-tasks-time"><time dateTime={value}>{assigned && preview ? preview : value}</time>{preview && <small>{assigned ? '台北時間' : `台北時間：${preview}`}</small>}</div>
 }
-function TaskCard({ task }: { task: MyTask }) {
+function TaskCard({ task, onOpenAssignment }: { task: MyTask; onOpenAssignment?: (task: MyTask) => void }) {
   return <article className="card my-task-card" aria-label={`本人任務 ${task.taskNo}`}>
     <header className="my-task-heading"><div><p className="eyebrow">ASSIGNED TASK</p><h2>{task.taskNo}</h2></div><span className="my-task-readonly">指派記錄 · 唯讀</span></header>
     <dl className="my-task-overview"><div><dt>作業類型</dt><dd><RawValue value={task.taskKind} /></dd></div><div><dt>指派時間</dt><dd><TimeValue value={task.assignedAt} assigned /></dd></div></dl>
@@ -27,11 +27,12 @@ function TaskCard({ task }: { task: MyTask }) {
     <section className="my-task-section" aria-label="本段時間"><h3>預定時間</h3><dl className="my-task-data"><div><dt>預定開始</dt><dd><TimeValue value={task.plannedStartAt} /></dd></div><div><dt>預定結束</dt><dd><TimeValue value={task.plannedEndAt} /></dd></div></dl></section>
     <section className="my-task-section" aria-label="本段標的"><h3>貨櫃與貨物</h3><dl className="my-task-data"><div><dt>標的類型</dt><dd>{task.item.itemKind === 'CONTAINER' ? '貨櫃' : task.item.itemKind === 'CARGO' ? '貨物' : '未提供'}</dd></div><div><dt>櫃型</dt><dd><RawValue value={task.item.containerType} /></dd></div><div><dt>櫃號</dt><dd><RawValue value={task.item.containerNo} /></dd></div><div><dt>件數</dt><dd><RawValue value={task.item.packageQty === null ? null : String(task.item.packageQty)} /></dd></div><div><dt>毛重 kg</dt><dd><RawValue value={task.item.grossWeight} /></dd></div><div><dt>體積 m³</dt><dd><RawValue value={task.item.cbm} /></dd></div></dl></section>
     <section className="my-task-section" aria-label="本段現場聯絡"><h3>現場聯絡</h3>{task.siteContact === null ? <p className="my-tasks-help">未提供整組現場聯絡資訊。</p> : <><p className="my-tasks-help">已提供現場聯絡欄位。</p><dl className="my-task-data"><div><dt>現場聯絡姓名</dt><dd><RawValue value={task.siteContact.name} /></dd></div><div><dt>現場聯絡電話</dt><dd><RawValue value={task.siteContact.phone} /></dd></div></dl></>}</section>
+    {onOpenAssignment && <button type="button" className="primary-button" aria-label={`開啟本人任務 ${task.taskNo}`} onClick={() => onOpenAssignment(task)}>開啟本人任務</button>}
     {task.policyMode === 'UNCONFIRMED' && <p className="my-tasks-policy-note">資格政策尚待確認，請向調度員核對。</p>}
   </article>
 }
 
-export default function MyTasks({ onExpired }: { onExpired: () => void }) {
+export default function MyTasks({ onExpired, onOpenAssignment }: { onExpired: () => void; onOpenAssignment?: (task: MyTask) => void }) {
   const [request, setRequest] = useState<ReadRequest>(() => ({ epoch: 0, page: 0, size: 20, visible: document.visibilityState !== 'hidden' }))
   const [state, setState] = useState<ReadState>()
   const epoch = useRef(0)
@@ -77,7 +78,7 @@ export default function MyTasks({ onExpired }: { onExpired: () => void }) {
     {!request.visible ? <section className="card my-tasks-empty" role="status">頁面回到前景後，將重新讀取本人任務。</section> : !current ? <section className="card my-tasks-empty" role="status">正在重新確認本人指派任務…</section> : current.kind === 'error' ? <section className="card my-tasks-empty" role="alert"><h2>{missing ? '目前沒有可讀取的本人任務' : denied ? '本人任務存取已失效' : '無法讀取本人任務'}</h2><p>{missing ? '請聯絡管理員確認目前帳號綁定；此頁不提供其他司機查詢。' : denied ? '請重新登入後再確認本人任務。' : csrf ? '安全驗證暫時無法完成，請重新讀取。' : '請確認連線後重新讀取；舊任務與聯絡資訊已隱去。'}</p></section> : data && <>
       {data.content.length === 0 ? <section className="card my-tasks-empty"><h2>目前沒有可讀取的本人指派任務</h2><p>調度員指派後可重新讀取；撤派或改派的舊任務不會保留在此頁。此清單不提供完成狀態。</p></section> : <>
         {data.content.some((task) => task.policyMode === 'SYNTHETIC_TEST_ONLY') && <aside className="my-tasks-synthetic" aria-label="合成工程驗證"><strong>合成工程驗證</strong><p>目前資料屬合成測試情境，不代表正式營運或法規適格核准。</p></aside>}
-        <div className="my-tasks-list">{data.content.map((task) => <TaskCard key={task.assignmentId} task={task} />)}</div>
+        <div className="my-tasks-list">{data.content.map((task) => <TaskCard key={task.assignmentId} task={task} onOpenAssignment={onOpenAssignment} />)}</div>
       </>}
       <nav className="my-tasks-pager" aria-label="本人任務分頁"><p>{data.totalPages ? `第 ${data.page + 1} / ${data.totalPages} 頁` : '目前無資料'}</p><div><button type="button" className="secondary-button" disabled={data.page === 0} onClick={() => read(data.page - 1)}>上一頁本人任務</button><button type="button" className="secondary-button" disabled={data.page + 1 >= data.totalPages || data.page >= 100000} onClick={() => read(data.page + 1)}>下一頁本人任務</button></div></nav>
       <p className="my-tasks-help">路線或聯絡資訊需要調整時，請聯絡調度員。</p>

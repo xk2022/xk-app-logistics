@@ -84,3 +84,9 @@ npm view vitest@5.1.1 engines peerDependencies --json
 ## M4-05 CI 工具解析穩定化
 
 Maven Dependency Plugin固定使用完整goal座標`org.apache.maven.plugins:maven-dependency-plugin:3.10.0:build-classpath`。3.10.0為本專案既有成功classpath步驟實際解析版本（Java21／Maven3.9.16），不是升級產品相依。固定group/artifact/version避免前綴掃描多個plugin group的動態metadata；Maven Central429仍不會被忽略。完整座標、本機classpath一致性及遠端四項CI依[M4-05補正證據](../09_testing/m4-05-ci-stabilization.md)核對。
+
+## M4-06 真實背景瀏覽器驗證
+
+Playwright1.65.1所附Chromium159.0.8154.6，配合Xvfb `2:21.1.7-3+deb12u13`／xauth `1:1.1.2-1.1`的本機原生預設context檢查，已實際確認分頁hidden→visible。單用headed仍受Playwright預設focus emulation影響，故背景子檢查使用官方connectOverCDP的noDefaults=true，未覆寫visibility或派送假事件。其他完整桌面／Pixel7操作仍使用原測試contexts。CI明確安裝xvfb／xauth並輸出當輪OS套件精確版本；實際整輪結果見[M4-06驗證](../09_testing/m4-06-validation.md)。
+
+本機缺少系統安裝helper，Xvfb由APT驗證的Debian套件解壓到/tmp，沿用既有系統libs與xauth，未修改主機套件或sudo。下載使用受信CA及簽章驗證，不關閉TLS。測試用原生Chromium僅對本機DEV憑證公鑰SPKI設定信任，不使用全域忽略憑證錯誤；私有profile／CDP位址不進報告。

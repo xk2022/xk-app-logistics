@@ -65,4 +65,10 @@
 - [獨立API](06_api/tom-closure.md)／[OpenAPI](06_api/tom-closure-openapi.yaml)
 - [驗證](09_testing/m4-05-validation.md)
 
-- [M4-05 main CI焦點穩定化](09_testing/m4-05-ci-stabilization.md)
+- [M4-05 main CI穩定化](09_testing/m4-05-ci-stabilization.md)
+
+### M4-06 司機執行介面
+
+- [工作包](08_development/m4-06-driver-ui-handoff.md)
+- [工程採用](98_decisions/2026-11-26-m4-06-engineering.md)
+- [實測紀錄](09_testing/m4-06-validation.md)

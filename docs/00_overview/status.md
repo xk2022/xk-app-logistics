@@ -44,3 +44,7 @@
 - LG-M4-05本機完整驗收：883 frontend／612 backend（161 unit＋451 IT）、38真TLS E2E／0 retries及十HTTP2,686／96檔全過，PG47／14初始化／重啟、V13→14 full41舊表、338正式classes同源、120憑證隱私與desktop/mobile畫面已驗。[本包收據](../09_testing/m4-05-validation.md)追蹤PR及main四項CI，main四過後才進M4-06。
 
 - M4-05 PR #27四CI全過並合併28b26cd；main首輪Vehicle焦點單測時序失敗，Compose另遇pre-E2E Maven Central429，正在[獨立補正](../09_testing/m4-05-ci-stabilization.md)。保持原focus斷言，不進M4-06，直到補正PR及最終main四過。
+
+- LG-M4-05 最終交付：PR #27 source7625d2817db6bbff036f7982c36a34705ca4cb00／merge28b26cd4068cfda642cb6ae4cf565884891491c0，PR45816721104四過；原main45818321672失敗保留。補正PR #28 source7324252264c2de39f1facc61fa77fd3a1e95d496／merge`a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`，PR45821675514及最終main45823239922 attempt1四過；883／612／38，HTTP PR2,686／main2,687。由最終merge開始M4-06，[司機完整工作台與實測](../09_testing/m4-06-validation.md)持續更新，M4-07仍需前包main四過。
+
+- LG-M4-06本機完整驗收：1,083 frontend／612 backend／40真TLS E2E（0 retries）與十HTTP3,075／116檔全過，130原始憑證隱私、PG47／14初始化重啟與338classes同源已驗；[本包驗證](../09_testing/m4-06-validation.md)追蹤獨立PR及精確main四CI，完成後自動M4-07。

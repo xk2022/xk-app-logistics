@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M4-01～04 已交付；LG-M4-05 工程與本機驗收完成，遠端狀態依交付收據 |
+| 狀態 | development — LG-M4-01～05 已交付；LG-M4-06 本機完整驗收通過，遠端交付中 |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,7 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [司機執行工作台](docs/08_development/m4-06-driver-ui-handoff.md) · [工程採用](docs/98_decisions/2026-11-26-m4-06-engineering.md) · [驗證](docs/09_testing/m4-06-validation.md)
 - [管理確認及結案](docs/08_development/m4-05-management-closure-handoff.md) · [API](docs/06_api/tom-closure.md) · [驗證](docs/09_testing/m4-05-validation.md)
 - [M4 七包交接](docs/08_development/m4-execution-handoff.md) · [M4-01 交接](docs/08_development/m4-01-driver-departure-handoff.md) · [M4-01 驗證](docs/09_testing/m4-01-validation.md)
 - [M4 工程定義](docs/98_decisions/2026-11-26-m4-01-engineering.md) · [M4 API](docs/06_api/tms-execution.md)

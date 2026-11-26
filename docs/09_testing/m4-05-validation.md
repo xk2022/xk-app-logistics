@@ -77,3 +77,7 @@ Pinned Testcontainers2.0.5 bytecode檢視確認startupAttempts預設1、沒有�
 ## main CI 穩定化補正
 
 PR #27四CI全過並合併28b26cd後，main的舊Vehicle單測出現1項focus時序失敗，Compose亦在E2E前遇Maven Central429；此結果沒有標為main成功。最小補正與新PR／精確main門檻見[CI穩定化](m4-05-ci-stabilization.md)；補正main四過才進M4-06。
+
+## 最終遠端收據
+
+補正 [PR #28](https://github.com/xk2022/xk-app-logistics/pull/28) source `7324252264c2de39f1facc61fa77fd3a1e95d496`，merge `a879f93a7bf6838dc46d2fb8d5fde554f7bd5ae7`；PR CI45821675514及精確main CI45823239922均attempt1四項成功，source／merge tree相同。兩者883前端／612後端（161unit＋451IT）／38E2E全過，HTTP PR2,686／main2,687，各96檔，報告隱私通過。main後端07:19，0failure／error／skip。原main45818321672失敗保留，最終門檻由補正main完成，隨後才從a879f93開始M4-06。完整literal收據與原失敗保留於PR #27／#28及本機delivery.json，不將首次merge冒充main全過。

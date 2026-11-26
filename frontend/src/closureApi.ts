@@ -90,7 +90,7 @@ async function transport<T>(path: string, parse: (v: unknown) => T, signal?: Abo
   const writing = op !== undefined
   if (signal?.aborted) throw new ClosureApiError(0, 'REQUEST_ABORTED', '連線已中斷。')
   let csrf: Record<string, string> = {}
-  if (op) { try { csrf = await getCsrfHeaders(signal) } catch (e) { if (e instanceof ApiError && [401, 403].includes(e.status)) throw new ClosureApiError(e.status, e.status === 401 ? 'E0401' : 'E0403', '登入或存取狀態已失效。', { reason: e.status === 403 ? 'FORBIDDEN' : null }); throw new ClosureApiError(0, 'NETWORK_ERROR', '無法取得安全驗證，請確認連線後再試。') } }
+  if (op) { try { csrf = await getCsrfHeaders(signal) } catch (e) { if (signal?.aborted) throw new ClosureApiError(0, 'REQUEST_ABORTED', '連線已中斷。'); if (e instanceof ApiError && [401, 403].includes(e.status)) throw new ClosureApiError(e.status, e.status === 401 ? 'E0401' : 'E0403', '登入或存取狀態已失效。', { reason: e.status === 403 ? 'FORBIDDEN' : null }); throw new ClosureApiError(0, 'NETWORK_ERROR', '無法取得安全驗證，請確認連線後再試。') } }
   if (signal?.aborted) throw new ClosureApiError(0, 'REQUEST_ABORTED', '連線已中斷。')
   const controller = new AbortController(), abort = () => controller.abort(); signal?.addEventListener('abort', abort, { once: true }); const timeout = window.setTimeout(abort, 10000)
   try {
