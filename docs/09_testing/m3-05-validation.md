@@ -19,7 +19,7 @@
 | 項目 | 實際結果 |
 | --- | --- |
 | 前端 lint／typecheck／test／build | 全過；26 files／590 tests，原 426 保留；Vite 73 modules |
-| 後端 Maven verify | 124 unit＋245 integration＝369 全過，0 failure／error／skip，5 分 58 秒；162 個後端來源檔 hash 在執行前後相同 |
+| 後端 Maven verify | 124 unit＋245 integration＝369 全過，0 failure／error／skip，修正後最終完整執行 5 分 49 秒；162 個後端來源檔 hash 在執行前後相同 |
 | PostgreSQL／映像 | 隔離 V9／27 表空庫、全部業務表與派工表零種子、重啟一致性全過；backend 131 個產品來源與 M3-04 完全相同，重用已驗收映像；新 frontend 映像的 68 個產品檔逐 byte 驗證相同，202 個產品／建置輸入凍結 |
 | 真實 HTTPS／E2E | 完整 28／28 通過，11 files、2 workers、0 retries、2.3 分鐘；原 26 保留，70 個私有合成帳號，桌機與 Pixel 7 真 UI／真後端／PG |
 | 實際 HTTP 契約／隱私 | 五份全過：原 TOM 424／12 files、Acceptance 32／4、Vehicle 174／2、Driver 282／2、TMS 332／4，合計 1,244 筆／24 files；同批報告隱私檢查通過，沒有 fixture 帳密或 trace |
@@ -51,3 +51,11 @@ Vite 成功建置時回報單一 JS 513.87 kB／gzip 144.32 kB，超過預設 50
 實際 frontend 映像 `sha256:03d7f93910d5407970ca26f1cf57b6cb4f58215661177c611a42fa72efa7b134`；backend 重用 `sha256:597a2373e8c2f8d4aa2a5503ccc8be85788016734f16f2c77b45ead5c0b4206f`，因 131 個 backend 產品來源逐 byte 完全相同。正常 DEV 未掛載測試政策；完整驗收使用 `compose.e2e.yaml` 的隔離 launcher，業務資料只透過 API 建立。
 
 同批報告隱私驗證後，已清除本包隔離容器／資料卷、私有 fixture／env／session overlay；一般 DEV 與受測映像、公開合成證據保留。
+
+## 首輪 PR CI 的併發測試修正
+
+[PR #20 首輪 CI 45749066236](https://github.com/xk2022/xk-app-logistics/actions/runs/45749066236) 的 frontend／security／Compose-E2E 成功；backend 只有既有 `UpmsIT.lastEnabledAdministratorCannotBeDisabledOrDemotedEvenWithConcurrentRequests` 失敗，兩回應為 `[200,403]`，原斷言僅接受 200／401／409。原產品在成功停用後撤銷 Session，較慢請求若尚未經 CSRF 可合法回 E0403；不修改該安全行為，不將失敗 run 改記成功，也不盲目重跑。
+
+此測試改先持有 PostgreSQL `upms_lock`，以獨立 autocommit observer 實際確認兩個寫入交易都已通過 auth／CSRF 並等待 canonical lock，再釋放競爭；不是固定 sleep 猜排程，也未加寬原狀態集合。保留 17 個案例、前段兩個 409 與恰一成功／最後一個管理員，另核對回應 code／時區、winner／loser 身分、帳號與認證版本、目前 Session 及唯一 ACCOUNT_UPDATE 審計。Gate／observer／future 均有界，失敗 finally 先釋放 gate 再等 executor。
+
+修正後 focused 5 unit＋17 integration 全過（1 分 03 秒）；修正後完整 verify 再次通過 124 unit＋245 integration＝369，0 failure／error／skip，5 分 49 秒。只有測試排程及斷言變更，202 個產品／建置輸入與 frontend／E2E 測試保持先前受測位元組，沒有業務例外或 API／migration／依賴變更。
