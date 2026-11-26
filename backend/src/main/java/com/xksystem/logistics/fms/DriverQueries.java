@@ -3,6 +3,7 @@ package com.xksystem.logistics.fms;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 
 /** Trusted master-data source only; grants no HTTP, account-management or dispatch authorization. */
 public interface DriverQueries {
@@ -17,4 +18,9 @@ public interface DriverQueries {
      * This neither validates legal/dispatch eligibility nor reserves a driver.
      */
     Snapshot requireAdministrativelyAvailable(UUID driverId);
+    Page<Snapshot> pageForDispatch(int page,int size,String q);
+    /** Caller writable transaction/canonical locks first; current source even when unavailable. */
+    Snapshot lockCurrentForDispatch(UUID driverId);
+    /** Caller must authenticate the normal current DRIVER first; derive accountId from that actor only. */
+    Optional<Snapshot> currentBoundDriverWithLock(UUID accountId);
 }

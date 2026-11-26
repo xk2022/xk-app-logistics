@@ -126,3 +126,11 @@ GET `/fms/drivers/me` 僅 DRIVER，安全 matcher 優先於 FMS 管理路徑。�
 V8 的 `order_acceptance_event` 每單唯一、版本恰加一、完整 JSON 快照以 composite FK 連結新 revision；UPDATE／DELETE 由 trigger 拒絕，不種事件或替歷史資料捏造人員／時間。使用 textual json 保留 U+0000；不加會解碼自由文字的 jsonb/extraction 檢查。事件、同版 revision、根狀態與 idempotency 同交易提交／回滾，沒有事件改寫或清理 API。
 
 成功 replay 先驗目前授權，跳過今日客戶、前態、原版本與完整性，返回原業務結果／新 traceId。舊 POST／PUT 歷史 replay 在之後受理仍有效；新 key 的 PUT 或再受理由狀態／版本拒絕。公開範圍不包含派工、占用、撤回或正式部署；詳細契約、模型與證據見 [受理 API](../docs/06_api/tom-acceptance.md)、[受理模型](../docs/05_database/tom-acceptance-model.md)及 [M3-03 驗證](../docs/09_testing/m3-03-validation.md)。
+
+## TMS 出發前派工（M3-04）
+
+[獨立 TMS API](../docs/06_api/tms-dispatch.md) 使用公司 envelope，原 TOM 五項與正式受理 envelope 保持不變。V9 新增五個 TMS 自有表與衍生任務索引；generation、每段唯一有效派工、跨主車／拖板位置的 VEHICLE 排他與 DRIVER 排他同交易保護，事件與歷史快照不可改寫。沒有 M4 出發／完成證據與時間預約占用。
+
+TOM 公開 `TaskQueries` 與同交易 `AcceptedTaskIndexSink`；TMS 只對自有表分頁、查占用與保存結果，再透過公開 port 取得 bounded source，不存取其他模組 repository。FMS 公開來源鎖／目前本人綁定與自有 `MasterDataChangeGuard` SPI，TMS 實作占用守衛，保留原 FMS DTO、查詢與行政可用語義。詳見[工程決策](../docs/98_decisions/2026-11-26-tms-dispatch-engineering.md)。
+
+正式政策預設 `UNCONFIRMED`，不能以環境旗標或 ADM 參數解鎖。獨立 E2E 才掛載 test source 的 launcher 與合成 policy（實查 DB 必為 `xk_logistics_e2e`）；正式 JAR 不含這些類別。一般 DEV 仍由原 `LogisticsApplication` 啟動。精確操作、原始字串／decimal／offset 保留、未知重播、升級與回滾證據見 [M3-04 驗證](../docs/09_testing/m3-04-validation.md)。

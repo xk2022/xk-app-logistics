@@ -147,6 +147,23 @@ public final class E2eFixtureMain {
                     acceptance.put(name, Map.of("username", username, "password", secret));
                 }
                 accounts.put("acceptance", acceptance);
+                Map<String, Object> dispatch = new LinkedHashMap<>();
+                String dispatchScope = project.equals("chromium") ? "DESKTOP" : "MOBILE";
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB"}) {
+                    String username = "dispatch-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, false, Instant.now());
+                    dispatch.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                dispatch.put("scope", dispatchScope);
+                dispatch.put("vehicleTypes", insertDispatchVehicleTypes(connection, vehicleTypeCategoryId, dispatchScope));
+                accounts.put("dispatch", dispatch);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();
@@ -162,6 +179,30 @@ public final class E2eFixtureMain {
             }
         }
         System.out.println("Synthetic E2E fixture created; credentials are stored only in the private fixture file.");
+    }
+
+    private static Map<String, Map<String, String>> insertDispatchVehicleTypes(Connection connection,
+            UUID categoryId, String scope) throws Exception {
+        Map<String, Map<String, String>> types = new LinkedHashMap<>();
+        for (String position : new String[] {"MAIN", "TRAILER", "SHARED"}) {
+            UUID id = UUID.randomUUID();
+            String code = "SYNTHETIC_TMS_" + scope + "_" + position;
+            String label = "僅合成派工驗收 " + scope + " " + position;
+            try (var statement = connection.prepareStatement("""
+                    INSERT INTO logistics.adm_dict_item
+                        (id,category_id,code,label,enabled,sort_order,read_only,created_at,updated_at)
+                    VALUES (?,?,?,?,true,100,false,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+                    """)) {
+                statement.setObject(1, id);
+                statement.setObject(2, categoryId);
+                statement.setString(3, code);
+                statement.setString(4, label);
+                statement.executeUpdate();
+            }
+            types.put(position.toLowerCase(java.util.Locale.ROOT),
+                    Map.of("id", id.toString(), "code", code, "label", label));
+        }
+        return types;
     }
 
     private static Map<String, Map<String, String>> insertVehicleTypes(Connection connection,

@@ -1,0 +1,1741 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics TMS Dispatch API
+  version: 0.1.0
+  description: LG-M3-04 獨立工程契約，依 Q36–Q40。只有出發前人工派工、撤改、原子占用與本人唯讀。保留原 TOM/FMS/UPMS 契約；沒有 M4 出發、完成、照片、異常或正式部署。預設政策
+    fail closed；合成測試政策只來自不進正式 JAR 的 test configuration。規格不代表實際驗收。
+servers:
+- url: /api/v1
+tags:
+- name: TMSDispatch
+security:
+- sessionCookie: []
+paths:
+  /tms/tasks:
+    get:
+      operationId: listTmsTasks
+      tags:
+      - TMSDispatch
+      summary: 有界任務及派工摘要
+      description: 固定 taskNo/id 排序；server count/page 後以公開 TOM port hydrate，不在單頁 silently filter。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - UNASSIGNED
+          - ASSIGNED
+          - ALL
+          default: UNASSIGNED
+      - name: orderId
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/tasks/{taskId}/dispatch:
+    get:
+      operationId: getTaskDispatch
+      tags:
+      - TMSDispatch
+      summary: 當前派工與有界歷史
+      description: 歷史包含目前派工，assignedGeneration DESC,id 排序；每派工事件至多2筆。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - name: historyPage
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          default: 0
+      - name: historySize
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+    post:
+      operationId: assignTask
+      tags:
+      - TMSDispatch
+      summary: 人工指派與原子占用
+      description: 只對 OPEN+ACCEPTED 且前置就緒任務；production policy 全部未核准，不能以行政可用取代適格政策。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/TaskId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResultEnvelope'
+          headers:
+            Idempotency-Replayed:
+              required: true
+              description: false 新提交；true 原成功業務快照。
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+      x-replayRule: 目前管理權限先驗；同 actor/method/canonical path/key 的成功重播先於目前來源／狀態／政策，不增加 generation、event 或占用；未知結果不自動重試。
+      x-versionRule: CommandResult.generation == 原請求 expectedGeneration + 1；原 HTTP200/replay header 與跨請求關係由 IT/E2E
+        直接斷言。
+  /tms/dispatches/{id}/revoke:
+    post:
+      operationId: revokeDispatch
+      tags:
+      - TMSDispatch
+      summary: 出發前撤派並原子釋放
+      description: 只對目前 ASSIGNED；釋放不要求今日政策或行政可用，不能假造出發／完成。回傳已終止目標。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/DispatchId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResultEnvelope'
+          headers:
+            Idempotency-Replayed:
+              required: true
+              description: false 新提交；true 原成功業務快照。
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+      x-replayRule: 目前管理權限先驗；同 actor/method/canonical path/key 的成功重播先於目前來源／狀態／政策，不增加 generation、event 或占用；未知結果不自動重試。
+      x-versionRule: CommandResult.generation == 原請求 expectedGeneration + 1；原 HTTP200/replay header 與跨請求關係由 IT/E2E
+        直接斷言。
+  /tms/dispatches/{id}/reassign:
+    post:
+      operationId: reassignDispatch
+      tags:
+      - TMSDispatch
+      summary: 出發前原子改派及留史
+      description: 舊 SUPERSEDED、新 ASSIGNED 與交換占用同交易；任一步失敗保留原派工與占用。回傳新目標。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/DispatchId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResultEnvelope'
+          headers:
+            Idempotency-Replayed:
+              required: true
+              description: false 新提交；true 原成功業務快照。
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignRequest'
+      x-replayRule: 目前管理權限先驗；同 actor/method/canonical path/key 的成功重播先於目前來源／狀態／政策，不增加 generation、event 或占用；未知結果不自動重試。
+      x-versionRule: CommandResult.generation == 原請求 expectedGeneration + 1；原 HTTP200/replay header 與跨請求關係由 IT/E2E
+        直接斷言。
+  /tms/resources:
+    get:
+      operationId: listTmsResources
+      tags:
+      - TMSDispatch
+      summary: 有界資源候選與占用阻擋
+      description: assignmentId 若有必為本任務目前 ASSIGNED，才可重用自身占用；候選包含占用／行政／政策 blockers，不代表完整組合適格。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - name: taskId
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: position
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - DRIVER
+          - MAIN
+          - TRAILER
+      - name: assignmentId
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Search'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks:
+    get:
+      operationId: listMyTmsTasks
+      tags:
+      - TMSDispatch
+      summary: 本人目前有效派工最小摘要
+      description: 由 fresh DRIVER 與目前有效綁定推導；不能傳 driverId/accountId/orderId。未綁／無效綁定404，有效綁定無派工為空頁。撤改、解綁或撤權立即失去舊權限。
+      x-allowedRoles:
+      - DRIVER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 成功；company envelope，非 TOM envelope。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTaskPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 與 JSESSIONID 是同一受保護 HttpSession；Secure/HttpOnly/SameSite=Lax。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 100000
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Search:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+        x-normalizedMaxLength: 100
+        description: NFC 與外圍空白 strip 後最多100 codepoints；字面搜尋，%/_ 不是 wildcard。
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    DispatchId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9._:-]{1,128}$
+      description: 恰一個 header，區分大小寫；不得在未知結果時另產生 key。
+  responses:
+    Error400:
+      description: shape/query/validation/no-op
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error401:
+      description: 未登入
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error403:
+      description: 已驗證使用者的 E0403 僅以 data.reason 區分 CSRF_INVALID 與 FORBIDDEN，不回傳安全 token 或其他身分資料。匿名 CSRF 拒絕回 401／null。既有 ErrorEnvelope 的 nullable data 保持相容，並非全部 403 必須非 null。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          examples:
+            csrfInvalid:
+              summary: 已登入但 CSRF 驗證失敗
+              value:
+                code: E0403
+                message: 安全驗證已更新，請重新整理後再試
+                data:
+                  reason: CSRF_INVALID
+                timestamp: '2026-11-26T10:00:00+08:00'
+            forbidden:
+              summary: 已登入但沒有本次操作權限
+              value:
+                code: E0403
+                message: 無權執行此操作
+                data:
+                  reason: FORBIDDEN
+                timestamp: '2026-11-26T10:00:00+08:00'
+    Error404:
+      description: 查無或無有效本人綁定
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error405:
+      description: 不允許的方法
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error409:
+      description: 獨立 TMS 業務衝突碼
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error415:
+      description: 不支援的媒體類型
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error500:
+      description: 安全錯誤摘要，不回 SQL/cause/body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+    Timestamp:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,9})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+    CompanyTimestamp:
+      type: string
+      format: date-time
+      pattern: \+08:00$
+    SourceDateTime:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+      description: 沿原 TOM 日期、offset 與最多六位小數秒；保留原字面，不新增到期或時窗派工規則。
+    NullableSourceDateTime:
+      anyOf:
+      - $ref: '#/components/schemas/SourceDateTime'
+      - type: 'null'
+    NullableText:
+      anyOf:
+      - type: string
+        maxLength: 200
+        description: 原 TOM 文字，不修剪、正規化或移除有效 NUL；nullable 與空字串不同。
+      - type: 'null'
+    NullableAddress:
+      anyOf:
+      - type: string
+        maxLength: 1000
+      - type: 'null'
+    NullableDecimal:
+      anyOf:
+      - type: string
+        maxLength: 32
+        pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+        not:
+          pattern: '[^0-9.]'
+        description: 原 TOM 非負十進位字串，保留 scale；不是 JSON number 或法定載重判斷。
+      - type: 'null'
+    PolicyMode:
+      type: string
+      enum:
+      - UNCONFIRMED
+      - SYNTHETIC_TEST_ONLY
+    Blocker:
+      type: string
+      enum:
+      - SOURCE_NOT_ACCEPTED
+      - PREREQUISITE_NOT_READY
+      - POLICY_NOT_CONFIRMED
+      - ALREADY_ASSIGNED
+      - ADMIN_UNAVAILABLE
+      - RESOURCE_OCCUPIED
+    OrderType:
+      type: string
+      enum:
+      - IMPORT
+      - EXPORT
+      - LOCAL
+    ItemSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        itemKind:
+          type: string
+          enum:
+          - CONTAINER
+          - CARGO
+        containerType:
+          $ref: '#/components/schemas/NullableText'
+        containerNo:
+          $ref: '#/components/schemas/NullableText'
+        packageQty:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        grossWeight:
+          $ref: '#/components/schemas/NullableDecimal'
+        cbm:
+          $ref: '#/components/schemas/NullableDecimal'
+      required:
+      - itemKind
+      - containerType
+      - containerNo
+      - packageQty
+      - grossWeight
+      - cbm
+    SiteContact:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/NullableText'
+        phone:
+          $ref: '#/components/schemas/NullableText'
+      required:
+      - name
+      - phone
+      description: 原 TOM null 與整組存在但兩欄 null 的讀取語意不合併。
+    TaskSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        orderId:
+          $ref: '#/components/schemas/Uuid'
+        orderNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        orderType:
+          $ref: '#/components/schemas/OrderType'
+        orderVersion:
+          $ref: '#/components/schemas/Version'
+        generation:
+          $ref: '#/components/schemas/Version'
+        taskKind:
+          $ref: '#/components/schemas/NullableText'
+        pickupName:
+          $ref: '#/components/schemas/NullableText'
+        deliveryName:
+          $ref: '#/components/schemas/NullableText'
+        prerequisiteReady:
+          type: boolean
+        currentAssignmentId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+        blockingReasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+          uniqueItems: true
+          maxItems: 6
+      required:
+      - taskId
+      - taskNo
+      - orderId
+      - orderNo
+      - orderType
+      - orderVersion
+      - generation
+      - taskKind
+      - pickupName
+      - deliveryName
+      - prerequisiteReady
+      - currentAssignmentId
+      - policyMode
+      - blockingReasons
+    TaskSource:
+      type: object
+      additionalProperties: false
+      properties:
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        orderId:
+          $ref: '#/components/schemas/Uuid'
+        orderNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        orderType:
+          $ref: '#/components/schemas/OrderType'
+        orderVersion:
+          $ref: '#/components/schemas/Version'
+        item:
+          $ref: '#/components/schemas/ItemSnapshot'
+        taskKind:
+          $ref: '#/components/schemas/NullableText'
+        pickupName:
+          $ref: '#/components/schemas/NullableText'
+        pickupAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        deliveryName:
+          $ref: '#/components/schemas/NullableText'
+        deliveryAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        siteContact:
+          anyOf:
+          - $ref: '#/components/schemas/SiteContact'
+          - type: 'null'
+        plannedStartAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        plannedEndAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        requiredTask:
+          type:
+          - boolean
+          - 'null'
+      required:
+      - taskId
+      - taskNo
+      - orderId
+      - orderNo
+      - orderType
+      - orderVersion
+      - item
+      - taskKind
+      - pickupName
+      - pickupAddress
+      - deliveryName
+      - deliveryAddress
+      - siteContact
+      - plannedStartAt
+      - plannedEndAt
+      - requiredTask
+      description: 單一段必要來源，沒有整單 remark、customer、shipping 或其他段任務圖。
+    DriverSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        driverCode:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - id
+      - driverCode
+      - name
+      - version
+    VehicleSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        plateNo:
+          type: string
+          minLength: 1
+          maxLength: 40
+        vehicleType:
+          $ref: '#/components/schemas/Uuid'
+        vehicleTypeCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+        vehicleTypeLabel:
+          type: string
+          minLength: 1
+          maxLength: 200
+        version:
+          $ref: '#/components/schemas/Version'
+      required:
+      - id
+      - plateNo
+      - vehicleType
+      - vehicleTypeCode
+      - vehicleTypeLabel
+      - version
+    ReasonInput:
+      type: string
+      x-normalizedMinLength: 1
+      x-normalizedMaxLength: 500
+      description: NFC 與 Unicode 外圍空白 strip 後 1–500 code points；拒控制字元但允 LF/TAB/CR。這是 canonical 界線，不是 raw maxLength。
+    Reservation:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        kind:
+          type: string
+          enum:
+          - DRIVER
+          - VEHICLE
+        position:
+          type: string
+          enum:
+          - DRIVER
+          - MAIN
+          - TRAILER
+        resourceId:
+          $ref: '#/components/schemas/Uuid'
+        acquiredAt:
+          $ref: '#/components/schemas/Timestamp'
+        releasedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        releaseReason:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+            pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+            allOf:
+            - pattern: \S
+            description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+          - type: 'null'
+      required:
+      - id
+      - kind
+      - position
+      - resourceId
+      - acquiredAt
+      - releasedAt
+      - releaseReason
+      allOf:
+      - if:
+          properties:
+            kind:
+              const: DRIVER
+        then:
+          properties:
+            position:
+              const: DRIVER
+        else:
+          properties:
+            position:
+              type: string
+              enum:
+              - MAIN
+              - TRAILER
+      - if:
+          properties:
+            releasedAt:
+              type: 'null'
+        then:
+          properties:
+            releaseReason:
+              type: 'null'
+        else:
+          properties:
+            releaseReason:
+              type: string
+              minLength: 1
+              maxLength: 500
+              pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+              allOf:
+              - pattern: \S
+              description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+    Event:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        action:
+          type: string
+          enum:
+          - ASSIGNED
+          - REVOKED
+          - REASSIGNED
+        assignmentId:
+          $ref: '#/components/schemas/Uuid'
+        previousAssignmentId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        fromGeneration:
+          $ref: '#/components/schemas/Version'
+        toGeneration:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        actorId:
+          $ref: '#/components/schemas/Uuid'
+        occurredAt:
+          $ref: '#/components/schemas/Timestamp'
+        reason:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+            pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+            allOf:
+            - pattern: \S
+            description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+          - type: 'null'
+      required:
+      - id
+      - action
+      - assignmentId
+      - previousAssignmentId
+      - fromGeneration
+      - toGeneration
+      - actorId
+      - occurredAt
+      - reason
+      x-versionRule: toGeneration == fromGeneration + 1；跨欄位關係由產品 IT/E2E 驗證。
+    Assignment:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        orderId:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum:
+          - ASSIGNED
+          - REVOKED
+          - SUPERSEDED
+        version:
+          type: integer
+          enum:
+          - 0
+          - 1
+        assignedGeneration:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        endedGeneration:
+          anyOf:
+          - $ref: '#/components/schemas/Version'
+          - type: 'null'
+        driver:
+          $ref: '#/components/schemas/DriverSnapshot'
+        mainVehicle:
+          $ref: '#/components/schemas/VehicleSnapshot'
+        trailer:
+          anyOf:
+          - $ref: '#/components/schemas/VehicleSnapshot'
+          - type: 'null'
+        source:
+          $ref: '#/components/schemas/TaskSource'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+        assignedBy:
+          $ref: '#/components/schemas/Uuid'
+        assignedAt:
+          $ref: '#/components/schemas/Timestamp'
+        assignmentReason:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+            pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+            allOf:
+            - pattern: \S
+            description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+          - type: 'null'
+        endedBy:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        endedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        endReason:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 500
+            pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+            allOf:
+            - pattern: \S
+            description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+          - type: 'null'
+        previousAssignmentId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        reservations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+          minItems: 2
+          maxItems: 3
+          uniqueItems: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+      required:
+      - id
+      - taskId
+      - orderId
+      - status
+      - version
+      - assignedGeneration
+      - endedGeneration
+      - driver
+      - mainVehicle
+      - trailer
+      - source
+      - policyMode
+      - assignedBy
+      - assignedAt
+      - assignmentReason
+      - endedBy
+      - endedAt
+      - endReason
+      - previousAssignmentId
+      - reservations
+      - events
+      allOf:
+      - if:
+          properties:
+            status:
+              const: ASSIGNED
+        then:
+          properties:
+            version:
+              const: 0
+            endedGeneration:
+              type: 'null'
+            endedBy:
+              type: 'null'
+            endedAt:
+              type: 'null'
+            endReason:
+              type: 'null'
+        else:
+          properties:
+            version:
+              const: 1
+            endedGeneration:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            endedBy:
+              $ref: '#/components/schemas/Uuid'
+            endedAt:
+              $ref: '#/components/schemas/Timestamp'
+            endReason:
+              type: string
+              minLength: 1
+              maxLength: 500
+              pattern: ^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]+$
+              allOf:
+              - pattern: \S
+              description: 已由伺服器 NFC 與邊界 strip 的原因；拒控制字元但允 LF/TAB/CR，不是保存期限或業務例外。
+      - if:
+          properties:
+            trailer:
+              type: 'null'
+        then:
+          properties:
+            reservations:
+              maxItems: 2
+        else:
+          properties:
+            reservations:
+              minItems: 3
+      - properties:
+          reservations:
+            contains:
+              properties:
+                position:
+                  const: DRIVER
+              required:
+              - position
+            minContains: 1
+            maxContains: 1
+      - properties:
+          reservations:
+            contains:
+              properties:
+                position:
+                  const: MAIN
+              required:
+              - position
+            minContains: 1
+            maxContains: 1
+    Occupation:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/Uuid'
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+      required:
+      - assignmentId
+      - taskId
+    ResourceCandidate:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        kind:
+          type: string
+          enum:
+          - DRIVER
+          - VEHICLE
+        position:
+          type: string
+          enum:
+          - DRIVER
+          - MAIN
+          - TRAILER
+        code:
+          type: string
+          minLength: 1
+          maxLength: 40
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        version:
+          $ref: '#/components/schemas/Version'
+        administrativelyAvailable:
+          type: boolean
+        occupied:
+          type: boolean
+        occupation:
+          anyOf:
+          - $ref: '#/components/schemas/Occupation'
+          - type: 'null'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+        policyApproved:
+          type: boolean
+        blockingReasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+          uniqueItems: true
+          maxItems: 6
+      required:
+      - id
+      - kind
+      - position
+      - code
+      - label
+      - version
+      - administrativelyAvailable
+      - occupied
+      - occupation
+      - policyMode
+      - policyApproved
+      - blockingReasons
+      allOf:
+      - if:
+          properties:
+            position:
+              const: DRIVER
+        then:
+          properties:
+            kind:
+              const: DRIVER
+        else:
+          properties:
+            kind:
+              const: VEHICLE
+      - if:
+          properties:
+            policyMode:
+              const: UNCONFIRMED
+        then:
+          properties:
+            policyApproved:
+              const: false
+      description: 個別 candidate 不保證組合可派；保留占用候選與 blockers，不於一頁中過濾造成錯誤總數。
+    MyTask:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/Uuid'
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        item:
+          $ref: '#/components/schemas/ItemSnapshot'
+        taskKind:
+          $ref: '#/components/schemas/NullableText'
+        pickupName:
+          $ref: '#/components/schemas/NullableText'
+        pickupAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        deliveryName:
+          $ref: '#/components/schemas/NullableText'
+        deliveryAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        siteContact:
+          anyOf:
+          - $ref: '#/components/schemas/SiteContact'
+          - type: 'null'
+        plannedStartAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        plannedEndAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        assignedAt:
+          $ref: '#/components/schemas/Timestamp'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+      required:
+      - assignmentId
+      - taskId
+      - taskNo
+      - item
+      - taskKind
+      - pickupName
+      - pickupAddress
+      - deliveryName
+      - deliveryAddress
+      - siteContact
+      - plannedStartAt
+      - plannedEndAt
+      - assignedAt
+      - policyMode
+      description: ACC-P02 本人最小當段摘要；不回 order/customer/driver/account/resource 身份、車牌、證照、稽核、歷史、占用或 generation。
+    TaskPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    AssignmentPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    ResourcePage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceCandidate'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    MyTaskPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyTask'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    DispatchDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        task:
+          $ref: '#/components/schemas/TaskSummary'
+        current:
+          anyOf:
+          - $ref: '#/components/schemas/Assignment'
+          - type: 'null'
+        history:
+          $ref: '#/components/schemas/AssignmentPage'
+      required:
+      - task
+      - current
+      - history
+    CommandResult:
+      type: object
+      additionalProperties: false
+      properties:
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        generation:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        assignment:
+          $ref: '#/components/schemas/Assignment'
+      required:
+      - taskId
+      - generation
+      - assignment
+      x-versionRule: generation == 原請求 expectedGeneration + 1；replay 保留原成功 data，不是目前 generation。
+    AssignRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedGeneration:
+          $ref: '#/components/schemas/Version'
+        driverId:
+          $ref: '#/components/schemas/Uuid'
+        mainVehicleId:
+          $ref: '#/components/schemas/Uuid'
+        trailerId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+      required:
+      - expectedGeneration
+      - driverId
+      - mainVehicleId
+      - trailerId
+      x-constraints:
+      - mainVehicleId 與非 null trailerId 必須不同。
+      - 所有資源、來源與已核准政策在同一交易 fresh 驗證。
+    RevokeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedGeneration:
+          $ref: '#/components/schemas/Version'
+        reason:
+          $ref: '#/components/schemas/ReasonInput'
+      required:
+      - expectedGeneration
+      - reason
+    ReassignRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedGeneration:
+          $ref: '#/components/schemas/Version'
+        driverId:
+          $ref: '#/components/schemas/Uuid'
+        mainVehicleId:
+          $ref: '#/components/schemas/Uuid'
+        trailerId:
+          anyOf:
+          - $ref: '#/components/schemas/Uuid'
+          - type: 'null'
+        reason:
+          $ref: '#/components/schemas/ReasonInput'
+      required:
+      - expectedGeneration
+      - driverId
+      - mainVehicleId
+      - trailerId
+      - reason
+      x-constraints:
+      - 不得同原 driver/main/trailer 三元組 no-op。
+      - mainVehicleId 與非 null trailerId 必須不同。
+    IdempotencyReplayed:
+      type: string
+      enum:
+      - 'true'
+      - 'false'
+    ErrorData:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        reason:
+          type: string
+          minLength: 1
+        actualGeneration:
+          $ref: '#/components/schemas/Version'
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+          minProperties: 1
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0405
+          - E0415
+          - E0500
+          - E1601
+          - E1602
+          - E1603
+          - E1604
+          - E1605
+          - E1606
+          - E1607
+          - E1608
+          - E1609
+        message:
+          type: string
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ErrorData'
+          - type: 'null'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+      allOf:
+      - if:
+          properties:
+            code:
+              const: E1601
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VERSION_CONFLICT
+                required:
+                - reason
+                - actualGeneration
+      - if:
+          properties:
+            code:
+              const: E1602
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: RESOURCE_OCCUPIED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1603
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: INVALID_STATE
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1604
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: PREREQUISITE_NOT_READY
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1605
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: POLICY_NOT_CONFIRMED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1606
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: MASTER_UNAVAILABLE
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1607
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_KEY_REUSED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1608
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_IN_PROGRESS
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1609
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: PROTECTED_RELATION
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E0400
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VALIDATION_ERROR
+                required:
+                - reason
+                - fields
+    TaskPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TaskPage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    DispatchDetailEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DispatchDetail'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    CommandResultEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CommandResult'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ResourcePageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ResourcePage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    MyTaskPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MyTaskPage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp

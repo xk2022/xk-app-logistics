@@ -196,3 +196,63 @@ prevents a fractional safe-boundary value from passing through float rounding.
 Diagnostics print schema/pointer/keyword without submitted values or raw parser
 messages. Static success is tooling evidence, not proof of product or HTTP
 execution; `--static-only` and `--responses` are mutually exclusive.
+
+## Independent TMS dispatch contract checks
+
+`validate_tms_contract.py` reads the independent
+`docs/06_api/tms-dispatch-openapi.yaml`. It requires exactly seven operations and
+42 component schemas, manager versus DRIVER-self roles, Session/CSRF, strict query
+rejection, write path/idempotency headers, exact JSON bodies and success/error
+response declarations. TMS uses the company `0000`/`timestamp` envelope; the original
+TOM `OK`/`traceId` contract and all existing validators remain unchanged. The four
+original source hashes are independently verified using the existing, unchanged
+`order-sources.sha256` manifest. No dependency or scanner exclusion is added.
+
+Static checks contain 51 positives / 113 negatives and eight reference-rejection
+self-checks. They cover initial/terminal assignment versions, two/three-resource
+snapshots, raw TOM NUL/NFD/decimal/offset/null values, generation bounds and exact
+mathematical integers, bounded pages, policy mode, detailed business errors, and
+privacy-specific self DTO exclusions. Authenticated E0403 examples distinguish
+`CSRF_INVALID` from `FORBIDDEN` using only `data.reason`; the existing null-data
+positive remains for schema compatibility. Anonymous CSRF rejection is 401/null.
+Reason-input canonical bounds are recorded
+as `x-normalizedMinLength/MaxLength`: a padded/NFD raw string can be valid after
+server normalization, so the schema does not impose a false raw maximum. Product
+tests own NFC/strip, semantic no-op, same-resource comparison and eligibility.
+
+All `$ref`/`$dynamicRef` values must resolve inside this OpenAPI document. Network,
+filesystem retrieval, relative external references and resource-ID overrides are
+forbidden before an in-memory retrieval-denying registry is created. The existing
+hash-pinned PyYAML/jsonschema/referencing packages are reused. Evidence parsing
+rejects duplicate keys, non-JSON numeric constants, invalid Unicode, unknown schema
+names and extra capture metadata; Decimal parsing avoids binary-float rounding at
+the safe generation boundary. Diagnostics print schema/pointer/keyword, never
+submitted values, parser messages, headers or credentials.
+
+The collector writes `tms-contract-responses.json` as nonempty arrays containing
+only `{schema,value}` public synthetic response bodies. Accepted names are
+`TaskPageEnvelope`, `DispatchDetailEnvelope`, `CommandResultEnvelope`,
+`ResourcePageEnvelope`, `MyTaskPageEnvelope` and `ErrorEnvelope`. No request body,
+key, Cookie, CSRF token, authentication header, password or trace is captured.
+Existing recursive fixture-password and trace checks must pass before upload.
+
+A body-only schema cannot establish HTTP status or `Idempotency-Replayed`, compare
+result generation with a separate original request, verify current DRIVER binding,
+or prove transaction/occupancy atomicity, legal eligibility, source locks, snapshot
+immutability or rollback. IT/E2E must directly verify those relationships; the spec
+records `x-versionRule`/`x-replayRule` without pretending that schema validation
+executes the product. Static fixtures and tool fail-path checks are tooling
+verification, not proof that real HTTP acceptance has run.
+
+```sh
+# Static tooling only; explicitly reports HTTP acceptance as not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_tms_contract.py --static-only
+# After the isolated real HTTPS browser run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_tms_contract.py \
+  --responses 'test-results/**/tms-contract-responses.json'
+```
+
+Without arguments the response glob is mandatory. Missing matches, empty files or
+arrays, unknown envelope names, extra metadata and schema failures all fail the
+command. `--static-only` and `--responses` are mutually exclusive. The commands use
+the existing temporary virtual environment and hashed install described above.

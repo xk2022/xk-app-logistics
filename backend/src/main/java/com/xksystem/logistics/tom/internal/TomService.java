@@ -24,7 +24,11 @@ public class TomService {
     private final UpmsAuthorization authorization;
     private final CrmQueries customers;
     private final Clock clock;
-    public TomService(TomOrderRepository orders,UpmsAuthorization authorization,CrmQueries customers,Clock clock){this.orders=orders;this.authorization=authorization;this.customers=customers;this.clock=clock;}
+    private final org.springframework.beans.factory.ObjectProvider<com.xksystem.logistics.tom.AcceptedTaskIndexSink> taskIndexes;
+    public TomService(TomOrderRepository orders,UpmsAuthorization authorization,CrmQueries customers,Clock clock,
+            org.springframework.beans.factory.ObjectProvider<com.xksystem.logistics.tom.AcceptedTaskIndexSink> taskIndexes){
+        this.orders=orders;this.authorization=authorization;this.customers=customers;this.clock=clock;this.taskIndexes=taskIndexes;
+    }
     public record WriteResult(int status,ObjectNode data,String location,boolean replayed) {}
 
     @Transactional
@@ -105,6 +109,12 @@ public class TomService {
             ObjectNode result=orders.accept(id,SCOPE,actor.id(),now,actual);
             orders.revision(id,result,trace,actor.id(),now);
             orders.acceptanceEvent(id,actual,result,trace,actor.id(),now);
+            var taskSeeds=new ArrayList<com.xksystem.logistics.tom.TaskQueries.Seed>();
+            for(JsonNode task:result.get("tasks"))taskSeeds.add(new com.xksystem.logistics.tom.TaskQueries.Seed(
+                    UUID.fromString(task.get("id").asString()),id,result.get("orderNo").asString(),
+                    task.get("taskNo").asString(),result.get("version").asLong()));
+            var acceptedTasks=List.copyOf(taskSeeds);
+            taskIndexes.orderedStream().forEach(index->index.accepted(acceptedTasks));
             orders.remember(SCOPE,actor.id(),"POST",path,key,hash,id,200,result,null,now);
             return new WriteResult(200,result,null,false);
         }catch(DataAccessException failure){throw persistence(failure);}
