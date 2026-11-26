@@ -82,7 +82,7 @@ class FmsDriverIT {
     private static final List<String> OPTION=List.of("id","driverCode","name","licenseType","licenseTypeCode","licenseTypeLabel","licenseTypeEnabled","licenseDueDate","version");
 
     @BeforeEach void isolateSyntheticDriversAccountsAndLicenseCatalog()throws Exception{
-        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
+        jdbc.execute("TRUNCATE TABLE logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle,logistics.order_core,logistics.tom_order,logistics.cargo_item,logistics.transport_task,logistics.task_dependency,logistics.order_draft_revision,logistics.api_idempotency,logistics.crm_contact,logistics.crm_address,logistics.crm_customer,logistics.adm_change_log,logistics.upms_audit,logistics.upms_account");
         jdbc.update("DELETE FROM logistics.adm_dict_item WHERE NOT read_only");jdbc.update("UPDATE logistics.adm_dict_category SET enabled=true,version=0 WHERE NOT read_only");
         category=jdbc.queryForObject("SELECT id FROM logistics.adm_dict_category WHERE code='DRIVER_LICENSE_TYPE'",UUID.class);types=new ArrayList<>();
         types.add(insertType(category,"SYNTHETIC_LICENSE_A","合成駕照類別甲",1));types.add(insertType(category,"SYNTHETIC_LICENSE_B","合成駕照類別乙",2));

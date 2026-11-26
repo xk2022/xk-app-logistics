@@ -1,0 +1,184 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics TOM Order Acceptance API
+  version: 0.1.0
+  description: >-
+    LG-M3-03獨立增量工程契約，依Q31–Q35。只新增明確受理，原五API及四份固定來源不變。
+    相對openapi.yaml引用只指同庫原0.2.0契約，不代表外部網路資源。
+    受理不是派工、占用或法規資格，本文不宣稱產品或HTTP驗收已執行。
+servers:
+  - url: /api/v1
+    description: 同源相對路徑，非部署證據。
+tags:
+  - name: OrderAcceptance
+security:
+  - sessionAuth: []
+paths:
+  /orders/{orderId}/accept:
+    post:
+      operationId: acceptOrder
+      tags: [OrderAcceptance]
+      summary: 明確受理目前已存完整草稿
+      description: >-
+        正常ADMIN/DISPATCHER本公司範圍，DRIVER拒絕。僅POST，無query。
+        同交易重新驗有效CRM客戶、locked persisted聚合、expectedVersion、OPEN+DRAFT、ORD-P01–P03。
+        成功只將root轉OPEN+ACCEPTED並恰加一版，保留客戶歷史名稱、子項身份及原始值；
+        event、V+1 revision及重送紀錄原子提交。event actor/time/snapshot不外露。
+        同key同內容成功重播在目前版本/前態/客戶/完整性查核前，仍先fresh驗目前授權。
+        已成功的草稿POST/PUT重播仍回原DRAFT結果，不改為當前ACCEPTED。
+        新key對已受理訂單拒絕，不重複事件；無撤回、派車、占用或配對。
+      x-allowedRoles: [ADMIN, DISPATCHER]
+      x-deniedRoles: [DRIVER]
+      x-companyScope: server_current_company
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      x-rejectDuplicateJsonProperties: true
+      x-versionRule: response.data.version == request.expectedVersion + 1
+      x-versionRuleValidation: >-
+        跨request/response關係由client/IT/E2E驗證；標準JSON Schema無跨請求$data運算。
+        body-only response evidence只驗回應自身schema，不聲稱驗到此關係。
+      security:
+        - sessionAuth: []
+          csrfToken: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            $ref: 'openapi.yaml#/components/schemas/Uuid'
+        - name: X-CSRF-TOKEN
+          in: header
+          required: true
+          description: 沿現有Session/CSRF；登入、登出或Session輪換後須更新。
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+            pattern: '\S'
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: >-
+            恰一個header；server scope+actor+POST+canonical UUID path+key隔離。
+            同內容重播原200業務data，本次traceId重新產生；無清理期限或自動換key。
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            pattern: '^[A-Za-z0-9._:-]+$'
+            not:
+              pattern: '[^A-Za-z0-9._:-]'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptOrderRequest'
+      responses:
+        '200':
+          description: >-
+            新受理或原成功重播。HTTP200，沒有Location要求。精確原OrderEnvelope，
+            OPEN+ACCEPTED，version=原request.expectedVersion+1；無acceptedAt/actor/event欄位。
+          headers:
+            Idempotency-Replayed:
+              required: true
+              description: false為新成功；true為重播原業務data，traceId屬本次請求。
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedOrderEnvelope'
+        '400':
+          description: >-
+            VALIDATION_ERROR協定/shape或完整性缺欄，完整性fieldErrors沿原checker的path/fieldId/ruleId/message，data=null；
+            當前客戶無效使用INVALID_CUSTOMER及/customerId OF04 ORD-P01。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: UNAUTHENTICATED，含Session失效或撤銷。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: FORBIDDEN或CSRF_INVALID；不增加DRIVER整單權限。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: ORDER_NOT_FOUND；授權公司範圍查無訂單。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: >-
+            VERSION_CONFLICT含actualVersion及/expectedVersion AF01 VERSION；
+            非OPEN+DRAFT或版本已達safe上限為ORDER_NOT_EDITABLE；
+            IDEMPOTENCY_KEY_REUSED、IDEMPOTENCY_IN_PROGRESS或PROTECTED_RELATION沿原語意。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: INTERNAL_ERROR安全訊息，交易全回滾，不回SQL、request或PII。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: 原訂單名稱，與XKSESSION安全別名對應同一HttpSession；衝突拒絕，既有策略不變。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  schemas:
+    AcceptOrderRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: >-
+            數學整數；1/1.0/1e0同義且canonical hash一致，不以float捨入。
+            新受理必須當前版一致且可遞增；safe上限本身shape合法但不能再受理（409）。
+      required: [expectedVersion]
+    AcceptedOrderEnvelope:
+      allOf:
+        - $ref: 'openapi.yaml#/components/schemas/OrderEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                lifecycleStatus:
+                  const: OPEN
+                acceptanceStatus:
+                  const: ACCEPTED
+                version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+      x-versionRule: response.data.version == request.expectedVersion + 1
+      description: >-
+        精確原OrderEnvelope之子集合，不新增欄位。allOf只收窄OPEN/ACCEPTED及受理後version>=1；
+        version與原request的加一關係需client/IT/E2E對應驗證，非body-only schema可推知。
+    ErrorEnvelope:
+      $ref: 'openapi.yaml#/components/schemas/ErrorEnvelope'
+      description: 精確原錯誤keys及code enum；不新增ACCEPTANCE_INCOMPLETE、timestamp或其他模組envelope。
+    IdempotencyReplayed:
+      type: string
+      enum: ['false', 'true']
+      description: HTTPheader的精確小寫文字，不是JSONbody布林。

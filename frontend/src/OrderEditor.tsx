@@ -11,10 +11,14 @@ import OrderTasksEditor from './OrderTasksEditor'
 import { OrderFieldIssues } from './orderFieldContext'
 import { EditorValidationError, editorFromOrder, emptyShipping, newItem, newTask, toOrderDraft } from './orderEditorModel'
 import type { EditorDraft, EditorIssue, EditorShipping } from './orderEditorModel'
+import { acceptOrder } from './orderAcceptanceApi'
+import type { AcceptanceRequest } from './orderAcceptanceApi'
+import { isEditableOrder, settlesPriorAcceptance } from './orderAcceptanceModel'
+import OrderAcceptancePanel from './OrderAcceptancePanel'
 import './order-editor.css'
 
-export interface OrderEditorProps { order?: Order; onSaved: (order: Order) => void; onExpired: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void }
-interface PendingWrite { id?: string; version?: number; draft: OrderDraft; key: string; unresolved?: true }
+export interface OrderEditorProps { order?: Order; onSaved: (order: Order) => void; onExpired: () => void; onCancel?: () => void; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void }
+type PendingWrite = ({ kind: 'draft'; id?: string; version?: number; draft: OrderDraft } | { kind: 'accept'; id: string; body: AcceptanceRequest }) & { key: string; unresolved?: true }
 interface Checked { data: AcceptanceCheck; traceId: string }
 function frozen<T>(value: T): T { if (value && typeof value === 'object') { Object.values(value).forEach(frozen); Object.freeze(value) } return value }
 function errorMessage(error: unknown): string { return error instanceof Error ? error.message : '操作未完成，請稍後再試。' }
@@ -24,7 +28,7 @@ function settlesPriorWrite(error: unknown): boolean {
   return error instanceof TomApiError && (error.status === 400 && error.code === 'INVALID_CUSTOMER' || error.status === 409 && ['VERSION_CONFLICT', 'ORDER_NOT_EDITABLE', 'PROTECTED_RELATION'].includes(error.code))
 }
 
-export default function OrderEditor({ order: initialOrder, onSaved, onExpired, onCancel, onDirtyChange }: OrderEditorProps) {
+export default function OrderEditor({ order: initialOrder, onSaved, onExpired, onCancel, onDirtyChange, onBusyChange }: OrderEditorProps) {
   const [baseline, setBaseline] = useState<Order | undefined>(initialOrder)
   const [draft, setDraft] = useState<EditorDraft>(() => editorFromOrder(initialOrder))
   const [pending, setPending] = useState<PendingWrite | null>(null)
@@ -35,7 +39,7 @@ export default function OrderEditor({ order: initialOrder, onSaved, onExpired, o
   const [remote, setRemote] = useState<Order | null>(null)
   const [reading, setReading] = useState(false)
   const [readError, setReadError] = useState<unknown>(null)
-  const [confirmation, setConfirmation] = useState<'reload' | 'rebase' | 'shipping' | null>(null)
+  const [confirmation, setConfirmation] = useState<'reload' | 'rebase' | 'shipping' | 'accept' | null>(null)
   const [check, setCheck] = useState<Checked | null>(null)
   const [checking, setChecking] = useState(false)
   const [checkError, setCheckError] = useState<unknown>(null)
@@ -48,17 +52,20 @@ export default function OrderEditor({ order: initialOrder, onSaved, onExpired, o
   const active = useRef(true)
   const editorElement = useRef<HTMLElement>(null)
   const dirtyCallback = useRef(onDirtyChange)
-  const locked = busy || pending !== null || reading || baseline !== undefined && (baseline.lifecycleStatus !== 'OPEN' || baseline.acceptanceStatus !== 'DRAFT')
-  const canProcessVersion = !busy && pending === null && !reading
+  const busyCallback = useRef(onBusyChange)
+  const locked = busy || pending !== null || reading || checking || baseline !== undefined && !isEditableOrder(baseline)
+  const canProcessVersion = !busy && pending === null && !reading && !checking
   const dirty = JSON.stringify(draft) !== JSON.stringify(editorFromOrder(baseline)) || pending !== null || busy || conflict
+  const canAccept = Boolean(baseline && isEditableOrder(baseline) && !dirty && canProcessVersion)
   const issues: EditorIssue[] = error instanceof EditorValidationError ? error.issues : error instanceof TomApiError ? error.fieldErrors : []
   const customerKey = `${query}/${customerPage}/${customerAttempt}`
   const customerLoading = customers?.key !== customerKey
   const customerData = customerLoading ? undefined : customers?.data
   const customerError = customerLoading ? undefined : customers?.error
 
-  useEffect(() => { active.current = true; return () => { active.current = false; dirtyCallback.current?.(false) } }, [])
+  useEffect(() => { active.current = true; return () => { active.current = false; dirtyCallback.current?.(false); busyCallback.current?.(false) } }, [])
   useEffect(() => { dirtyCallback.current = onDirtyChange }, [onDirtyChange])
+  useEffect(() => { busyCallback.current = onBusyChange }, [onBusyChange])
   useEffect(() => { dirtyCallback.current?.(dirty) }, [dirty])
   useEffect(() => {
     if (!dirty) return
@@ -80,41 +87,45 @@ export default function OrderEditor({ order: initialOrder, onSaved, onExpired, o
   }
   const handleAuth = (failure: unknown) => { if (failure instanceof ApiError && (failure.status === 401 || failure instanceof TomApiError && failure.code === 'FORBIDDEN')) onExpired() }
   const send = async (operation: PendingWrite) => {
-    setBusy(true); setError(null); setNotice(''); setRemote(null); setConfirmation(null); setPending(operation)
+    setBusy(true); busyCallback.current?.(true); setError(null); setNotice(''); setRemote(null); setConfirmation(null); setPending(operation)
     try {
-      const result: TomWriteResult<Order> = operation.id ? await replaceOrder(operation.id, operation.version!, operation.draft, operation.key) : await createOrder(operation.draft, operation.key)
+      const result: TomWriteResult<Order> = operation.kind === 'accept' ? await acceptOrder(operation.id, operation.body, operation.key) : operation.id ? await replaceOrder(operation.id, operation.version!, operation.draft, operation.key) : await createOrder(operation.draft, operation.key)
       if (!active.current) return
       adopt(result.data)
-      setNotice(result.replayed ? `已取回這次保存的第 ${result.data.version} 版原結果。重播可能是歷史快照；最新資料請明確重新載入確認。` : `草稿已保存，版本 ${result.data.version}。`)
+      setNotice(operation.kind === 'accept' ? result.replayed ? `已取回這次受理的第 ${result.data.version} 版原結果。重播是原受理快照；最新資料請明確重新載入確認。` : `訂單已正式受理，版本 ${result.data.version}。目前待派車，沒有派工或資源占用。` : result.replayed ? `已取回這次保存的第 ${result.data.version} 版原結果。重播可能是歷史快照；最新資料請明確重新載入確認。` : `草稿已保存，版本 ${result.data.version}。`)
       onSaved(result.data)
     } catch (failure) {
       if (!active.current) return
       setError(failure); handleAuth(failure)
       const uncertain = !(failure instanceof TomApiError) || failure.uncertain || failure.code === 'IDEMPOTENCY_IN_PROGRESS' || failure.code === 'IDEMPOTENCY_KEY_REUSED'
       // A filter/shape rejection of this retry cannot settle the earlier lost response.
-      const stillUnresolved = operation.unresolved && !settlesPriorWrite(failure)
+      const stillUnresolved = operation.unresolved && !(operation.kind === 'accept' ? settlesPriorAcceptance(failure) : settlesPriorWrite(failure))
       setPending(stillUnresolved || uncertain ? { ...operation, unresolved: true } : null)
-      if (!stillUnresolved && failure instanceof TomApiError && failure.code === 'VERSION_CONFLICT') setConflict(true)
-    } finally { if (active.current) setBusy(false) }
+      if (!stillUnresolved && failure instanceof TomApiError && (failure.code === 'VERSION_CONFLICT' || operation.kind === 'accept' && failure.code === 'ORDER_NOT_EDITABLE')) setConflict(true)
+    } finally { if (active.current) { setBusy(false); busyCallback.current?.(false) } }
   }
   const save = () => {
     if (locked || conflict) return
-    try { const body = frozen(structuredClone(toOrderDraft(draft))); void send({ id: baseline?.id, version: baseline?.version, draft: body, key: newIdempotencyKey() }) }
+    try { const body = frozen(structuredClone(toOrderDraft(draft))); void send({ kind: 'draft', id: baseline?.id, version: baseline?.version, draft: body, key: newIdempotencyKey() }) }
     catch (failure) { setError(failure) }
   }
+  const confirmAcceptance = () => {
+    if (!canAccept || !baseline || confirmation !== 'accept') return
+    void send({ kind: 'accept', id: baseline.id, body: frozen({ expectedVersion: baseline.version }), key: newIdempotencyKey() })
+  }
   const readRemote = async () => {
-    if (!baseline || busy || pending) return
-    setReading(true); setReadError(null)
+    if (!baseline || !canProcessVersion) return
+    setReading(true); busyCallback.current?.(true); setReadError(null); setConfirmation(null)
     try { const result = await getOrder(baseline.id); if (active.current) { setRemote(result.data); setConfirmation(null) } }
     catch (failure) { if (active.current) { setReadError(failure); handleAuth(failure) } }
-    finally { if (active.current) setReading(false) }
+    finally { if (active.current) { setReading(false); busyCallback.current?.(false) } }
   }
   const runCheck = async () => {
-    if (!baseline || checking || pending || busy) return
-    setChecking(true); setCheckError(null)
+    if (!baseline || !canProcessVersion) return
+    setChecking(true); busyCallback.current?.(true); setCheckError(null); setConfirmation(null)
     try { const result = await checkOrder(baseline.id); if (active.current) setCheck({ data: result.data, traceId: result.traceId }) }
     catch (failure) { if (active.current) { setCheckError(failure); handleAuth(failure) } }
-    finally { if (active.current) setChecking(false) }
+    finally { if (active.current) { setChecking(false); busyCallback.current?.(false) } }
   }
   const focusPath = (path: string) => {
     const candidates = [...editorElement.current?.querySelectorAll<HTMLElement>('[data-order-path]') ?? []]
@@ -134,14 +145,15 @@ export default function OrderEditor({ order: initialOrder, onSaved, onExpired, o
   const historical = baseline && baseline.customerId === draft.customerId
   const updateShipping = (key: keyof EditorShipping, value: string) => { if (draft.shipping) change({ ...draft, shipping: { ...draft.shipping, [key]: value } }) }
 
-  return <section className="order-editor" ref={editorElement} tabIndex={-1} aria-labelledby="order-editor-heading"><header className="order-editor-heading"><div><p className="eyebrow">ORDER DRAFT</p><h1 id="order-editor-heading">{baseline ? `編輯訂單 ${baseline.orderNo}` : '新增訂單'}</h1><p>草稿只需類型與客戶即可保存。完整性檢查不是正式受理或派工。</p></div>{onCancel && <button type="button" className="secondary-button" disabled={busy} onClick={onCancel}>返回訂單列表</button>}</header>
+  return <section className="order-editor" ref={editorElement} tabIndex={-1} aria-labelledby="order-editor-heading"><header className="order-editor-heading"><div><p className="eyebrow">ORDER DRAFT</p><h1 id="order-editor-heading">{baseline ? `${isEditableOrder(baseline) ? '編輯' : '檢視'}訂單 ${baseline.orderNo}` : '新增訂單'}</h1><p>{baseline?.acceptanceStatus === 'ACCEPTED' ? '正式受理內容僅供檢視；本階段沒有撤回、派工或資源占用。' : '草稿只需類型與客戶即可保存。完整性檢查不是正式受理或派工。'}</p></div>{onCancel && <button type="button" className="secondary-button" disabled={busy || reading || checking} onClick={onCancel}>返回訂單列表</button>}</header>
     {baseline && <div className="order-saved-meta"><span>已保存版本 {baseline.version}</span><span>{baseline.lifecycleStatus}／{baseline.acceptanceStatus}</span><span>客戶歷史名稱：{baseline.customerName}</span></div>}
-    {baseline && (baseline.lifecycleStatus !== 'OPEN' || baseline.acceptanceStatus !== 'DRAFT') && <p className="order-warning">此訂單目前僅供檢視，不能編輯或保存草稿。</p>}
+    {baseline && !isEditableOrder(baseline) && <p className="order-warning">此訂單目前僅供檢視，不能編輯或保存草稿。</p>}
     {notice && <p className="order-success" role="status">{notice}</p>}
+    <OrderAcceptancePanel order={baseline} dirty={dirty} disabled={!canProcessVersion || conflict} confirming={confirmation === 'accept'} onOpen={() => { if (canAccept) setConfirmation('accept') }} onCancel={() => setConfirmation(null)} onConfirm={confirmAcceptance} />
     {Boolean(error) && <div className="order-error-summary" role="alert"><p>{errorMessage(error)}</p>{error instanceof TomApiError && <p>錯誤代碼：{error.code}{error.traceId ? ` · 追查識別：${error.traceId}` : ''}</p>}{issues.length > 0 && <ul>{issues.map((issue, index) => <li key={index}><button type="button" onClick={() => focusPath(issue.path)}>{issue.message} <small>{issue.path}{issue.fieldId ? ` · ${issue.fieldId}` : ''}</small></button></li>)}</ul>}</div>}
-    {pending && !busy && <div className="order-uncertain" role="status"><h2>{pendingKeyConflict ? '停止這次重送，先確認伺服器結果' : '保存結果尚待確認'}</h2><p>目前內容已凍結，不會另建一份或自動換識別重送。若要離開，請先理解先前請求可能已成功；返回列表後確認結果，再決定下一步。</p>{!pendingKeyConflict && <button type="button" className="primary-button" onClick={() => { void send(pending) }}>以原內容重試保存</button>}</div>}
-    {conflict && <div className="order-warning"><h2>版本衝突，本機草稿已保留</h2><p>伺服器可能已有第 {error instanceof TomApiError && error.actualVersion !== undefined ? error.actualVersion : '較新'} 版；不會自動覆寫版本或重送。請讀取遠端內容後，再明確選擇處理方式。</p></div>}
-    {baseline && <section className="order-reload-panel" aria-label="伺服器版本比較"><button type="button" className="secondary-button" disabled={busy || pending !== null || reading} onClick={() => { void readRemote() }}>{reading ? '讀取中…' : '讀取伺服器版本比較'}</button>{Boolean(readError) && <p className="order-error" role="alert">{errorMessage(readError)}</p>}{remote && <div><p>已讀取伺服器第 {remote.version} 版，客戶：{remote.customerName}，{remote.items.length} 個項目、{remote.tasks.length} 個任務；尚未覆蓋本機內容。</p><div className="order-compare-grid"><details><summary>本機完整草稿內容</summary><pre>{JSON.stringify(draft, null, 2)}</pre></details><details><summary>伺服器完整草稿內容</summary><pre>{JSON.stringify(editorFromOrder(remote), null, 2)}</pre></details></div><div className="order-row-actions"><button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (canProcessVersion) setConfirmation('reload') }}>捨棄本機內容，載入伺服器版本</button>{conflict && <button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (canProcessVersion) setConfirmation('rebase') }}>保留本機草稿，使用此版本繼續</button>}</div>{(confirmation === 'reload' || confirmation === 'rebase') && <div className="order-confirm"><p>{confirmation === 'reload' ? '確認捨棄本機未保存內容，改用已讀取的伺服器版本？' : '下一次保存將以此伺服器版本為基準，完整取代為本機內容，可能覆寫遠端修改或移除遠端新增項目／任務。請先比較後明確確認。'}</p><button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (!canProcessVersion || !remote) return; if (confirmation === 'reload') { adopt(remote); onSaved(remote) } else { setBaseline(remote); setConflict(false); setError(null); setRemote(null); setConfirmation(null); setCheck(null); setNotice('已由您確認保留本機內容，並採用讀取版本作為下次保存基準；尚未送出。') } }}>確認{confirmation === 'reload' ? '載入伺服器版本' : '保留本機內容繼續'}</button><button type="button" className="secondary-button" onClick={() => setConfirmation(null)}>取消版本處理</button></div>}</div>}</section>}
+    {pending && !busy && <div className="order-uncertain" role="status"><h2>{pendingKeyConflict ? '停止這次重送，先確認伺服器結果' : pending.kind === 'accept' ? '受理結果尚待確認' : '保存結果尚待確認'}</h2><p>目前內容已凍結，不會另建一份或自動換識別重送。若要離開，請先理解先前請求可能已成功；返回列表後確認結果，再決定下一步。</p>{!pendingKeyConflict && <button type="button" className="primary-button" onClick={() => { void send(pending) }}>{pending.kind === 'accept' ? '以原請求重試受理' : '以原內容重試保存'}</button>}</div>}
+    {conflict && <div className="order-warning"><h2>{error instanceof TomApiError && error.code === 'ORDER_NOT_EDITABLE' ? '訂單狀態已變更，本機內容已保留' : '版本衝突，本機草稿已保留'}</h2><p>伺服器可能已有第 {error instanceof TomApiError && error.actualVersion !== undefined ? error.actualVersion : '較新'} 版；不會自動覆寫版本或重送。請讀取遠端內容後，再明確選擇處理方式。</p></div>}
+    {baseline && <section className="order-reload-panel" aria-label="伺服器版本比較"><button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { void readRemote() }}>{reading ? '讀取中…' : '讀取伺服器版本比較'}</button>{Boolean(readError) && <p className="order-error" role="alert">{errorMessage(readError)}</p>}{remote && <div><p>已讀取伺服器第 {remote.version} 版，客戶：{remote.customerName}，{remote.items.length} 個項目、{remote.tasks.length} 個任務；尚未覆蓋本機內容。</p><div className="order-compare-grid"><details><summary>本機完整草稿內容</summary><pre>{JSON.stringify(draft, null, 2)}</pre></details><details><summary>伺服器完整草稿內容</summary><pre>{JSON.stringify(editorFromOrder(remote), null, 2)}</pre></details></div><div className="order-row-actions"><button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (canProcessVersion) setConfirmation('reload') }}>捨棄本機內容，載入伺服器版本</button>{conflict && isEditableOrder(remote) && <button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (canProcessVersion) setConfirmation('rebase') }}>保留本機草稿，使用此版本繼續</button>}</div>{(confirmation === 'reload' || confirmation === 'rebase') && <div className="order-confirm"><p>{confirmation === 'reload' ? '確認捨棄本機未保存內容，改用已讀取的伺服器版本？' : '下一次保存將以此伺服器版本為基準，完整取代為本機內容，可能覆寫遠端修改或移除遠端新增項目／任務。請先比較後明確確認。'}</p><button type="button" className="secondary-button" disabled={!canProcessVersion} onClick={() => { if (!canProcessVersion || !remote || confirmation === 'rebase' && !isEditableOrder(remote)) return; if (confirmation === 'reload') { adopt(remote); onSaved(remote) } else { setBaseline(remote); setConflict(false); setError(null); setRemote(null); setConfirmation(null); setCheck(null); setNotice('已由您確認保留本機內容，並採用讀取版本作為下次保存基準；尚未送出。') } }}>確認{confirmation === 'reload' ? '載入伺服器版本' : '保留本機內容繼續'}</button><button type="button" className="secondary-button" onClick={() => setConfirmation(null)}>取消版本處理</button></div>}</div>}</section>}
     <OrderFieldIssues.Provider value={issues}><fieldset className="order-main-fields" disabled={locked}><legend>訂單基本資料</legend><div className="order-field-grid"><div className="order-field"><label htmlFor="order-type">訂單類型</label><select id="order-type" data-order-path="/type" value={draft.type} onChange={(event) => change({ ...draft, type: event.target.value as EditorDraft['type'] })}><option value="">請選擇類型</option><option value="IMPORT">進口</option><option value="EXPORT">出口</option><option value="LOCAL">國內</option></select><small>變更類型不會自動清除船務、項目或任務。</small></div><OrderField id="order-reference" label="客戶參考號" path="/customerReference" value={draft.customerReference} onChange={(value) => change({ ...draft, customerReference: value })} maxLength={200} hint="選填，不取代系統單號；留空表示未知。" /></div>
       <fieldset className="order-customer-picker"><legend>客戶</legend><div className="order-customer-search"><label htmlFor="order-customer-search">查詢有效客戶</label><input id="order-customer-search" value={search} onChange={(event) => setSearch(event.target.value)} /><button type="button" className="secondary-button" onClick={() => { if ([...search].length > 100) { setError(new EditorValidationError([{ path: '/customerId', message: '客戶搜尋最多 100 字。' }])); return } setQuery(search.trim()); setCustomerPage(0); setCustomerAttempt((value) => value + 1) }}>查詢客戶</button></div>{customerLoading ? <p role="status">正在讀取有效客戶…</p> : customerError ? <p className="order-error" role="alert">{errorMessage(customerError)}；可重新查詢，同一歷史客戶不會因此被清空。</p> : customerData?.content.length === 0 && <p>此頁沒有符合條件的有效客戶。</p>}
         <label htmlFor="order-customer-id">選擇客戶</label><select id="order-customer-id" data-order-path="/customerId" value={draft.customerId} onChange={(event) => { const id = event.target.value; const selected = customerData?.content.find((item) => item.id === id); setChoice(selected ? { id, name: selected.name } : baseline && id === baseline.customerId ? { id, name: baseline.customerName } : null); change({ ...draft, customerId: id }) }}><option value="">請選擇客戶</option>{choice && !customerData?.content.some((item) => item.id === choice.id) && <option value={choice.id}>已選：{choice.name}{historical ? '（歷史客戶）' : ''}</option>}{baseline && baseline.customerId !== choice?.id && !customerData?.content.some((item) => item.id === baseline.customerId) && <option value={baseline.customerId}>原客戶：{baseline.customerName}（歷史客戶）</option>}{customerData?.content.map((item) => <option value={item.id} key={item.id}>{item.name} · {item.customerCode}</option>)}</select>{historical && <p className="order-history-note">同客戶會保留「{baseline!.customerName}」歷史名稱；即使主檔已改名或停用，仍可維護原草稿。</p>}{customerData && <div className="order-customer-pagination"><span>共 {customerData.totalElements} 個有效客戶</span><button type="button" className="text-button" disabled={customerPage === 0} onClick={() => setCustomerPage((value) => value - 1)}>上一頁客戶</button><button type="button" className="text-button" disabled={customerPage + 1 >= customerData.totalPages} onClick={() => setCustomerPage((value) => value + 1)}>下一頁客戶</button></div>}
@@ -152,7 +164,7 @@ export default function OrderEditor({ order: initialOrder, onSaved, onExpired, o
     <OrderItemsEditor items={draft.items} tasks={draft.tasks} disabled={locked} onChange={(items) => change({ ...draft, items })} onAdd={() => change({ ...draft, items: [...draft.items, newItem()] })} onRemove={(ref) => { if (draft.tasks.some((task) => task.itemRef === ref)) { setError(new EditorValidationError([{ path: '/items', message: '項目仍被任務使用，請先調整關聯；不會自動刪除任務。' }])); return } change({ ...draft, items: draft.items.filter((item) => item.clientRef !== ref) }) }} />
     <OrderTasksEditor tasks={draft.tasks} items={draft.items} disabled={locked} onChange={(tasks) => change({ ...draft, tasks })} onAdd={() => change({ ...draft, tasks: [...draft.tasks, newTask()] })} onRemove={(ref) => { if (draft.tasks.some((task) => task.predecessorRefs.includes(ref))) { setError(new EditorValidationError([{ path: '/tasks', message: '此任務仍被其他任務作為前置，請先調整依賴；不會自動清除其他任務關聯。' }])); return } change({ ...draft, tasks: draft.tasks.filter((task) => task.clientRef !== ref) }) }} />
     </OrderFieldIssues.Provider>
-    <div className="order-save-bar"><p>{busy ? '正在保存；請等待結果。' : dirty ? '有本機未保存內容或待確認操作。' : baseline ? `目前內容對應已保存版本 ${baseline.version}。` : '尚未建立訂單。'}</p><button type="button" className="primary-button" disabled={locked || conflict} onClick={save}>{busy ? '保存中…' : baseline ? '保存草稿' : '建立草稿'}</button></div>
-    <section className="order-acceptance-panel" aria-labelledby="order-acceptance-title"><div className="order-section-heading"><div><h2 id="order-acceptance-title">已保存版本完整性</h2><p>{dirty ? '本機尚有修改；檢查不包含未保存內容。' : '僅檢查已保存的欄位，不授予業務操作權限。'}</p></div><button type="button" className="secondary-button" disabled={!baseline || checking || busy || pending !== null} onClick={() => { void runCheck() }}>{checking ? '檢查中…' : '檢查已保存版本'}</button></div>{!baseline && <p>請先建立草稿，才可檢查已保存版本。</p>}{Boolean(checkError) && <p className="order-error" role="alert">{errorMessage(checkError)}</p>}{check && <div className="order-check-result" role="status"><h3>{check.data.confirmedRulesOutcome === 'COMPLETE' ? '已確認規則欄位齊全' : '仍有待補欄位'} · 受檢版本 {check.data.version}</h3>{baseline?.version !== check.data.version && <p className="order-warning">受檢版本與目前編輯基準不同，請比較伺服器資料。</p>}<p>尚未授予正式受理（{check.data.operationalAcceptance}），沒有派工或資源占用。</p><p>已檢規則：{check.data.checkedRules.join('、')}</p>{(dirty || baseline?.version !== check.data.version) && <p>本機內容已修改或受檢版本不同，請先保存／重新載入再定位欄位。</p>}{check.data.missingFields.length > 0 && <ul>{check.data.missingFields.map((issue, index) => <li key={index}><button type="button" className="text-button" disabled={dirty || baseline?.version !== check.data.version} onClick={() => { if (!dirty && baseline?.version === check.data.version) focusPath(issue.path) }}>{issue.message} <small>{issue.path} · {issue.fieldId} · {issue.ruleId}</small></button></li>)}</ul>}<h4>仍待核准的政策</h4>{check.data.pendingPolicyIds.length ? <ul>{check.data.pendingPolicyIds.map((id) => <li key={id}>{id}</li>)}</ul> : <p>本次沒有列出待決政策；仍不代表正式受理。</p>}<small>追查識別：{check.traceId}</small></div>}</section>
+    <div className="order-save-bar"><p>{busy ? pending?.kind === 'accept' ? '正在正式受理；請等待結果。' : '正在保存；請等待結果。' : dirty ? '有本機未保存內容或待確認操作。' : baseline ? `目前內容對應已保存版本 ${baseline.version}。` : '尚未建立訂單。'}</p><button type="button" className="primary-button" disabled={locked || conflict} onClick={save}>{busy ? '保存中…' : baseline ? '保存草稿' : '建立草稿'}</button></div>
+    <section className="order-acceptance-panel" aria-labelledby="order-acceptance-title"><div className="order-section-heading"><div><h2 id="order-acceptance-title">已保存版本完整性</h2><p>{dirty ? '本機尚有修改；檢查不包含未保存內容。' : '僅檢查已保存的欄位，不授予業務操作權限。'}</p></div><button type="button" className="secondary-button" disabled={!baseline || !canProcessVersion} onClick={() => { void runCheck() }}>{checking ? '檢查中…' : '檢查已保存版本'}</button></div>{!baseline && <p>請先建立草稿，才可檢查已保存版本。</p>}{Boolean(checkError) && <p className="order-error" role="alert">{errorMessage(checkError)}</p>}{check && <div className="order-check-result" role="status"><h3>{check.data.confirmedRulesOutcome === 'COMPLETE' ? '已確認規則欄位齊全' : '仍有待補欄位'} · 受檢版本 {check.data.version}</h3>{baseline?.version !== check.data.version && <p className="order-warning">受檢版本與目前編輯基準不同，請比較伺服器資料。</p>}<p>{baseline?.acceptanceStatus === 'ACCEPTED' ? `此完整性檢核不執行受理（${check.data.operationalAcceptance}）；訂單已受理狀態以已保存資料為準，沒有派工或資源占用。` : `尚未授予正式受理（${check.data.operationalAcceptance}）；此檢核不執行受理，沒有派工或資源占用。`}</p><p>已檢規則：{check.data.checkedRules.join('、')}</p>{(dirty || baseline?.version !== check.data.version) && <p>本機內容已修改或受檢版本不同，請先保存／重新載入再定位欄位。</p>}{check.data.missingFields.length > 0 && <ul>{check.data.missingFields.map((issue, index) => <li key={index}><button type="button" className="text-button" disabled={dirty || baseline?.version !== check.data.version} onClick={() => { if (!dirty && baseline?.version === check.data.version) focusPath(issue.path) }}>{issue.message} <small>{issue.path} · {issue.fieldId} · {issue.ruleId}</small></button></li>)}</ul>}<h4>仍待核准的政策</h4>{check.data.pendingPolicyIds.length ? <ul>{check.data.pendingPolicyIds.map((id) => <li key={id}>{id}</li>)}</ul> : <p>本次沒有列出待決政策；仍不代表正式受理。</p>}<small>追查識別：{check.traceId}</small></div>}</section>
   </section>
 }

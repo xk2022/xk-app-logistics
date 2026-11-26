@@ -335,3 +335,5 @@ export async function replaceOrder(id: string, value: number | ReplaceOrderDraft
 export async function getAcceptanceCheck(id: string, signal?: AbortSignal): Promise<TomSuccess<AcceptanceCheck>> { return transport(`${path(id)}/acceptance-check`, acceptance, 'GET', signal) }
 export const checkOrder = getAcceptanceCheck
 export function newIdempotencyKey(): string { return crypto.randomUUID() }
+// Pure legacy parsers shared by the independent acceptance operation.
+export { order as parseTomOrder, readJson as readTomJson }

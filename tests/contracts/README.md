@@ -134,3 +134,65 @@ matches, empty files/arrays, extra capture metadata or a schema error fail. Stat
 success alone cannot be reported as actual HTTP validation; `--static-only` and
 `--responses` are mutually exclusive. Commands use the same temporary virtual
 environment and hashed install documented above.
+
+## Incremental TOM acceptance contract checks
+
+`validate_acceptance_contract.py` reads the independent
+`docs/06_api/tom-acceptance-openapi.yaml`: exactly one new POST operation and four
+incremental schemas (`AcceptOrderRequest`, `AcceptedOrderEnvelope`, `ErrorEnvelope`,
+`IdempotencyReplayed`). It checks operation, manager-role, JSON, Session/CSRF,
+required path/header, HTTP-status and response-schema declarations. The success
+schema uses `allOf` with the **exact preserved** `OrderEnvelope`, narrowing only
+OPEN, ACCEPTED and version >= 1. The error schema reuses the original envelope
+and code enum, without adding metadata, timestamps or new business error codes.
+
+The validator verifies the four immutable source SHA-256 fingerprints and checks
+the schemas' metadata. Only three exact `openapi.yaml#/components/schemas/...`
+references (`Uuid`, `OrderEnvelope`, `ErrorEnvelope`) are allowlisted in the new
+document; they resolve through the already loaded, hash-verified original OpenAPI
+in an in-memory registry. Original internal references stay in that resource.
+Network and filesystem retrieval, alternative relative paths, resource-ID
+overrides and arbitrary external references are rejected. The synthetic registry
+URIs are identifiers, not fetched URLs. Existing order, vehicle and driver tools,
+the source manifest and hash-pinned requirements remain unchanged.
+
+Static checks contain 26 positives / 33 negatives and seven reference-rejection
+self-checks. They cover all three order types, nullable/raw/NUL data, legacy
+envelope exactness, accepted-state narrowing, original errors, Gregorian calendar
+and offset/microsecond rules, exact safe mathematical integers, rejected actor/time
+inputs and precise replay-header text. Request shape permits the maximum version;
+the transaction's inability to increment it is a domain 409, not a schema 400.
+These tests do not execute ORD completeness, authorization, normalization,
+transactions, event immutability or a real HTTP request.
+
+Standard JSON Schema cannot compare a response version with a separate request's
+expectedVersion. The spec records `x-versionRule` and the client/IT/E2E must verify
+identity, `version == originalExpectedVersion + 1`, HTTP 200 and the mandatory
+replay header directly. Body-only evidence validates the response's own schema;
+it does not claim to verify those cross-request or HTTP-header relationships.
+
+The new collector writes `acceptance-contract-responses.json` as a nonempty array
+of `{schema,value}`, allowing only `AcceptedOrderEnvelope` and `ErrorEnvelope`.
+It contains public synthetic response bodies, never headers, cookies, CSRF,
+credentials, request bodies or event internals. Accepted GET/list/check responses
+and rejected PUT responses remain in `order-contract-responses.json`, validated
+by the unchanged original tool. A post-acceptance replay of an old POST/PUT key
+still returns its original historical DRAFT data; the new validator must not
+rewrite or impose accepted-only schemas on those old operations.
+
+```sh
+# Static tooling only; explicitly reports HTTP acceptance as not run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_acceptance_contract.py --static-only
+# After the isolated real HTTPS browser run:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_acceptance_contract.py \
+  --responses 'test-results/**/acceptance-contract-responses.json'
+```
+
+The same hashed temporary environment above suffices; no dependency is added.
+Without arguments the acceptance glob is mandatory by default. Missing or empty
+evidence, duplicate JSON properties, non-JSON constants, invalid Unicode, unknown
+schema names, extra capture metadata or schema errors fail. Decimal parsing
+prevents a fractional safe-boundary value from passing through float rounding.
+Diagnostics print schema/pointer/keyword without submitted values or raw parser
+messages. Static success is tooling evidence, not proof of product or HTTP
+execution; `--static-only` and `--responses` are mutually exclusive.

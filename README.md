@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M3-02 FMS 司機主檔（驗證紀錄見下方） |
+| 狀態 | development — LG-M3-03 TOM 正式受理（驗證紀錄見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,8 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [正式受理交接](docs/08_development/m3-03-tom-acceptance-handoff.md) · [受理 API／OpenAPI](docs/06_api/tom-acceptance.md)
+- [受理工程決策](docs/98_decisions/2026-11-26-tom-acceptance-engineering.md) · [M3-03 驗證](docs/09_testing/m3-03-validation.md)
 - [FMS 司機交接](docs/08_development/m3-02-fms-driver-handoff.md) · [司機 API／OpenAPI](docs/06_api/fms-drivers.md)
 - [司機工程決策](docs/98_decisions/2026-11-25-fms-driver-engineering.md) · [M3-02 驗證](docs/09_testing/m3-02-validation.md)
 - [FMS 車輛交接](docs/08_development/m3-01-fms-vehicle-handoff.md) · [車輛 API／OpenAPI](docs/06_api/fms-vehicles.md)
@@ -40,7 +42,7 @@
 
 需要 Node.js 24.22.3／npm 11.19.1、Java 21、Docker Engine 與 Compose v2。Maven Wrapper 固定 Maven 3.9.16；React 19.3.1、TypeScript 6.0.3、Vite 8.3.8、Spring Boot 4.1.3、PostgreSQL 17.12。精確相依、官方相容性與公司規範基準見 [M1 版本紀錄](docs/04_architecture/m1-versions.md)。
 
-Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，僅開原五項 API。`fms` 提供車輛與司機主檔、受控分類選項、DRIVER 本人唯讀介面及後續模組可使用的行政狀態查詢；不處理派工或資源占用。後續模組必須透過介面協作，不跨模組操作 repository。
+Monorepo 採 Modular Monolith。`frontend/` 提供登入、本人密碼、角色工作台與 ADMIN 帳號管理；`backend/` 的 `platform` 提供工程端點，`upms` 負責帳號、固定角色、認證與稽核；`adm` 負責字典、核准參數與異動紀錄，透過 UPMS 公開授權介面核對身分；`crm` 提供客戶、聯絡人、常用地址與可信 server 共用查詢。`tom` 的 OrderCore 與訂單草稿聚合保存項目、任務、依賴、客戶歷史快照、版本與成功重送紀錄，提供原五項 API 與獨立正式受理操作。`fms` 提供車輛與司機主檔、受控分類選項、DRIVER 本人唯讀介面及後續模組可使用的行政狀態查詢；不處理派工或資源占用。後續模組必須透過介面協作，不跨模組操作 repository。
 
 ## 啟動
 
@@ -52,7 +54,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛及 V7 FMS 司機主檔結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機及 V8 TOM 不可變受理事件結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -154,7 +156,17 @@ ADMIN／DISPATCHER 登入後由「訂單工作台」查詢、新增及編輯本�
 
 保存遇到連線中斷、逾時或無法確認的回應時，保留該次請求內容及重送識別，讓使用者明確重試同一次保存；不自動換 key 新增另一單。版本衝突保留本機內容，不自動覆寫或再次保存；重新讀取伺服器版本需明確確認捨棄本機內容。未儲存或結果未確認時，離開頁面會先提示；表單與重送資訊僅在記憶體，關閉／重新整理頁面不會持久保存。
 
-完整性檢核針對已保存的版本顯示缺漏；若要檢查本機修改，須先保存。即使顯示完整，也不代表正式受理：`operationalAcceptance` 仍為 `NOT_GRANTED`。本階段沒有派車、司機回報、照片或結案操作。桌面／手機及真實後端／PostgreSQL 的實測結果見 [M2-05 驗證](docs/09_testing/m2-05-validation.md)。
+完整性檢核針對已保存的版本顯示缺漏；若要檢查本機修改，須先保存。完整性檢核不會受理：`operationalAcceptance` 仍為 `NOT_GRANTED`，表示此檢核不授予受理操作；實際受理狀態以訂單的 `acceptanceStatus` 為準。本階段沒有派車、司機回報、照片或結案操作。桌面／手機及真實後端／PostgreSQL 的實測結果見 [M2-05 驗證](docs/09_testing/m2-05-validation.md)。
+
+## TOM 正式受理
+
+正常 ADMIN／DISPATCHER 可對已保存、沒有未儲存內容或未確認操作的 OPEN＋DRAFT 訂單，明確執行「正式受理訂單」並再次確認。伺服器會在同一交易重新查核目前身分、客戶有效性、聚合版本與 ORD-P01–P03；不信任先前完整性結果，也不在保存草稿或顯示 COMPLETE 時自動受理。未決 D04／D05 清單不被當成新增全面阻擋或例外放行。
+
+唯一新操作為 `POST /api/v1/orders/{orderId}/accept`，JSON 只有 `expectedVersion`，需要 Session／CSRF 與 Idempotency-Key；成功 HTTP 200 沿原 OrderEnvelope，回 OPEN＋ACCEPTED 與恰加一版。原五項 API 與四份固定契約不變；GET／列表可讀既有 schema 已允許的 ACCEPTED，原草稿 PUT 新請求被既有守衛拒絕。只讀 acceptance-check 即使對已受理訂單仍回 NOT_GRANTED；這不會覆蓋訂單本身的受理狀態。
+
+受理保留客戶歷史名稱、項目／任務 UUID、taskNo、依賴與原內容。受理人員、server 時間、前後版本及完整受理後快照存入 V8 不可變事件，同版快照加入既有版本歷程，並與根狀態及成功重送紀錄原子提交；本階段不新增事件讀取 API 或把事件欄位塞入舊 Order DTO。
+
+同 key、同內容的成功重送先重驗目前授權，再回原成功結果，不重複建事件或加版；舊成功 POST／PUT 在後續受理後仍可重播其歷史草稿結果。未知受理結果保留原 request／key，只能明確重試同一次，不自動換 key、保存或覆寫。版本衝突需明確讀取比較；遠端已受理時不能以本機未保存草稿重新基底。受理後前端唯讀，顯示「已受理／待派車」，此顯示不產生派工或資源占用。實際契約與驗收見上述受理文件。
 
 ## FMS 車輛管理
 
@@ -182,6 +194,6 @@ DRIVER 由「本人司機資料」唯讀查詢目前帳號綁定的必要資料�
 
 ## 範圍與部署
 
-UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。正式受理、派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
+UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。派工、資源占用、司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。

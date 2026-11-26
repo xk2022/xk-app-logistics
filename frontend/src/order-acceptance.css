@@ -1,0 +1,16 @@
+.order-formal-acceptance { margin: 22px 0; padding: 24px; border: 1px solid #bfdbfe; border-radius: 12px; background: #f8fbff; }
+.order-formal-accepted { border-color: #bbf7d0; background: #f0fdf4; }
+.order-formal-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; }
+.order-formal-heading > div { min-width: 0; }
+.order-formal-heading h2 { font-size: 21px; margin: 0 0 10px; color: #172554; }
+.order-formal-heading p:not(.eyebrow) { color: #475569; font-size: 13px; line-height: 1.8; margin: 0; }
+.order-formal-heading > button { flex: 0 0 auto; }
+.order-formal-help { color: #64748b; font-size: 12px; line-height: 1.8; margin: 14px 0 0; }
+.order-formal-confirm { margin-top: 22px; padding-top: 22px; border-top: 1px solid #bfdbfe; color: #334155; }
+.order-formal-confirm h3 { font-size: 18px; margin: 0 0 18px; }
+.order-formal-confirm dl { display: flex; flex-wrap: wrap; gap: 18px 32px; padding: 16px; margin: 0 0 18px; border-radius: 8px; background: #fff; border: 1px solid #e2e8f0; }
+.order-formal-confirm dt { color: #64748b; font-size: 12px; }
+.order-formal-confirm dd { color: #172554; font-size: 14px; font-weight: 600; margin: 7px 0 0; overflow-wrap: anywhere; }
+.order-formal-confirm p { font-size: 13px; line-height: 1.8; }
+.order-formal-confirm .order-row-actions { margin-top: 20px; }
+@media (max-width: 680px) { .order-formal-acceptance { padding: 19px 16px; } .order-formal-heading { flex-direction: column; gap: 16px; } .order-formal-heading > button { width: 100%; justify-content: center; } .order-formal-confirm dl { flex-direction: column; gap: 16px; } .order-formal-confirm .order-row-actions > button { flex: 1; justify-content: center; } }

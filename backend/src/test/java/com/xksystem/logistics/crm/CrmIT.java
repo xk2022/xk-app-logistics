@@ -79,7 +79,7 @@ class CrmIT {
 
     @BeforeEach
     void isolateSyntheticCrmAndAccounts() {
-        jdbc.execute("TRUNCATE TABLE logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
+        jdbc.execute("TRUNCATE TABLE logistics.order_acceptance_event,logistics.fms_driver,logistics.fms_vehicle, logistics.order_core, logistics.tom_order, logistics.cargo_item, logistics.transport_task, "
                 + "logistics.task_dependency, logistics.order_draft_revision, logistics.api_idempotency, "
                 + "logistics.crm_contact, logistics.crm_address, logistics.crm_customer, "
                 + "logistics.adm_change_log, logistics.upms_audit, logistics.upms_account");

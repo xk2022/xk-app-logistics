@@ -70,9 +70,20 @@ silently add dispatch or legal-eligibility rules. License references and account
 metadata stay out of self responses. No CRM, TOM, vehicle, or driver records are
 inserted by the fixture runner.
 
+The acceptance scenario adds independent ADMIN/DISPATCHER/DRIVER actors for each
+viewport and runs all three original order graphs through the real POST accept
+operation. It checks incomplete drafts, explicit confirmation, immutable accepted
+views and waiting-for-dispatch display, actor restrictions, stale versions,
+disabled-customer retry, historical customer names, and a committed response lost
+before delivery. An explicit retry preserves the original key/body/version;
+a CSRF refusal does not unlock the uncertain request. No dispatch operation or
+resource reservation exists. The complete suite contains 24 cases, including all
+22 preceding cases. Acceptance artifacts use their independent incremental
+schemas; accepted GET/list/check and rejected PUT also pass the original schemas.
+
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 48 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
-order UI, and FMS ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
+runner creates 54 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets for each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
 JAR, generates random synthetic credentials, and writes a private file outside
 report directories. Its ADM definition fixtures use six `SYNTHETIC_*` keys, one
@@ -124,6 +135,8 @@ python3 -m venv /tmp/xk-order-contract-env
 /tmp/xk-order-contract-env/bin/python -m pip install --require-hashes -r tests/contracts/requirements.txt
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_order_contract.py \
   --responses 'test-results/**/order-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_acceptance_contract.py \
+  --responses 'test-results/**/acceptance-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_vehicle_contract.py \
   --responses 'test-results/**/vehicle-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_driver_contract.py \

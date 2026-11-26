@@ -60,6 +60,20 @@ public class TomController {
         return TomEnvelope.ok(request, service.check(principal(authentication), TomPageQuery.uuid(orderId, "/orderId", "OF01")));
     }
 
+    @PostMapping(value = "/{orderId}/accept", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TomEnvelope.Success> accept(Authentication authentication, @PathVariable String orderId,
+            @RequestBody byte[] body, @RequestParam MultiValueMap<String, String> query, HttpServletRequest request) {
+        noQuery(query);
+        return written(request, service.accept(principal(authentication), TomPageQuery.uuid(orderId, "/orderId", "OF01"),
+                utf8(body), key(request), TomEnvelope.trace(request)));
+    }
+
+    // Only POST gets this new protocol fallback. Legacy GET /{id}/accept remains an unknown-path 404.
+    @PostMapping(value = "/{orderId}/accept")
+    public void unsupportedAccept() {
+        throw TomPageQuery.invalid("", "request", "請依受理契約提供 JSON 與有效媒體格式");
+    }
+
     // Keep known-path protocol failures inside this controller's legacy-contract advice.
     @RequestMapping({"", "/{orderId}", "/{orderId}/acceptance-check"})
     public void unsupported() {
