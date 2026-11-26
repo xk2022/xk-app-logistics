@@ -164,6 +164,23 @@ public final class E2eFixtureMain {
                 dispatch.put("scope", dispatchScope);
                 dispatch.put("vehicleTypes", insertDispatchVehicleTypes(connection, vehicleTypeCategoryId, dispatchScope));
                 accounts.put("dispatch", dispatch);
+                Map<String, Object> dispatchUi = new LinkedHashMap<>();
+                for (String name : new String[] {"admin", "dispatcher", "driverA", "driverB"}) {
+                    String username = "dispatch-ui-e2e-" + UUID.randomUUID().toString().substring(0, 16);
+                    String secret = UpmsTestData.password();
+                    String role = switch (name) {
+                        case "admin" -> "ADMIN";
+                        case "dispatcher" -> "DISPATCHER";
+                        default -> "DRIVER";
+                    };
+                    UUID id = UpmsTestData.insert(connection, encoder, username, role,
+                            secret, false, Instant.now());
+                    dispatchUi.put(name, Map.of("id", id.toString(), "username", username, "password", secret));
+                }
+                dispatchUi.put("scope", dispatchScope);
+                // Shared immutable synthetic definitions; actors and all business records remain separate.
+                dispatchUi.put("vehicleTypes", dispatch.get("vehicleTypes"));
+                accounts.put("dispatchUi", dispatchUi);
                 fixture.put(project, accounts);
             }
             Path output = Path.of(System.getenv().getOrDefault("E2E_FIXTURE_PATH", "/tmp/xk-m2-e2e-fixture.json")).toAbsolutePath();

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -455,20 +456,95 @@ class UpmsIT {
         Account other = account("ADMIN", false);
         Browser second = new Browser();
         assertStatus(second.login(other), 200, "0000");
-        // Get both tokens before racing the writes so each request carries a valid session-bound token.
+        // Both tokens are valid initially, but one session can be revoked before its request reaches CSRF.
+        // Queue both controller transactions behind the real canonical lock instead: this test exercises
+        // the last-admin write invariant after authentication/CSRF, not the earlier revoked-token path.
         String firstToken = first.csrf();
         String secondToken = second.csrf();
-        try (var pool = Executors.newFixedThreadPool(2)) {
-            var results = pool.invokeAll(List.<Callable<Integer>>of(
-                    () -> first.send("PATCH", "/api/v1/upms/accounts/" + other.id(), Map.of("displayName", "合成管理員",
-                            "role", "ADMIN", "enabled", false, "version", 0), firstToken).statusCode(),
-                    () -> second.send("PATCH", "/api/v1/upms/accounts/" + onlyAdmin.id(), Map.of("displayName", "合成管理員",
-                            "role", "ADMIN", "enabled", false, "version", 0), secondToken).statusCode()));
-            List<Integer> statuses = List.of(results.get(0).get(), results.get(1).get());
-            assertThat(statuses.stream().filter(value -> value == 200).count()).isEqualTo(1);
-            assertThat(statuses).allMatch(value -> value == 200 || value == 401 || value == 409);
+        List<HttpResponse<String>> responses;
+        // Resource order also closes/releases the JDBC gate before ExecutorService.close waits for workers.
+        try (var pool = Executors.newFixedThreadPool(2); var gate = dataSource.getConnection()) {
+            gate.setAutoCommit(false);
+            try (var statement = gate.prepareStatement("SELECT id FROM logistics.upms_lock WHERE id=1 FOR UPDATE")) {
+                statement.setQueryTimeout(10);
+                try (var row = statement.executeQuery()) { assertThat(row.next()).isTrue(); }
+            }
+            var firstResult = pool.submit(() -> first.send("PATCH", "/api/v1/upms/accounts/" + other.id(),
+                    Map.of("displayName", "合成管理員", "role", "ADMIN", "enabled", false, "version", 0), firstToken));
+            var secondResult = pool.submit(() -> second.send("PATCH", "/api/v1/upms/accounts/" + onlyAdmin.id(),
+                    Map.of("displayName", "合成管理員", "role", "ADMIN", "enabled", false, "version", 0), secondToken));
+            try {
+                awaitAccountWritesWaitingOnCanonicalLock();
+            } finally {
+                // Release even if observation fails/times out, before waiting for either HTTP future.
+                gate.rollback();
+            }
+            responses = List.of(firstResult.get(20, TimeUnit.SECONDS), secondResult.get(20, TimeUnit.SECONDS));
         }
+        // Verify the actual safety invariant before any response-shape assertion can stop the test.
         assertThat(count("SELECT count(*) FROM logistics.upms_account WHERE role='ADMIN' AND enabled")).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM logistics.upms_account")).isEqualTo(2);
+        List<Integer> statuses = responses.stream().map(HttpResponse::statusCode).toList();
+        assertThat(statuses.stream().filter(value -> value == 200).count()).isEqualTo(1);
+        assertThat(statuses).allMatch(value -> value == 200 || value == 401 || value == 409);
+        for (var response : responses) {
+            String code = switch (response.statusCode()) {
+                case 200 -> "0000";
+                case 401 -> "E0401";
+                case 409 -> "E0409";
+                default -> throw new AssertionError("Unexpected canonical-race HTTP status: " + response.statusCode());
+            };
+            assertStatus(response, response.statusCode(), code);
+            assertThat(java.time.OffsetDateTime.parse(json.readTree(response.body()).get("timestamp").asString()).getOffset())
+                    .isEqualTo(java.time.ZoneOffset.ofHours(8));
+        }
+        int winnerIndex = responses.get(0).statusCode() == 200 ? 0 : 1;
+        List<Account> actors = List.of(onlyAdmin, other);
+        List<Browser> browsers = List.of(first, second);
+        Account winner = actors.get(winnerIndex), loser = actors.get(1 - winnerIndex);
+        JsonNode changed = data(responses.get(winnerIndex));
+        assertThat(changed.get("id").asString()).isEqualTo(loser.id().toString());
+        assertThat(changed.get("role").asString()).isEqualTo("ADMIN");
+        assertThat(changed.get("enabled").asBoolean()).isFalse();
+        assertThat(changed.get("version").asLong()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM logistics.upms_account WHERE id=? AND role='ADMIN' AND enabled AND version=0 AND auth_version=0",
+                Long.class, winner.id())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM logistics.upms_account WHERE id=? AND role='ADMIN' AND NOT enabled AND version=1 AND auth_version=1",
+                Long.class, loser.id())).isEqualTo(1);
+        HttpResponse<String> winnerMe = browsers.get(winnerIndex).get("/api/v1/auth/me");
+        assertStatus(winnerMe, 200, "0000");
+        assertThat(data(winnerMe).get("id").asString()).isEqualTo(winner.id().toString());
+        assertThat(data(winnerMe).get("role").asString()).isEqualTo("ADMIN");
+        assertThat(data(winnerMe).get("enabled").asBoolean()).isTrue();
+        assertStatus(browsers.get(1 - winnerIndex).get("/api/v1/auth/me"), 401, "E0401");
+        assertThat(count("SELECT count(*) FROM logistics.upms_audit WHERE action='ACCOUNT_UPDATE'")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT target_id FROM logistics.upms_audit WHERE action='ACCOUNT_UPDATE'", UUID.class)).isEqualTo(loser.id());
+        assertThat(jdbc.queryForObject("SELECT actor FROM logistics.upms_audit WHERE action='ACCOUNT_UPDATE'", String.class)).isEqualTo(winner.username());
+    }
+
+    private void awaitAccountWritesWaitingOnCanonicalLock() throws Exception {
+        // A separate autocommit observer avoids PostgreSQL's transaction-scoped statistics snapshot cache.
+        try (var observer = dataSource.getConnection()) {
+            observer.setAutoCommit(true);
+            try (var statement = observer.prepareStatement("""
+                    SELECT count(*) FROM pg_stat_activity
+                    WHERE datname=current_database() AND pid<>pg_backend_pid()
+                      AND wait_event_type='Lock' AND query ILIKE '%upms_lock%'
+                    """)) {
+                statement.setQueryTimeout(2);
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+                long waiting = 0;
+                while (System.nanoTime() < deadline) {
+                    try (var result = statement.executeQuery()) {
+                        assertThat(result.next()).isTrue();
+                        waiting = result.getLong(1);
+                    }
+                    if (waiting == 2) return;
+                    Thread.sleep(20);
+                }
+                throw new AssertionError("Expected two account writes waiting on the UPMS canonical lock; observed " + waiting);
+            }
+        }
     }
 
     private Account account(String role, boolean temporary) throws Exception {

@@ -218,7 +218,7 @@ jobs:
           docker compose up --detach --wait --wait-timeout 120
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE version = '\''1'\'' AND success"')" = 1
           test "$(docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "SELECT count(*) FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL"')" = 9
-      - name: Create isolated synthetic UPMS, ADM, CRM, TOM, and FMS fixture with test-only runner
+      - name: Create independent isolated synthetic role groups with test-only runner
         working-directory: backend
         run: |
           set -a
@@ -226,7 +226,7 @@ jobs:
           set +a
           DB_URL="jdbc:postgresql://127.0.0.1:5432/$POSTGRES_DB" DB_USER="$POSTGRES_USER" DB_PASSWORD="$POSTGRES_PASSWORD" \
             java -cp "target/test-classes:target/classes:$(cat target/e2e-classpath.txt)" com.xksystem.logistics.support.E2eFixtureMain
-      - name: TLS browser UPMS, ADM, CRM, TOM, FMS, TMS API and service smoke on desktop and mobile
+      - name: TLS browser services, roles, orders, FMS and TMS API/workbench on desktop and mobile
         run: npm run test:e2e
       - name: Validate original order schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
