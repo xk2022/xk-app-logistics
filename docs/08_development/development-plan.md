@@ -44,3 +44,7 @@ Q41–Q47 與 M4-01～07 已採用。依 [M4 七工作包交接](m4-execution-ha
 M4-01 已由 [PR #23](https://github.com/xk2022/xk-app-logistics/pull/23) 合併，PR CI45768556588／main CI45769255127 attempt1 均四過；M4-02 從 merge `daf26f979c1c03c078876f204a713578abe80a4e` 開始，後續 03～07 保持前包 main 四過的順序門檻。
 
 M4-02 本機590／469／32及七HTTP1,731全過；[本包驗證](../09_testing/m4-02-validation.md)追蹤 source／merge／PR與main四項CI，全部完成再進M4-03。正式照片／例外／釋放／結案責任仍未核准，正向只隔離合成。
+
+M4-02 PR #24／main四過收據已核對；M4-03從merge `4681f13b4dd1dc324632848e7b119147e0e43068` 依[本包交接](m4-03-exceptions-handoff.md)及[驗證紀錄](../09_testing/m4-03-validation.md)實作。其餘包依序保留前包main四過門檻。
+
+- LG-M4-03已完成本機前端718／後端530／E2E34／八HTTP1,949驗收，詳[驗證及四項遠端門檻](../09_testing/m4-03-validation.md)；main四項成功後依M4交接自動進M4-04，不提前完成／釋放或結案。

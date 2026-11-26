@@ -43,3 +43,10 @@
 - [M4-02 工程採用](98_decisions/2026-11-26-m4-02-engineering.md)
 - [獨立 API](06_api/tms-progress-evidence.md)／[OpenAPI](06_api/tms-progress-evidence-openapi.yaml)
 - [M4-02 驗證](09_testing/m4-02-validation.md)
+
+### M4-03 工程與驗證
+
+- [異常與補件交接](08_development/m4-03-exceptions-handoff.md)
+- [工程採用](98_decisions/2026-11-26-m4-03-engineering.md)
+- [獨立API](06_api/tms-exceptions.md)／[OpenAPI](06_api/tms-exceptions-openapi.yaml)
+- [M4-03驗證](09_testing/m4-03-validation.md)

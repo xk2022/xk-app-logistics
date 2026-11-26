@@ -1,0 +1,2546 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics TMS Exceptions / Supplements API
+  version: 0.1.0
+  description: LG-M4-03獨立13操作工程契約。D04/D05/D06/D10/正式provider未核准：normalExceptionPolicy UNCONFIRMED。僅isolated實查xk_logistics_e2e合成閉環可正向。rawUnicode原回報/理由/補件/照片保留，RESOLVED不等於完成/釋放/結案；不改所有舊API/schema/validators與M402合法2上傳phase。複製Evidence描述指M402舊限制，本包新supplement
+    route另外明定三phase。
+servers:
+- url: /api/v1
+tags:
+- name: TMSExceptions
+security:
+- sessionCookie: []
+paths:
+  /tms/my-tasks/{assignmentId}/exceptions:
+    get:
+      operationId: listMyExceptions
+      tags:
+      - TMSExceptions
+      summary: listMyExceptions
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Status'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionSummaryPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+    post:
+      operationId: reportMyException
+      tags:
+      - TMSExceptions
+      summary: reportMyException
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportExceptionRequest'
+      x-maxStreamBytes: 16384
+      x-replayRule: 授權/原Session/歸屬後先receipt/hash；request只驗屬於case、不得要求仍active。新state/version/phase/policy/fulfillment只能在miss後；原結果不重做。
+      x-versionRule: report OPEN/exception0；request/upload/submit/resolve各exception+1，不升execution；upload雙token先異常後執行；success
+        IDs/status/rawtext/token witness由client與IT/E2E驗。
+      x-postLedgerMissErrors:
+      - E1901
+      - E1902
+      - E1903
+      - E1907
+      - E1908
+  /tms/my-tasks/{assignmentId}/exceptions/{exceptionId}:
+    get:
+      operationId: getMyException
+      tags:
+      - TMSExceptions
+      summary: getMyException
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/ExceptionId'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks/{assignmentId}/exceptions/{exceptionId}/history:
+    get:
+      operationId: getMyExceptionHistory
+      tags:
+      - TMSExceptions
+      summary: getMyExceptionHistory
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverExceptionHistoryPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks/{assignmentId}/exceptions/{exceptionId}/supplement-requests/{requestId}/evidence:
+    post:
+      operationId: uploadMySupplement
+      tags:
+      - TMSExceptions
+      summary: uploadMySupplement
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+        新補件允許AWAITING但不擴舊M402upload；每artifact+1非fulfilled，私有blob/metadata/link/event/receipt同tx。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/RequestId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      - $ref: '#/components/parameters/ExceptionVersion'
+      - $ref: '#/components/parameters/ExecutionVersion'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplementUploadEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              $ref: '#/components/schemas/BinaryPng'
+      x-maxStreamBytes: 1048576
+      x-replayRule: 授權/原Session/歸屬後先receipt/hash；request只驗屬於case、不得要求仍active。新state/version/phase/policy/fulfillment只能在miss後；原結果不重做。
+      x-versionRule: report OPEN/exception0；request/upload/submit/resolve各exception+1，不升execution；upload雙token先異常後執行；success
+        IDs/status/rawtext/token witness由client與IT/E2E驗。
+      x-postLedgerMissErrors:
+      - E1901
+      - E1902
+      - E1903
+      - E1907
+      - E1908
+      x-rejectDuplicateHeaders:
+      - Content-Type
+      - Content-Encoding
+      - X-Exception-Version
+      - X-Execution-Version
+      - Idempotency-Key
+      x-rejectMediaParameters: true
+      x-allowedContentEncodings:
+      - identity
+  /tms/my-tasks/{assignmentId}/exceptions/{exceptionId}/supplement-requests/{requestId}/submit:
+    post:
+      operationId: submitMySupplement
+      tags:
+      - TMSExceptions
+      summary: submitMySupplement
+      description: DRIVER先fresh normal/currentSession/currentbinding/currentASSIGNED/currentTOMsource/完整occupations後才看receipt；foreign/失效opaque404。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/RequestId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitSupplementRequest'
+      x-maxStreamBytes: 16384
+      x-replayRule: 授權/原Session/歸屬後先receipt/hash；request只驗屬於case、不得要求仍active。新state/version/phase/policy/fulfillment只能在miss後；原結果不重做。
+      x-versionRule: report OPEN/exception0；request/upload/submit/resolve各exception+1，不升execution；upload雙token先異常後執行；success
+        IDs/status/rawtext/token witness由client與IT/E2E驗。
+      x-postLedgerMissErrors:
+      - E1901
+      - E1902
+      - E1903
+      - E1907
+      - E1908
+  /tms/exceptions:
+    get:
+      operationId: listExceptions
+      tags:
+      - TMSExceptions
+      summary: listExceptions
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      - $ref: '#/components/parameters/Status'
+      - $ref: '#/components/parameters/AssignmentFilter'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionSummaryPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/exceptions/{exceptionId}:
+    get:
+      operationId: getException
+      tags:
+      - TMSExceptions
+      summary: getException
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionDetailEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/exceptions/{exceptionId}/history:
+    get:
+      operationId: getExceptionHistory
+      tags:
+      - TMSExceptions
+      summary: getExceptionHistory
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerExceptionHistoryPageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/exceptions/{exceptionId}/supplement-requests:
+    post:
+      operationId: requestExceptionSupplement
+      tags:
+      - TMSExceptions
+      summary: requestExceptionSupplement
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerExceptionRequest'
+      x-maxStreamBytes: 16384
+      x-replayRule: 授權/原Session/歸屬後先receipt/hash；request只驗屬於case、不得要求仍active。新state/version/phase/policy/fulfillment只能在miss後；原結果不重做。
+      x-versionRule: report OPEN/exception0；request/upload/submit/resolve各exception+1，不升execution；upload雙token先異常後執行；success
+        IDs/status/rawtext/token witness由client與IT/E2E驗。
+      x-postLedgerMissErrors:
+      - E1901
+      - E1902
+      - E1903
+      - E1907
+      - E1908
+  /tms/exceptions/{exceptionId}/resolve:
+    post:
+      operationId: resolveException
+      tags:
+      - TMSExceptions
+      summary: resolveException
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Idempotency-Replayed:
+              required: true
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExceptionRecordEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerExceptionRequest'
+      x-maxStreamBytes: 16384
+      x-replayRule: 授權/原Session/歸屬後先receipt/hash；request只驗屬於case、不得要求仍active。新state/version/phase/policy/fulfillment只能在miss後；原結果不重做。
+      x-versionRule: report OPEN/exception0；request/upload/submit/resolve各exception+1，不升execution；upload雙token先異常後執行；success
+        IDs/status/rawtext/token witness由client與IT/E2E驗。
+      x-postLedgerMissErrors:
+      - E1901
+      - E1902
+      - E1903
+      - E1907
+      - E1908
+  /tms/exceptions/{exceptionId}/evidence:
+    get:
+      operationId: listExceptionEvidence
+      tags:
+      - TMSExceptions
+      summary: listExceptionEvidence
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplementEvidencePageEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/exceptions/{exceptionId}/evidence/{evidenceId}/content:
+    get:
+      operationId: getExceptionEvidenceContent
+      tags:
+      - TMSExceptions
+      summary: getExceptionEvidenceContent
+      description: Manager歷史facts/receipt先fresh正常ADMIN或DISPATCHER＋原Session＋companyrecord，不依currentdriver/占用；newwrite
+        miss才currentguard，binary再current歷史readpolicy/provider。
+      x-allowedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-deniedRoles:
+      - DRIVER
+      security:
+      - sessionCookie: []
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      parameters:
+      - $ref: '#/components/parameters/ExceptionId'
+      - $ref: '#/components/parameters/EvidenceId'
+      responses:
+        '200':
+          description: 成功原次收據或當前GET；historical receipt≠current detail。
+          headers:
+            Cache-Control:
+              required: true
+              schema:
+                const: no-store, private
+              description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+            Content-Length:
+              required: true
+              schema:
+                type: integer
+                minimum: 1
+                maximum: 9007199254740991
+            X-Content-Type-Options:
+              required: true
+              schema:
+                const: nosniff
+            Content-Disposition:
+              required: true
+              schema:
+                const: inline; filename="evidence.png"
+          content:
+            image/png:
+              schema:
+                $ref: '#/components/schemas/BinaryPng'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '413':
+          $ref: '#/components/responses/Error413'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      x-noConditionalOrRangeServing: true
+      x-forbiddenSuccessHeaders:
+      - ETag
+      - Last-Modified
+      - Accept-Ranges
+      - Location
+      - Content-Location
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 與JSESSIONID為同一受保護HttpSession別名；Secure/HttpOnly/SameSite=Lax，正常帳號與首次改密限制保持。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    ExceptionId:
+      name: exceptionId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    EvidenceId:
+      name: evidenceId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9._:-]{1,128}$
+        not:
+          pattern: '[^A-Za-z0-9._:-]'
+      description: 恰一個 case-sensitive header；未知結果固定原 key/body/path，不自動重送或換 key。
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+        maximum: 100000
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+    ExecutionVersion:
+      name: X-Execution-Version
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ExecutionVersionHeader'
+      description: 恰一個header，預期目前execution版本；stage serverderived，無client phase/time/type。
+    ExceptionVersion:
+      name: X-Exception-Version
+      in: header
+      required: true
+      schema:
+        $ref: '#/components/schemas/ExecutionVersionHeader'
+      description: 異常expectedVersion；先於X-Execution-Version核對，實際值單位不得混淆。
+    Status:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ExceptionStatus'
+    AssignmentFilter:
+      name: assignmentId
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Uuid'
+  responses:
+    Error400:
+      description: strict shape/query/header/PNG bytes驗證，VALIDATION_ERROR+fields
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error401:
+      description: 未登入、過期/失效normal帳號或匿名CSRF，null data
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error403:
+      description: manager禁止代理或CSRF；reason-only FORBIDDEN/CSRF_INVALID，保留null兼容
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          examples:
+            csrf_invalid:
+              value:
+                code: E0403
+                message: 安全驗證或權限拒絕
+                data:
+                  reason: CSRF_INVALID
+                timestamp: '2026-11-26T10:00:00+08:00'
+            forbidden:
+              value:
+                code: E0403
+                message: 安全驗證或權限拒絕
+                data:
+                  reason: FORBIDDEN
+                timestamp: '2026-11-26T10:00:00+08:00'
+    Error404:
+      description: 非本人/失效assignment/source/occupation/evidence範圍，opaque null
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error405:
+      description: 未契約method含HEAD，不回photo bytes
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error409:
+      description: 獨立E1901–08，版本／狀態／政策／重送／關聯／補件；兩種actual版本單位明確。
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error413:
+      description: 應用程式實際stream超1048576，E0413/null；更大edge拒絕不宣稱appJSON
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error415:
+      description: 不支援media/encoding，null data
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error500:
+      description: 安全內部/DB/provider失敗摘要，null data，無路徑與cause
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            const: no-store, private
+          description: 所有metadata/policy/command/content成功與拒絕皆private/no-store；無共享cache bypass。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    CanonicalUuid:
+      allOf:
+      - $ref: '#/components/schemas/Uuid'
+      - not:
+          pattern: '[^0-9a-f-]'
+      description: 伺服器輸出 canonical lowercase UUID；request/path UUID 可大小寫，hash前正規化。
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+      description: 安全數學整數範圍可重用，版本單位依欄位判定。異常record／summary／event／supplement收據的version、異常命令expectedVersion及actualVersion屬exception；ExecutionView.version與reportedExecutionVersion／expectedExecutionVersion／actualExecutionVersion屬execution；與assignment.version、task generation及TOM／FMS版本分開。
+    Timestamp:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,9})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+    CompanyTimestamp:
+      type: string
+      format: date-time
+      pattern: \+08:00$
+    ExecutionPhase:
+      type: string
+      enum:
+      - WAITING
+      - DEPARTED
+      - IN_PROGRESS
+      - AWAITING_COMPLETION
+      - COMPLETED
+      description: M4-01 只可 WAITING→DEPARTED；其餘為後續已授權工作包的讀取 enum 預留，本包不提供其命令或宣稱其政策已核准。
+    ExecutionView:
+      type: object
+      additionalProperties: false
+      properties:
+        phase:
+          $ref: '#/components/schemas/ExecutionPhase'
+        version:
+          $ref: '#/components/schemas/Version'
+        departedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+      required:
+      - phase
+      - version
+      - departedAt
+      allOf:
+      - if:
+          properties:
+            phase:
+              const: WAITING
+        then:
+          properties:
+            version:
+              const: 0
+            departedAt:
+              type: 'null'
+        else:
+          properties:
+            version:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            departedAt:
+              $ref: '#/components/schemas/Timestamp'
+      description: 無 execution row 的本人 GET 虛擬 WAITING/0/null，無 DB／event／receipt 寫入；首次出發才保存 DEPARTED/1。
+    IdempotencyReplayed:
+      type: string
+      enum:
+      - 'true'
+      - 'false'
+    EvidenceIds:
+      type: array
+      items:
+        $ref: '#/components/schemas/Uuid'
+      minItems: 0
+      maxItems: 32
+      uniqueItems: true
+      x-uniqueCanonicalUuids: true
+      description: 技術上限32；依UUID lowercase後去重檢查並排序，數學集合，不含業務優先順序；重複拒絕、不默默dedupe。
+    Evidence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        phase:
+          $ref: '#/components/schemas/ExecutionPhase'
+        executionVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        mediaType:
+          const: image/png
+        byteSize:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          not:
+            pattern: '[^0-9a-f]'
+        uploadedAt:
+          $ref: '#/components/schemas/Timestamp'
+        status:
+          const: VERIFIED
+      required:
+      - id
+      - assignmentId
+      - taskId
+      - phase
+      - executionVersion
+      - mediaType
+      - byteSize
+      - sha256
+      - uploadedAt
+      - status
+      description: 不可變十欄本人證據；本包只在DEPARTED/IN_PROGRESS建立，phase保留完整既有讀enum。actual bytes/hash/server time，無actor/account/driver/resource/order/customer、filename、URL、storage
+        key/path、原bytes/base64。內部uploader只audit。
+    EvidenceRequirements:
+      type: object
+      additionalProperties: false
+      properties:
+        minimumCount:
+          const: 1
+        allowedMediaTypes:
+          const:
+          - image/png
+        maxBytes:
+          const: 65536
+        maxPixels:
+          const: 4096
+      required:
+      - minimumCount
+      - allowedMediaTypes
+      - maxBytes
+      - maxPixels
+      description: 只有隔離合成測試策略的明確數值，不是D06照片分類／數量／格式／大小／必填階段或正式provider核准；normal requirements為null。
+    PolicyMode:
+      type: string
+      enum:
+      - UNCONFIRMED
+      - SYNTHETIC_TEST_ONLY
+    ExecutionVersionHeader:
+      type: string
+      minLength: 1
+      maxLength: 16
+      pattern: ^(0|[1-9][0-9]*)$
+      not:
+        pattern: '[^0-9]'
+      format: execution-version-header
+      x-maximumNumericValue: 9007199254740991
+      description: 恰一header，ASCII digits safe integer；無leading zero/sign/exponent/whitespace/comma，與JSON數學整數文法刻意不同。
+    BinaryPng:
+      type: string
+      format: binary
+      x-maxBytes: 1048576
+      description: bounded streaming raw PNG，實際bytes/cap/CRC/chunks/dimensions/decoder/hash由產品IT/E2E驗，不寫HTTP JSON
+        artifact。
+    ReportedPhase:
+      type: string
+      enum:
+      - DEPARTED
+      - IN_PROGRESS
+      - AWAITING_COMPLETION
+    ExceptionStatus:
+      type: string
+      enum:
+      - OPEN
+      - NEEDS_SUPPLEMENT
+      - RESOLVED
+    RawDescription:
+      type: string
+      minLength: 1
+      maxLength: 2000
+      x-nonBlankRawText: true
+      description: 有效原始Unicode scalar/NUL/NFD/首尾空白/newline逐字保存；只驗codepoints及Unicode whitespace/SpaceChar/FEFF nonblank，不NFC/trim。
+    RawNote:
+      type: string
+      minLength: 1
+      maxLength: 1000
+      x-nonBlankRawText: true
+      description: 原始reason/note，DRIVER可見，非內部staff note；不同原文字面是不同hash，不trim/NFC。
+    CanonicalEvidenceIds:
+      type: array
+      items:
+        $ref: '#/components/schemas/CanonicalUuid'
+      maxItems: 32
+      uniqueItems: true
+      x-canonicalUuidOrder: true
+      description: canonical lowercase sorted唯一UUID集合；只當前request照片，技術上限32非D06正式數量。
+    ExceptionSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        reportedPhase:
+          $ref: '#/components/schemas/ReportedPhase'
+        status:
+          $ref: '#/components/schemas/ExceptionStatus'
+        version:
+          $ref: '#/components/schemas/Version'
+        blocking:
+          type: boolean
+        reportedAt:
+          $ref: '#/components/schemas/Timestamp'
+      required:
+      - id
+      - assignmentId
+      - taskId
+      - taskNo
+      - reportedPhase
+      - status
+      - version
+      - blocking
+      - reportedAt
+      allOf:
+      - if:
+          properties:
+            status:
+              const: RESOLVED
+        then:
+          properties:
+            blocking:
+              const: false
+        else:
+          properties:
+            blocking:
+              const: true
+      - if:
+          properties:
+            version:
+              const: 0
+        then:
+          properties:
+            status:
+              const: OPEN
+    ActiveSupplementRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        reason:
+          $ref: '#/components/schemas/RawNote'
+        requestedAt:
+          $ref: '#/components/schemas/Timestamp'
+        uploadedCount:
+          type: integer
+          minimum: 0
+          maximum: 32
+        evidenceIds:
+          $ref: '#/components/schemas/CanonicalEvidenceIds'
+      required:
+      - id
+      - reason
+      - requestedAt
+      - uploadedCount
+      - evidenceIds
+      x-countMatchesEvidenceIds: true
+    ExceptionRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        reportedPhase:
+          $ref: '#/components/schemas/ReportedPhase'
+        reportedExecutionVersion:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        description:
+          $ref: '#/components/schemas/RawDescription'
+        status:
+          $ref: '#/components/schemas/ExceptionStatus'
+        version:
+          $ref: '#/components/schemas/Version'
+        blocking:
+          type: boolean
+        reportedAt:
+          $ref: '#/components/schemas/Timestamp'
+        resolvedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+        resolutionNote:
+          anyOf:
+          - $ref: '#/components/schemas/RawNote'
+          - type: 'null'
+        activeRequest:
+          anyOf:
+          - $ref: '#/components/schemas/ActiveSupplementRequest'
+          - type: 'null'
+      required:
+      - id
+      - assignmentId
+      - taskId
+      - taskNo
+      - reportedPhase
+      - reportedExecutionVersion
+      - description
+      - status
+      - version
+      - blocking
+      - reportedAt
+      - resolvedAt
+      - resolutionNote
+      - activeRequest
+      allOf:
+      - if:
+          properties:
+            status:
+              const: RESOLVED
+        then:
+          properties:
+            blocking:
+              const: false
+        else:
+          properties:
+            blocking:
+              const: true
+      - if:
+          properties:
+            status:
+              const: RESOLVED
+        then:
+          properties:
+            resolvedAt:
+              $ref: '#/components/schemas/Timestamp'
+            resolutionNote:
+              $ref: '#/components/schemas/RawNote'
+        else:
+          properties:
+            resolvedAt:
+              type: 'null'
+            resolutionNote:
+              type: 'null'
+      - if:
+          properties:
+            status:
+              const: NEEDS_SUPPLEMENT
+        then:
+          properties:
+            activeRequest:
+              $ref: '#/components/schemas/ActiveSupplementRequest'
+            version:
+              minimum: 1
+        else:
+          properties:
+            activeRequest:
+              type: 'null'
+      - if:
+          properties:
+            version:
+              const: 0
+        then:
+          properties:
+            status:
+              const: OPEN
+    ActionAvailability:
+      type: object
+      additionalProperties: false
+      properties:
+        allowed:
+          type: boolean
+        blocker:
+          enum:
+          - null
+          - FORBIDDEN
+          - POLICY_NOT_CONFIRMED
+          - INVALID_STATE
+          - SUPPLEMENT_REQUIRED
+          - EVIDENCE_REQUIRED
+      required:
+      - allowed
+      - blocker
+      allOf:
+      - if:
+          properties:
+            allowed:
+              const: true
+        then:
+          properties:
+            blocker:
+              type: 'null'
+        else:
+          properties:
+            blocker:
+              type: string
+    ExceptionActions:
+      type: object
+      additionalProperties: false
+      properties:
+        mode:
+          $ref: '#/components/schemas/PolicyMode'
+        requestSupplement:
+          $ref: '#/components/schemas/ActionAvailability'
+        resolve:
+          $ref: '#/components/schemas/ActionAvailability'
+        uploadSupplement:
+          $ref: '#/components/schemas/ActionAvailability'
+        submitSupplement:
+          $ref: '#/components/schemas/ActionAvailability'
+        requirements:
+          anyOf:
+          - $ref: '#/components/schemas/EvidenceRequirements'
+          - type: 'null'
+      required:
+      - mode
+      - requestSupplement
+      - resolve
+      - uploadSupplement
+      - submitSupplement
+      - requirements
+      allOf:
+      - if:
+          properties:
+            mode:
+              const: UNCONFIRMED
+        then:
+          properties:
+            requestSupplement:
+              properties:
+                allowed:
+                  const: false
+            resolve:
+              properties:
+                allowed:
+                  const: false
+            uploadSupplement:
+              properties:
+                allowed:
+                  const: false
+            submitSupplement:
+              properties:
+                allowed:
+                  const: false
+            requirements:
+              type: 'null'
+      - if:
+          anyOf:
+          - properties:
+              uploadSupplement:
+                properties:
+                  allowed:
+                    const: true
+          - properties:
+              submitSupplement:
+                properties:
+                  allowed:
+                    const: true
+        then:
+          properties:
+            requirements:
+              $ref: '#/components/schemas/EvidenceRequirements'
+    ExceptionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        exception:
+          $ref: '#/components/schemas/ExceptionRecord'
+        execution:
+          $ref: '#/components/schemas/ExecutionView'
+        actions:
+          $ref: '#/components/schemas/ExceptionActions'
+      required:
+      - exception
+      - execution
+      - actions
+      allOf:
+      - if:
+          properties:
+            exception:
+              properties:
+                status:
+                  const: NEEDS_SUPPLEMENT
+        then:
+          properties:
+            actions:
+              properties:
+                requestSupplement:
+                  properties:
+                    allowed:
+                      const: false
+                resolve:
+                  properties:
+                    allowed:
+                      const: false
+        else:
+          properties:
+            actions:
+              properties:
+                requirements:
+                  type: 'null'
+                uploadSupplement:
+                  properties:
+                    allowed:
+                      const: false
+                submitSupplement:
+                  properties:
+                    allowed:
+                      const: false
+      - if:
+          properties:
+            exception:
+              properties:
+                status:
+                  const: RESOLVED
+        then:
+          properties:
+            actions:
+              properties:
+                requestSupplement:
+                  properties:
+                    allowed:
+                      const: false
+                resolve:
+                  properties:
+                    allowed:
+                      const: false
+                uploadSupplement:
+                  properties:
+                    allowed:
+                      const: false
+                submitSupplement:
+                  properties:
+                    allowed:
+                      const: false
+      - if:
+          properties:
+            actions:
+              properties:
+                requirements:
+                  type: object
+        then:
+          properties:
+            actions:
+              properties:
+                mode:
+                  const: SYNTHETIC_TEST_ONLY
+            execution:
+              properties:
+                phase:
+                  $ref: '#/components/schemas/ReportedPhase'
+    ReportExceptionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedExecutionVersion:
+          $ref: '#/components/schemas/Version'
+        description:
+          $ref: '#/components/schemas/RawDescription'
+      required:
+      - expectedExecutionVersion
+      - description
+    ManagerExceptionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          $ref: '#/components/schemas/Version'
+        reason:
+          $ref: '#/components/schemas/RawNote'
+      required:
+      - expectedVersion
+      - reason
+    SubmitSupplementRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          $ref: '#/components/schemas/Version'
+        note:
+          $ref: '#/components/schemas/RawNote'
+        evidenceIds:
+          $ref: '#/components/schemas/EvidenceIds'
+      required:
+      - expectedVersion
+      - note
+      - evidenceIds
+    SupplementUploadResult:
+      type: object
+      additionalProperties: false
+      properties:
+        exceptionId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        assignmentId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        taskId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        version:
+          type: integer
+          minimum: 2
+          maximum: 9007199254740991
+        requestId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        evidence:
+          allOf:
+          - $ref: '#/components/schemas/Evidence'
+          - properties:
+              phase:
+                $ref: '#/components/schemas/ReportedPhase'
+      required:
+      - exceptionId
+      - assignmentId
+      - taskId
+      - version
+      - requestId
+      - evidence
+    SupplementEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        requestId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        submitted:
+          type: boolean
+        evidence:
+          $ref: '#/components/schemas/Evidence'
+      required:
+      - requestId
+      - submitted
+      - evidence
+    DriverExceptionEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        exceptionId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        type:
+          enum:
+          - REPORTED
+          - SUPPLEMENT_REQUESTED
+          - SUPPLEMENT_EVIDENCE_UPLOADED
+          - SUPPLEMENT_SUBMITTED
+          - RESOLVED
+        fromStatus:
+          anyOf:
+          - $ref: '#/components/schemas/ExceptionStatus'
+          - type: 'null'
+        toStatus:
+          $ref: '#/components/schemas/ExceptionStatus'
+        fromVersion:
+          anyOf:
+          - $ref: '#/components/schemas/Version'
+          - type: 'null'
+        toVersion:
+          $ref: '#/components/schemas/Version'
+        occurredAt:
+          $ref: '#/components/schemas/Timestamp'
+        note:
+          anyOf:
+          - $ref: '#/components/schemas/RawDescription'
+          - type: 'null'
+        requestId:
+          anyOf:
+          - $ref: '#/components/schemas/CanonicalUuid'
+          - type: 'null'
+        evidenceIds:
+          $ref: '#/components/schemas/CanonicalEvidenceIds'
+      required:
+      - id
+      - exceptionId
+      - type
+      - fromStatus
+      - toStatus
+      - fromVersion
+      - toVersion
+      - occurredAt
+      - note
+      - requestId
+      - evidenceIds
+      allOf:
+      - if:
+          properties:
+            type:
+              const: REPORTED
+        then:
+          properties:
+            fromStatus:
+              const: null
+            toStatus:
+              const: OPEN
+            fromVersion:
+              type: 'null'
+            toVersion:
+              const: 0
+            requestId:
+              type: 'null'
+            note:
+              $ref: '#/components/schemas/RawDescription'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_REQUESTED
+        then:
+          properties:
+            fromStatus:
+              const: OPEN
+            toStatus:
+              const: NEEDS_SUPPLEMENT
+            fromVersion:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_EVIDENCE_UPLOADED
+        then:
+          properties:
+            fromStatus:
+              const: NEEDS_SUPPLEMENT
+            toStatus:
+              const: NEEDS_SUPPLEMENT
+            fromVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 2
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              type: 'null'
+            evidenceIds:
+              minItems: 1
+              maxItems: 1
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_SUBMITTED
+        then:
+          properties:
+            fromStatus:
+              const: NEEDS_SUPPLEMENT
+            toStatus:
+              const: OPEN
+            fromVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 2
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 1
+              maxItems: 32
+      - if:
+          properties:
+            type:
+              const: RESOLVED
+        then:
+          properties:
+            fromStatus:
+              const: OPEN
+            toStatus:
+              const: RESOLVED
+            fromVersion:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            requestId:
+              type: 'null'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      x-exactVersionIncrement: true
+    ActorSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        role:
+          enum:
+          - ADMIN
+          - DISPATCHER
+          - DRIVER
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+      required:
+      - role
+      - displayName
+    ManagerExceptionEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/CanonicalUuid'
+        exceptionId:
+          $ref: '#/components/schemas/CanonicalUuid'
+        type:
+          enum:
+          - REPORTED
+          - SUPPLEMENT_REQUESTED
+          - SUPPLEMENT_EVIDENCE_UPLOADED
+          - SUPPLEMENT_SUBMITTED
+          - RESOLVED
+        fromStatus:
+          anyOf:
+          - $ref: '#/components/schemas/ExceptionStatus'
+          - type: 'null'
+        toStatus:
+          $ref: '#/components/schemas/ExceptionStatus'
+        fromVersion:
+          anyOf:
+          - $ref: '#/components/schemas/Version'
+          - type: 'null'
+        toVersion:
+          $ref: '#/components/schemas/Version'
+        occurredAt:
+          $ref: '#/components/schemas/Timestamp'
+        note:
+          anyOf:
+          - $ref: '#/components/schemas/RawDescription'
+          - type: 'null'
+        requestId:
+          anyOf:
+          - $ref: '#/components/schemas/CanonicalUuid'
+          - type: 'null'
+        evidenceIds:
+          $ref: '#/components/schemas/CanonicalEvidenceIds'
+        actor:
+          $ref: '#/components/schemas/ActorSnapshot'
+      required:
+      - id
+      - exceptionId
+      - type
+      - fromStatus
+      - toStatus
+      - fromVersion
+      - toVersion
+      - occurredAt
+      - note
+      - requestId
+      - evidenceIds
+      - actor
+      allOf:
+      - if:
+          properties:
+            type:
+              const: REPORTED
+        then:
+          properties:
+            fromStatus:
+              const: null
+            toStatus:
+              const: OPEN
+            fromVersion:
+              type: 'null'
+            toVersion:
+              const: 0
+            requestId:
+              type: 'null'
+            note:
+              $ref: '#/components/schemas/RawDescription'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_REQUESTED
+        then:
+          properties:
+            fromStatus:
+              const: OPEN
+            toStatus:
+              const: NEEDS_SUPPLEMENT
+            fromVersion:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_EVIDENCE_UPLOADED
+        then:
+          properties:
+            fromStatus:
+              const: NEEDS_SUPPLEMENT
+            toStatus:
+              const: NEEDS_SUPPLEMENT
+            fromVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 2
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              type: 'null'
+            evidenceIds:
+              minItems: 1
+              maxItems: 1
+      - if:
+          properties:
+            type:
+              const: SUPPLEMENT_SUBMITTED
+        then:
+          properties:
+            fromStatus:
+              const: NEEDS_SUPPLEMENT
+            toStatus:
+              const: OPEN
+            fromVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 2
+              maximum: 9007199254740991
+            requestId:
+              $ref: '#/components/schemas/CanonicalUuid'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 1
+              maxItems: 32
+      - if:
+          properties:
+            type:
+              const: RESOLVED
+        then:
+          properties:
+            fromStatus:
+              const: OPEN
+            toStatus:
+              const: RESOLVED
+            fromVersion:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            toVersion:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            requestId:
+              type: 'null'
+            note:
+              $ref: '#/components/schemas/RawNote'
+            evidenceIds:
+              minItems: 0
+              maxItems: 0
+      - if:
+          properties:
+            type:
+              enum:
+              - REPORTED
+              - SUPPLEMENT_EVIDENCE_UPLOADED
+              - SUPPLEMENT_SUBMITTED
+        then:
+          properties:
+            actor:
+              properties:
+                role:
+                  const: DRIVER
+        else:
+          properties:
+            actor:
+              properties:
+                role:
+                  enum:
+                  - ADMIN
+                  - DISPATCHER
+      x-exactVersionIncrement: true
+    ExceptionSummaryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExceptionSummary'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    DriverExceptionHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriverExceptionEvent'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    ManagerExceptionHistoryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerExceptionEvent'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    SupplementEvidencePage:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplementEvidence'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalElements:
+          $ref: '#/components/schemas/Version'
+        totalPages:
+          $ref: '#/components/schemas/Version'
+      required:
+      - content
+      - page
+      - size
+      - totalElements
+      - totalPages
+    ErrorData:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+        actualVersion:
+          $ref: '#/components/schemas/Version'
+        actualExecutionVersion:
+          $ref: '#/components/schemas/Version'
+        fields:
+          type: object
+          minProperties: 1
+          additionalProperties:
+            type: string
+      required: []
+      minProperties: 1
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0405
+          - E0413
+          - E0415
+          - E0500
+          - E1901
+          - E1902
+          - E1903
+          - E1904
+          - E1905
+          - E1906
+          - E1907
+          - E1908
+        message:
+          type: string
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ErrorData'
+          - type: 'null'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+      allOf:
+      - if:
+          properties:
+            code:
+              const: E1901
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VERSION_CONFLICT
+                required:
+                - reason
+              - oneOf:
+                - required:
+                  - actualVersion
+                  not:
+                    required:
+                    - actualExecutionVersion
+                - required:
+                  - actualExecutionVersion
+                  not:
+                    required:
+                    - actualVersion
+      - if:
+          properties:
+            code:
+              const: E1902
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: INVALID_STATE
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1903
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: POLICY_NOT_CONFIRMED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1904
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_KEY_REUSED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1905
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_IN_PROGRESS
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1906
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: PROTECTED_RELATION
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1907
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: SUPPLEMENT_REQUIRED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1908
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: EVIDENCE_INVALID
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E0400
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VALIDATION_ERROR
+                required:
+                - reason
+                - fields
+      - if:
+          properties:
+            code:
+              enum:
+              - E0401
+              - E0404
+              - E0405
+              - E0413
+              - E0415
+              - E0500
+        then:
+          properties:
+            data:
+              type: 'null'
+      - if:
+          properties:
+            code:
+              const: E0403
+        then:
+          properties:
+            data:
+              anyOf:
+              - type: object
+                additionalProperties: false
+                properties:
+                  reason:
+                    enum:
+                    - CSRF_INVALID
+                    - FORBIDDEN
+                required:
+                - reason
+              - type: 'null'
+      description: 獨立E19；E1901 oneOf actualVersion異常／actualExecutionVersion執行，兩者不能同時或皆無。E16/E17/E18及private資料不回。
+    ExceptionSummaryPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ExceptionSummaryPage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ExceptionRecordEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ExceptionRecord'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ExceptionDetailEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ExceptionDetail'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    DriverExceptionHistoryPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DriverExceptionHistoryPage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    ManagerExceptionHistoryPageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ManagerExceptionHistoryPage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    SupplementUploadEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/SupplementUploadResult'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    SupplementEvidencePageEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/SupplementEvidencePage'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+x-preservedSpecSha256:
+  tms-execution-openapi.yaml: !!str b260dd0a814f11d1dc28b874f79f4280d4edce2b9bc5ac75ca0d4f3f7bbc51d4
+  tms-progress-evidence-openapi.yaml: !!str fd062dd540f657dd48a172a8955ada62aa7dd80e8a0faa805d3e91dd3efbc791
+x-syntheticOnlyDecision:
+  database: xk_logistics_e2e
+  minimumCount: 1
+  allowedMediaTypes:
+  - image/png
+  maxBytes: 65536
+  maxPixels: 4096
+  resolutionRequiresSubmittedSupplement: true
+  formalExceptionApproval: false

@@ -13,12 +13,14 @@ def main():
     exact = [SOURCE / name for name in (
         "TmsE2eApplication.class", "SyntheticDispatchPolicy.class",
         "SyntheticEvidencePolicy.class", "SyntheticEvidenceStorage.class",
+        "SyntheticExceptionPolicy.class",
     )]
     dispatch_inner = sorted(SOURCE.glob("SyntheticDispatchPolicy$*.class"))
     evidence_inner = sorted(SOURCE.glob("SyntheticEvidencePolicy$*.class"))
-    if not all(path.is_file() for path in exact) or not dispatch_inner or not evidence_inner:
+    exception_inner = sorted(SOURCE.glob("SyntheticExceptionPolicy$*.class"))
+    if not all(path.is_file() for path in exact) or not dispatch_inner or not evidence_inner or not exception_inner:
         raise SystemExit("Compile the isolated TMS test launcher and policy before preparing its runtime")
-    files = exact + dispatch_inner + evidence_inner
+    files = exact + dispatch_inner + evidence_inner + exception_inner
     # Never copy all test classes, the @TestConfiguration wrapper, fixtures, or JUnit libraries.
     if DESTINATION.exists():
         shutil.rmtree(DESTINATION)

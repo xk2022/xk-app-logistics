@@ -42,11 +42,15 @@ class EvidenceStore {
         return Optional.of(new Receipt(row.get("request_hash").toString(),(UUID)row.get("driver_id"),json.readValue(row.get("original_data").toString(),EvidenceDtos.Evidence.class)));
     }
     void upload(ExecutionService.Owned owned,UUID objectId,EvidenceDtos.Evidence evidence,ExecutionEvidencePolicy.Requirements rule,String path,String key,String hash) {
+        insertMetadata(owned,objectId,evidence,rule);
+        var at=OffsetDateTime.ofInstant(evidence.uploadedAt(),ZoneOffset.UTC);
+        jdbc.update("INSERT INTO logistics.tms_execution_evidence_command(id,company_scope,actor_id,driver_id,assignment_id,task_id,evidence_id,http_method,canonical_path,idempotency_key,request_hash,original_status,original_data,created_at) VALUES (?,?,?,?,?,?,?,'POST',?,?,?,200,?::json,?)",
+                UUID.randomUUID(),TmsStore.SCOPE,owned.actorId(),owned.driverId(),evidence.assignmentId(),evidence.taskId(),evidence.id(),path,key,hash,json.writeValueAsString(evidence),at);
+    }
+    void insertMetadata(ExecutionService.Owned owned,UUID objectId,EvidenceDtos.Evidence evidence,ExecutionEvidencePolicy.Requirements rule) {
         var at=OffsetDateTime.ofInstant(evidence.uploadedAt(),ZoneOffset.UTC);
         jdbc.update("INSERT INTO logistics.tms_execution_evidence(id,assignment_id,task_id,driver_id,actor_id,phase,execution_version,media_type,byte_size,sha256,uploaded_at,status,object_id,policy_snapshot) VALUES (?,?,?,?,?,?,?,?,?,?,?,'VERIFIED',?,?::json)",
                 evidence.id(),evidence.assignmentId(),evidence.taskId(),owned.driverId(),owned.actorId(),evidence.phase().name(),evidence.executionVersion(),evidence.mediaType(),evidence.byteSize(),evidence.sha256(),at,objectId,json.writeValueAsString(rule));
-        jdbc.update("INSERT INTO logistics.tms_execution_evidence_command(id,company_scope,actor_id,driver_id,assignment_id,task_id,evidence_id,http_method,canonical_path,idempotency_key,request_hash,original_status,original_data,created_at) VALUES (?,?,?,?,?,?,?,'POST',?,?,?,200,?::json,?)",
-                UUID.randomUUID(),TmsStore.SCOPE,owned.actorId(),owned.driverId(),evidence.assignmentId(),evidence.taskId(),evidence.id(),path,key,hash,json.writeValueAsString(evidence),at);
     }
     void progress(ExecutionService.Owned owned,ExecutionDtos.View before,EvidenceDtos.ProgressResult result,List<UUID> evidenceIds,String path,String key,String hash,Instant now) {
         var at=OffsetDateTime.ofInstant(now,ZoneOffset.UTC);

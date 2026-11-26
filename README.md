@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — LG-M4-01 已合併、PR／main CI 全過；LG-M4-02 本機驗收完成（PR／main CI 收據另列） |
+| 狀態 | development — LG-M4-01／02 已合併、PR／main CI 全過；LG-M4-03 開發與驗證中 |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -241,3 +241,11 @@ M4-01 本機 frontend 590／backend 418／desktop＋Pixel 7 E2E 30 與六份實�
 正常啟動的照片策略／provider 維持 UNCONFIRMED／unavailable，沒有正式照片上傳或進度豁免開關。正向測試只在隔離 xk_logistics_e2e，用 test-classpath 政策及同 PostgreSQL 交易的私有 bytea 替身；PNG、數量、大小及像素值均為合成工程數值，不代表 D06／D10 或正式 provider 核准。不執行照片保存清理、正式安全釋放／結案、M5 或部署。完整手機操作 UI 依 M4-06 交付。
 
 M4-02 本機前端590／後端469（139 unit＋330 integration）／桌面與Pixel7 E2E32、七份實際HTTP契約1,731筆全過；空庫34表／V1–V11與重啟一致、234後端class／71前端產品建置檔逐byte同源、90憑證報告隱私通過後清理隔離環境。遠端 source／merge／四項PR及main CI 以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-02-progress-evidence+base%3Amain)為準；main四過才開M4-03。
+
+## M4-03 異常處理與明確補件
+
+[異常契約](docs/06_api/tms-exceptions.md)、[獨立 OpenAPI](docs/06_api/tms-exceptions-openapi.yaml)、[工作包](docs/08_development/m4-03-exceptions-handoff.md)、[驗收](docs/09_testing/m4-03-validation.md)。新增13項獨立 API、V12六表及 ADMIN／DISPATCHER「異常處理」工作台，保留原始回報、補件要求、新私有照片、明確提交、管理處置及不可變歷史；DRIVER 完整手機操作於 M4-06 交付。異常版本與執行版本獨立，上傳不等於提交，處置不會完成任務、釋放人車或解鎖依賴。
+
+一般新異常政策仍 UNCONFIRMED；正式例外、照片規則／provider／保存、安全解除及結案責任未核准，不新增開放參數。正向只在真實隔離測試 DB 載入明確 test-only 策略。管理 UI 區分目前事實與歷史收據，保留版本衝突原文並明確比較／採用；未知結果只重試同次請求，GET或讀照失敗不判定另一個POST回滾。私有預覽在關閉／撤權時清除，沒有公開照片網址。
+
+本機前端718／後端530（146 unit＋384 integration）／真實TLS桌面及手機E2E34（0 retries）、八份實際HTTP1,949筆／58檔全過；40表／V1～V12空庫與重啟、升級及100憑證報告隱私已驗證。最終受測source／merge／PR與main四項CI以[本包交付收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-03-exceptions+base%3Amain)及上述驗收文件為準；main四項通過才開始M4-04。

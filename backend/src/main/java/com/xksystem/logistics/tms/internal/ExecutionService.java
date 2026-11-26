@@ -41,7 +41,7 @@ public class ExecutionService {
         this.vehicles=vehicles;this.tasks=tasks;this.policy=policy;this.clock=clock;
     }
     public record Written(ExecutionDtos.DepartureResult data,boolean replayed) {}
-    record Owned(UUID actorId,UUID driverId,DriverQueries.Snapshot driver,TmsDtos.Assignment assignment) {}
+    record Owned(UUID actorId,UUID driverId,DriverQueries.Snapshot driver,TmsDtos.Assignment assignment,com.xksystem.logistics.upms.AccountDto actor) {}
 
     /** Lock-capable read; WAITING has no database/event/receipt side effect. */
     @Transactional
@@ -100,14 +100,14 @@ public class ExecutionService {
                     ||!source.source().equals(assignment.source())||!source.source().orderId().equals(anchor.orderId())
                     ||!source.source().taskId().equals(anchor.taskId()))throw ExecutionFailure.missing();
             completeOccupation(assignment);
-            return new Owned(actor.id(),driver.id(),driver,assignment);
+            return new Owned(actor.id(),driver.id(),driver,assignment,actor);
         } catch(TmsFailure failure) {
             if(failure.status()==404)throw ExecutionFailure.missing();throw failure;
         } catch(UpmsException failure) {
             if(failure.status()==404)throw ExecutionFailure.missing();throw failure;
         }
     }
-    private void completeOccupation(TmsDtos.Assignment assignment) {
+    void completeOccupation(TmsDtos.Assignment assignment) {
         var expected=new EnumMap<ResourcePosition,UUID>(ResourcePosition.class);
         expected.put(ResourcePosition.DRIVER,assignment.driver().id());expected.put(ResourcePosition.MAIN,assignment.mainVehicle().id());
         if(assignment.trailer()!=null)expected.put(ResourcePosition.TRAILER,assignment.trailer().id());

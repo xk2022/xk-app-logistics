@@ -379,3 +379,70 @@ Without `--static-only` the response glob is mandatory. Missing matches, empty
 files/arrays, malformed evidence, unknown envelopes, extra metadata and schema
 failures fail the command. `--static-only` and `--responses` are mutually exclusive.
 No new dependency or artifact-scanner exception is introduced.
+
+## Independent M4-03 exception and supplement checks
+
+`validate_exception_contract.py` reads the new `docs/06_api/tms-exceptions-openapi.yaml`
+only: exactly 13 operations / 46 schemas, fresh role-specific self versus manager
+routes, original Session/CSRF, exact query/header/body declarations, bounded actual
+JSON16KiB/raw1MiB inputs, post-ledger miss guarantees and private binary headers.
+The unchanged original four source hashes plus the exact frozen M401 and M402
+OpenAPI pins are independently verified (six sources); fourteen reused component
+schema constraints and Session/CSRF schemes must match preserved M402 definitions.
+Only the new Version description explains exception versus execution field units;
+its numeric/type keywords remain identical to the preserved source.
+No old API, validator, manifest, dependency or source fingerprint is changed.
+
+Static tooling contains 65 positives / 498 negatives and eight reference-rejection
+self-checks. It covers raw NUL/NFD/leading/trailing/newline preservation, Java
+whitespace/SpaceChar/FEFF nonblank checks and code-point limits; exact summary9,
+record14, activeRequest5, detail3, actions6, event11/manager12, upload6 and evidence3
+shapes; three reporting phases versus the full five-phase historical execution
+view; status/blocking/nullable/availability conditions; canonical sorted UUID sets
+and count matching; creation0 then exact event+1; separate safe exception/execution
+version units and E1901 exactly-one actual token; privacy and E19/common errors.
+Synthetic count1/PNG/65536-byte/4096-pixel fixtures are isolated policy examples,
+not formal D04/D05/D06/provider/retention/safe-release approval.
+
+Explicit independent custom keywords validate raw nonblank Unicode scalar text,
+case-insensitive duplicate request UUIDs, canonical output-set order, bounded
+active-request count equality and exact event version increment. Header grammar
+uses the existing-style custom safe digits format; JSON retains mathematical
+1/1.0/1e0 equivalence with exact Decimal arithmetic. Local reference preflight and a
+retrieval-denying registry prevent network/file/foreign reference retrieval and
+resource identity overrides. Parsing rejects duplicate keys, non-JSON constants,
+malformed Unicode/UTF-8, extreme invalid Decimal input, unknown envelopes and extra
+capture metadata. Diagnostics print schema/pointer/keyword without submitted values.
+
+Only nonempty `exception-contract-responses.json` arrays of public synthetic
+`{schema,value}` JSON bodies are accepted. Names are `ExceptionSummaryPageEnvelope`,
+`ExceptionRecordEnvelope`, `ExceptionDetailEnvelope`, `DriverExceptionHistoryPageEnvelope`,
+`ManagerExceptionHistoryPageEnvelope`, `SupplementUploadEnvelope`,
+`SupplementEvidencePageEnvelope`, `ErrorEnvelope`. Manager binary success is
+excluded; content errors use ErrorEnvelope. Earlier setup/order/acceptance/TMS/
+execution/progress responses retain their original collectors. No raw PNG/base64,
+request, credential, key, cookie, token, header, filename or trace is captured;
+existing recursive privacy/credential scans remain required before upload.
+
+Schema checks cannot prove current self binding or manager historical company
+scope, original-session freshness, request belongs-before-ledger versus active
+only-on-miss, actual streamed bytes/PNG/hash/cache/status, command receipt witness
+against its original request, atomic rollback or zero-case blocker-query locking.
+IT/E2E verify these directly. Metadata/history GET failures never settle a separate
+unknown POST; the explicit E1901/02/03/07/08 miss whitelist applies only to the same
+frozen POST attempt. E1906 and common errors are not rollback evidence. Successful
+receipt and fresh current detail are distinct; RESOLVED does not authorize release.
+
+```sh
+# Static only; explicitly not real HTTP acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_exception_contract.py --static-only
+# After isolated real HTTPS acceptance:
+/tmp/xk-contract-env/bin/python tests/contracts/validate_exception_contract.py \
+  --responses 'test-results/**/exception-contract-responses.json'
+```
+
+The default response glob is mandatory without `--static-only`; missing matches,
+empty/malformed files or arrays, extra metadata, unknown schemas and body failures
+are nonzero. `--responses` and `--static-only` are mutually exclusive. No new
+package or scanner exception is introduced. Static tooling is not product HTTP or
+operational policy acceptance.
