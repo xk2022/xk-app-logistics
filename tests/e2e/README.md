@@ -1,6 +1,6 @@
 # Browser verification
 
-The suite has 28 cases: fourteen each for desktop Chromium and Pixel 7. The
+The suite has 30 cases: fifteen each for desktop Chromium and Pixel 7. The
 original twelve service, UPMS, ADM, CRM, and TOM API cases remain. The independent
 `order-ui.spec.ts` adds three order-interface scenarios per project, using a
 separate synthetic account group.
@@ -110,6 +110,39 @@ history, driver tasks, confirmation, and uncertain-result screenshots contain on
 synthetic visible data; keyboard activation, field labels and horizontal overflow
 are checked on desktop and mobile. Runtime startup remains an external explicit step.
 
+The independent M4-01 `execution.spec.ts` retains all 28 existing cases and adds
+one API-only scenario per viewport. The execution UI remains in M4-06. Each new
+scenario signs in through real protected HTTPS pages and calls only the frozen
+current-person detail/departure operations through the browser's same-origin
+`fetch`. It checks the new exact fifteen-field detail and three-field departure
+receipt, while the original my-tasks list retains its exact fourteen fields.
+Virtual WAITING/0 detail preserves accepted/assignment snapshot decimal strings,
+raw NUL/NFD/whitespace, original date-time offset/microseconds and
+absent/all-null/populated contact distinctions. The original TOM API may canonicalize
+input decimal trailing zeros; execution must preserve its stored source value,
+not restore the original POST spelling.
+The case covers anonymous, management-role, temporary-password, unbound,
+cross-person, current-binding and disabled-account refusals; strict body/query,
+media/method/key/CSRF failures; independent execution versions; canonical-body and
+canonical-path replay, case-sensitive keys, reuse on a different assignment path,
+and simultaneous same-key departure. HEAD refusal is checked using only status
+and the public replay header; its body is not read or counted as JSON evidence. A real TLS relay
+commits the first departure then aborts browser delivery. Explicit retries keep
+the original raw body/key, first receive a real CSRF403, then recover the immutable
+successful receipt. These are API checks, not claims about an execution UI.
+
+M3 coexistence checks use both deliberate orderings and real concurrent browser
+requests for departure versus revoke/reassign. Either serialized race winner is
+allowed, but both operations cannot succeed. A successful departure leaves task
+generation, assignment status/version, dispatch snapshot/history, reservations,
+TOM data and predecessor readiness unchanged. New terminal manager commands are
+then refused in the original E16 namespace; legitimate old manager success
+replays remain historical. Current detail and receipt are refused after binding
+changes, even for the same account with the original successful key. Deterministic
+lock scheduling, insert-failure rollback, zero-GET-write and production-policy
+checks belong to the backend integration suite; HTTP/schema checks do not claim
+to establish those database properties alone.
+
 Production eligibility stays fail-closed. Positive TMS browser checks explicitly
 use a separately mounted, test-only launcher and synthetic policy, never a
 production profile or approval flag. Every policy construction checks
@@ -121,7 +154,7 @@ synthetic assignment is marked `SYNTHETIC_TEST_ONLY`. No weight, inspection,
 license, work-hour, or real operating qualification is inferred.
 
 Use a fresh, isolated PostgreSQL database named `xk_logistics_e2e`. The fixture
-runner creates 70 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
+runner creates 80 synthetic login accounts: independent UPMS, ADM, CRM, TOM API,
 order UI, acceptance, and FMS ADMIN/DISPATCHER/DRIVER sets, plus independent TMS
 ADMIN/DISPATCHER/two-DRIVER sets for the API and UI scenarios in each browser project. It accepts only
 that database on the local machine and refuses a populated account table. It lives under `backend/src/test`, is absent from the production
@@ -149,6 +182,16 @@ reuses only the API group's immutable synthetic type IDs, and creates driver cod
 those definitions, so API-group role revocation and UI-group binding changes
 cannot invalidate each other's scenarios. Order numbers and resource searches
 isolate each UI scenario from concurrent test records.
+
+The M4-01 `execution` group adds five separate accounts per viewport: ADMIN,
+DISPATCHER, two normal DRIVER actors and one valid temporary DRIVER. It shares
+only immutable synthetic vehicle-type IDs with the TMS groups. Driver codes use
+`SYNTHETIC_TMS_<scope>_D2001` and higher; new plates, customers, orders and task
+kinds isolate all data from both previous API/UI scenarios and the other viewport.
+All business records, assignments and departures are created through real APIs;
+the runner never inserts an execution, departure time, event or command receipt.
+Departed resources remain occupied; later sub-scenarios create fresh resources
+and explicitly change only their own binding, rather than bypassing release gates.
 
 The complete suite uses `compose.e2e.yaml` only after `compose.yaml` and
 `compose.dev.yaml`. The override explicitly runs `TmsE2eApplication` through
@@ -205,6 +248,8 @@ python3 -m venv /tmp/xk-order-contract-env
   --responses 'test-results/**/driver-contract-responses.json'
 /tmp/xk-order-contract-env/bin/python tests/contracts/validate_tms_contract.py \
   --responses 'test-results/**/tms-contract-responses.json'
+/tmp/xk-order-contract-env/bin/python tests/contracts/validate_execution_contract.py \
+  --responses 'test-results/**/execution-contract-responses.json'
 ```
 
 The validator keeps format checking enabled and verifies the immutable source
@@ -252,10 +297,25 @@ asserted directly by the API scenario; body-only schema validation is not claime
 as proof of a database transaction. No authentication body or request headers
 are collected.
 
-CI validates health/status, Flyway V1–V9 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
-tables (27 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
+Each execution case additionally writes `execution-contract-responses.json`.
+Its exact schema allowlist is `MyTaskExecutionEnvelope`, `DepartMyTaskEnvelope`
+and `ErrorEnvelope`, validated against the independent execution OpenAPI. It
+contains only original synthetic bodies from the two new routes, including actual
+error responses. Setup and competing manager operations continue to produce
+separate original order, acceptance and TMS artifacts; execution E17 errors never
+enter the old TMS validator. The real lost-response witness records only its
+actual upstream response body, never the request or headers. The existing privacy
+guard recursively checks all 80 fixture passwords and rejects traces; it is not a
+claim that every possible cookie, CSRF or key leak has been independently scanned.
+Helpers therefore keep those values only in memory, avoid sensitive-header HTTP
+request logs, use generic forwarding failures and compare retry identities as
+booleans. The new API scenario takes no execution UI screenshot.
+
+CI validates health/status, Flyway V1–V10 on an empty database, exact UPMS/ADM/CRM/TOM/FMS/TMS
+tables (30 including Flyway), the fixed ORDER_TYPE enum and four empty configurable categories,
 absence of seeded accounts, parameter definitions/values, CRM records, TOM records,
-vehicles, drivers, dispatch assignments/events/reservations, restart stability,
+vehicles, drivers, dispatch assignments/events/reservations, execution/event/command
+records, restart stability,
 and these browser flows. Report upload requires the privacy check to confirm
 that fixture credentials and trace archives are absent.
 It removes its credential file, disposable containers, and database volume after

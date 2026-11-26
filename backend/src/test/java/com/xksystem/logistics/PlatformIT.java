@@ -57,7 +57,9 @@ class PlatformIT {
                         "adm_dict_category", "adm_dict_item", "adm_parameter_definition", "adm_parameter", "adm_change_log",
                         "crm_customer", "crm_contact", "crm_address", "order_core", "tom_order", "cargo_item", "transport_task",
                         "task_dependency", "order_draft_revision", "api_idempotency", "fms_vehicle", "fms_driver", "order_acceptance_event",
-                        "tms_task_dispatch", "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency");
+                        "tms_task_dispatch", "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency",
+                        "tms_execution", "tms_execution_event", "tms_execution_command");
+        assertThat(jdbc.queryForObject("select count(*) from pg_tables where schemaname='logistics'", Long.class)).isEqualTo(30);
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_account", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_audit", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from logistics.upms_lock where id=1", Long.class)).isEqualTo(1);
@@ -74,6 +76,8 @@ class PlatformIT {
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '7'", String.class)).isEqualTo("7");
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '8'", String.class)).isEqualTo("8");
         assertThat(jdbc.queryForObject("select version from logistics.flyway_schema_history where success and version = '9'", String.class)).isEqualTo("9");
+        assertThat(jdbc.queryForList("select version from logistics.flyway_schema_history where success and version is not null order by installed_rank", String.class))
+                .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
         assertThat(jdbc.queryForList("select code from logistics.adm_dict_category order by sort_order", String.class))
                 .containsExactly("ORDER_TYPE", "CONTAINER_TYPE", "TASK_KIND", "VEHICLE_TYPE", "DRIVER_LICENSE_TYPE");
         assertThat(jdbc.queryForList("select code from logistics.adm_dict_item order by sort_order", String.class))
@@ -81,7 +85,8 @@ class PlatformIT {
         assertThat(jdbc.queryForObject("select count(*) from logistics.adm_dict_item where not read_only", Long.class)).isZero();
         for (String table : new String[] {"adm_parameter_definition", "adm_parameter", "adm_change_log", "crm_customer", "crm_contact", "crm_address",
                 "order_core", "tom_order", "cargo_item", "transport_task", "task_dependency", "order_draft_revision", "api_idempotency", "fms_vehicle", "fms_driver", "order_acceptance_event",
-                "tms_task_dispatch", "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency"}) {
+                "tms_task_dispatch", "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency",
+                "tms_execution", "tms_execution_event", "tms_execution_command"}) {
             assertThat(jdbc.queryForObject("select count(*) from logistics." + table, Long.class)).isZero();
         }
         assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
@@ -615,9 +620,181 @@ class PlatformIT {
         }
     }
 
+    @Test
+    void upgradesV9ToV10PreservingEveryExistingRowIncludingActiveDispatchHistoryWithoutExecutionBackfill() throws Exception {
+        String databaseName = "xk_execution_upgrade_test";
+        jdbc.execute("CREATE DATABASE " + databaseName);
+        String url = postgres.getJdbcUrl().replace("/" + postgres.getDatabaseName(), "/" + databaseName);
+        try {
+            Flyway previous = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("9").load();
+            assertThat(previous.migrate().migrationsExecuted).isEqualTo(9);
+            var database = new JdbcTemplate(new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                    url, postgres.getUsername(), postgres.getPassword()));
+            JsonNode originalDispatch = seedV9UpgradeDispatch(database, url);
+            var tableOrders = v9DomainTableOrders();
+            assertThat(tableOrders).hasSize(26);
+            var oldTables = new java.util.ArrayList<>(tableOrders.keySet());
+            oldTables.add("flyway_schema_history");
+            assertThat(database.queryForList("SELECT tablename FROM pg_tables WHERE schemaname='logistics'", String.class))
+                    .containsExactlyInAnyOrderElementsOf(oldTables);
+            var before = new java.util.LinkedHashMap<String, String>();
+            tableOrders.forEach((table, ordering) -> {
+                assertThat(database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class))
+                        .as("The V9 preservation fixture populates the existing table %s", table).isPositive();
+                before.put(table, tableDigest(database, table, ordering));
+            });
+            int historyPrefix = database.queryForObject("SELECT max(installed_rank) FROM logistics.flyway_schema_history", Integer.class);
+            String historyPredicate = " WHERE installed_rank<=" + historyPrefix;
+            String oldHistory = tableDigest(database, "flyway_schema_history", "installed_rank", historyPredicate);
+            int oldHistoryRows = database.queryForObject("SELECT count(*) FROM logistics.flyway_schema_history", Integer.class);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_assignment WHERE status='ASSIGNED'", Long.class)).isEqualTo(1);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_resource_reservation WHERE released_at IS NULL", Long.class)).isEqualTo(2);
+            assertThat(database.queryForObject("SELECT generation FROM logistics.tms_task_dispatch WHERE task_id=?", Long.class,
+                    java.util.UUID.fromString(originalDispatch.get("taskId").asString()))).isEqualTo(1);
+
+            Flyway upgrade = Flyway.configure().dataSource(url, postgres.getUsername(), postgres.getPassword())
+                    .schemas("logistics").defaultSchema("logistics").target("10").load();
+            assertThat(upgrade.migrate().migrationsExecuted).isEqualTo(1);
+            assertThat(upgrade.validateWithResult().validationSuccessful).isTrue();
+            assertThat(upgrade.migrate().migrationsExecuted).isZero();
+            tableOrders.forEach((table, ordering) -> assertThat(tableDigest(database, table, ordering))
+                    .as("V10 preserves every existing V9 row in %s", table).isEqualTo(before.get(table)));
+            assertThat(tableDigest(database, "flyway_schema_history", "installed_rank", historyPredicate)).isEqualTo(oldHistory);
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics.flyway_schema_history", Integer.class)).isEqualTo(oldHistoryRows + 1);
+            assertThat(database.queryForList("SELECT version FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank", String.class))
+                    .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+            var expectedTables = new java.util.ArrayList<>(oldTables);
+            expectedTables.addAll(java.util.List.of("tms_execution", "tms_execution_event", "tms_execution_command"));
+            assertThat(database.queryForList("SELECT tablename FROM pg_tables WHERE schemaname='logistics'", String.class))
+                    .containsExactlyInAnyOrderElementsOf(expectedTables).hasSize(30);
+            assertNoExecutionRows(database);
+            assertThat(json.readTree(database.queryForObject("SELECT snapshot::text FROM logistics.tms_dispatch_event", String.class)))
+                    .isEqualTo(originalDispatch);
+            assertThat(json.readTree(database.queryForObject("SELECT original_data::text FROM logistics.tms_idempotency", String.class)))
+                    .isEqualTo(originalDispatch);
+            assertThat(json.readTree(database.queryForObject("SELECT source_snapshot::text FROM logistics.tms_assignment", String.class)))
+                    .isEqualTo(originalDispatch.get("assignment").get("source"));
+        } finally {
+            String cleanupUrl = postgres.getJdbcUrl() + (postgres.getJdbcUrl().contains("?") ? "&" : "?")
+                    + "connectTimeout=5&socketTimeout=10";
+            try (var connection = java.sql.DriverManager.getConnection(cleanupUrl, postgres.getUsername(), postgres.getPassword());
+                    var statement = connection.createStatement()) {
+                statement.setQueryTimeout(10);
+                statement.execute("DROP DATABASE " + databaseName + " WITH (FORCE)");
+            }
+        }
+    }
+
+    /** Frozen V9 synthetic data, inserted before V10 exists; never starts a latest-version writer to prepare the baseline. */
+    private JsonNode seedV9UpgradeDispatch(JdbcTemplate database, String url) throws Exception {
+        var at = OffsetDateTime.parse("2026-11-17T08:00:00.123456Z");
+        java.util.UUID actor, driverAccount;
+        java.util.Map<String, String> definitions;
+        try (var connection = java.sql.DriverManager.getConnection(url, postgres.getUsername(), postgres.getPassword())) {
+            var encoder = new com.xksystem.logistics.upms.UpmsConfiguration().passwordEncoder();
+            actor = com.xksystem.logistics.support.UpmsTestData.insert(connection, encoder,
+                    "synthetic-v9-upgrade-admin", "ADMIN", com.xksystem.logistics.support.UpmsTestData.password(), false, at.toInstant());
+            driverAccount = com.xksystem.logistics.support.UpmsTestData.insert(connection, encoder,
+                    "synthetic-v9-upgrade-driver", "DRIVER", com.xksystem.logistics.support.UpmsTestData.password(), false, at.toInstant());
+            definitions = com.xksystem.logistics.support.AdmTestData.insertDefinitions(connection, "EXECUTION_UPGRADE");
+        }
+        database.update("INSERT INTO logistics.upms_audit(id,actor,target_id,action,reason,occurred_at) VALUES (?,?,?,'LOGIN_SUCCESS','Synthetic V9 upgrade fixture',?)",
+                java.util.UUID.randomUUID(), "synthetic-v9-upgrade-admin", actor, at);
+        java.util.UUID type = java.util.UUID.randomUUID(), customer = java.util.UUID.randomUUID();
+        String typeCode = "SYNTHETIC_TMS_IT_MAIN", typeLabel = "合成升級主車類別";
+        database.update("INSERT INTO logistics.adm_dict_item(id,category_id,code,label,enabled,sort_order,read_only,version,created_at,updated_at) SELECT ?,id,?,?,true,1,false,0,?,? FROM logistics.adm_dict_category WHERE code='VEHICLE_TYPE'",
+                type, typeCode, typeLabel, at, at);
+        database.update("INSERT INTO logistics.adm_parameter(id,parameter_key,name,value_type,value_text,description,enabled,version,created_at,updated_at) VALUES (?,?,'合成 V9 升級參數','TEXT','upgrade','Synthetic fixture',true,0,?,?)",
+                java.util.UUID.randomUUID(), definitions.get("text"), at, at);
+        database.update("INSERT INTO logistics.adm_change_log(id,target_type,target_id,action,actor_id,actor_username,occurred_at,before_value,after_value) VALUES (?,'ITEM',?,'CREATE',?,'synthetic-v9-upgrade-admin',?,NULL,?::jsonb)",
+                java.util.UUID.randomUUID(), type, actor, at, json.writeValueAsString(json.createObjectNode().put("code", typeCode)));
+        database.update("INSERT INTO logistics.crm_customer(id,customer_code,name,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,'SYNTHETIC_V9_UPGRADE','合成歷史客戶',false,7,?,?,?,?)",
+                customer, at, at, actor, actor);
+        database.update("INSERT INTO logistics.crm_contact(id,customer_id,name,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,'合成 V9 聯絡人',true,0,?,?,?,?)",
+                java.util.UUID.randomUUID(), customer, at, at, actor, actor);
+        database.update("INSERT INTO logistics.crm_address(id,customer_id,address,enabled,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,'合成 V9 地址',true,0,?,?,?,?)",
+                java.util.UUID.randomUUID(), customer, at, at, actor, actor);
+        JsonNode accepted = seedV8UpgradeOrder(database, actor, customer, at, "OPEN", "ACCEPTED", "ACCEPTED");
+        java.util.UUID driver = java.util.UUID.randomUUID(), vehicle = java.util.UUID.randomUUID();
+        String driverCode = "SYNTHETIC_TMS_IT_D1", driverName = "合成 V9 升級司機", plate = "SYNTHETIC-V9-VEHICLE";
+        database.update("INSERT INTO logistics.fms_driver(id,driver_code,name,account_id,employment_status,duty_status,version,created_at,created_by,updated_at,updated_by) VALUES (?,?,?,?,'ACTIVE','ON_DUTY',0,?,?,?,?)",
+                driver, driverCode, driverName, driverAccount, at, actor, at, actor);
+        database.update("INSERT INTO logistics.fms_vehicle(id,plate_no,vehicle_type_id,capacity_ton,registration_date,inspection_due_date,administrative_status,version,created_at,created_by,updated_at,updated_by) VALUES (?,?,?,12.3400,DATE '1500-01-02',DATE '9999-12-31','AVAILABLE',0,?,?,?,?)",
+                vehicle, plate, type, at, actor, at, actor);
+        java.util.UUID order = java.util.UUID.fromString(accepted.get("id").asString());
+        JsonNode first = accepted.get("tasks").get(0);
+        assertThat(first.get("predecessorTaskIds")).isEmpty();
+        java.util.UUID task = java.util.UUID.fromString(first.get("id").asString());
+        for (JsonNode value : accepted.get("tasks"))
+            database.update("INSERT INTO logistics.tms_task_dispatch(task_id,order_id,company_scope,order_no,task_no,source_order_version,generation) VALUES (?,?,'SINGLE_COMPANY',?,?,1,?)",
+                    java.util.UUID.fromString(value.get("id").asString()), order, accepted.get("orderNo").asString(), value.get("taskNo").asString(), value.get("id").equals(first.get("id")) ? 1 : 0);
+        var assignedAt = at.plusMinutes(1).toInstant();
+        java.util.UUID assignmentId = java.util.UUID.randomUUID();
+        var driverSnapshot = new com.xksystem.logistics.tms.TmsDtos.DriverSnapshot(driver, driverCode, driverName, 0);
+        var mainSnapshot = new com.xksystem.logistics.tms.TmsDtos.VehicleSnapshot(vehicle, plate, type, typeCode, typeLabel, 0);
+        var source = json.readValue(json.writeValueAsString(upgradeSource(accepted, first)), com.xksystem.logistics.tom.TaskQueries.Source.class);
+        var reservations = java.util.List.of(
+                new com.xksystem.logistics.tms.TmsDtos.Reservation(java.util.UUID.randomUUID(), com.xksystem.logistics.tms.ResourceKind.DRIVER,
+                        com.xksystem.logistics.tms.ResourcePosition.DRIVER, driver, assignedAt, null, null),
+                new com.xksystem.logistics.tms.TmsDtos.Reservation(java.util.UUID.randomUUID(), com.xksystem.logistics.tms.ResourceKind.VEHICLE,
+                        com.xksystem.logistics.tms.ResourcePosition.MAIN, vehicle, assignedAt, null, null));
+        var event = new com.xksystem.logistics.tms.TmsDtos.Event(java.util.UUID.randomUUID(), "ASSIGNED", assignmentId, null, 0, 1, actor, assignedAt, null);
+        var assignment = new com.xksystem.logistics.tms.TmsDtos.Assignment(assignmentId, task, order, "ASSIGNED", 0, 1, null,
+                driverSnapshot, mainSnapshot, null, source, com.xksystem.logistics.tms.PolicyMode.SYNTHETIC_TEST_ONLY,
+                actor, assignedAt, null, null, null, null, null, reservations, java.util.List.of(event));
+        var result = new com.xksystem.logistics.tms.TmsDtos.CommandResult(task, 1, assignment);
+        String resultJson = json.writeValueAsString(result);
+        var assignedOffset = assignedAt.atOffset(ZoneOffset.UTC);
+        database.update("INSERT INTO logistics.tms_assignment(id,task_id,order_id,status,version,assigned_generation,driver_id,main_vehicle_id,driver_snapshot,main_vehicle_snapshot,source_snapshot,policy_mode,assigned_by,assigned_at) VALUES (?,?,?,'ASSIGNED',0,1,?,?,?::json,?::json,?::json,'SYNTHETIC_TEST_ONLY',?,?)",
+                assignmentId, task, order, driver, vehicle, json.writeValueAsString(driverSnapshot), json.writeValueAsString(mainSnapshot),
+                json.writeValueAsString(source), actor, assignedOffset);
+        for (var reservation : reservations) {
+            boolean isDriver = reservation.kind() == com.xksystem.logistics.tms.ResourceKind.DRIVER;
+            database.update("INSERT INTO logistics.tms_resource_reservation(id,assignment_id,driver_id,vehicle_id,position,acquired_at) VALUES (?,?,?,?,?,?)",
+                    reservation.id(), assignmentId, isDriver ? driver : null, isDriver ? null : vehicle, reservation.position().name(), assignedOffset);
+        }
+        database.update("INSERT INTO logistics.tms_dispatch_event(id,task_id,action,assignment_id,from_generation,to_generation,actor_id,occurred_at,snapshot) VALUES (?,?,'ASSIGNED',?,0,1,?,?,?::json)",
+                event.id(), task, assignmentId, actor, assignedOffset, resultJson);
+        var command = json.createObjectNode().put("expectedGeneration", 0).put("driverId", driver.toString())
+                .put("mainVehicleId", vehicle.toString()).putNull("trailerId");
+        com.xksystem.logistics.tms.TmsValidation.command(command, com.xksystem.logistics.tms.TmsValidation.Action.ASSIGN);
+        database.update("INSERT INTO logistics.tms_idempotency(id,company_scope,actor_id,http_method,canonical_path,idempotency_key,request_hash,task_id,original_status,original_data,created_at) VALUES (?,'SINGLE_COMPANY',?,'POST',?,?,?,?,200,?::json,?)",
+                java.util.UUID.randomUUID(), actor, "/api/v1/tms/tasks/" + task + "/dispatch", "synthetic-v9-assign-" + assignmentId,
+                com.xksystem.logistics.tms.TmsValidation.hash(command), task, resultJson, assignedOffset);
+        return json.readTree(resultJson);
+    }
+
+    private static java.util.Map<String, String> v9DomainTableOrders() {
+        var result = new java.util.LinkedHashMap<String, String>();
+        for (String table : java.util.List.of("upms_lock", "upms_account", "upms_audit", "adm_dict_category", "adm_dict_item",
+                "adm_parameter", "adm_change_log", "crm_customer", "crm_contact", "crm_address", "order_core", "cargo_item",
+                "transport_task", "order_draft_revision", "api_idempotency", "fms_vehicle", "fms_driver", "order_acceptance_event",
+                "tms_assignment", "tms_resource_reservation", "tms_dispatch_event", "tms_idempotency")) result.put(table, "id");
+        result.put("adm_parameter_definition", "parameter_key");
+        result.put("tom_order", "order_id");
+        result.put("task_dependency", "order_id,task_id,predecessor_task_id");
+        result.put("tms_task_dispatch", "task_id");
+        return result;
+    }
+
+    private static void assertNoExecutionRows(JdbcTemplate database) {
+        for (String table : java.util.List.of("tms_execution", "tms_execution_event", "tms_execution_command"))
+            assertThat(database.queryForObject("SELECT count(*) FROM logistics." + table, Long.class))
+                    .as("No execution state, departure actor/time, event or receipt is invented in %s", table).isZero();
+    }
+
     private void verifiesMigratedTaskThroughHttps(JdbcTemplate database, String url, JsonNode accepted,
             java.util.UUID actor, String adminPassword, java.util.Map<String, String> tableOrders,
             java.util.Map<String, String> beforeMigration) throws Exception {
+        // The caller has completed the historical V8->V9 proof. Current runtime compatibility is a separate V9->V10 step.
+        assertThat(database.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'", Long.class)).isEqualTo(27);
+        assertThat(database.queryForList("SELECT version FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank", String.class))
+                .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+        var beforeRuntime = new java.util.LinkedHashMap<String, String>();
+        v9DomainTableOrders().forEach((table, ordering) -> beforeRuntime.put(table, tableDigest(database, table, ordering)));
+        int historyPrefix = database.queryForObject("SELECT max(installed_rank) FROM logistics.flyway_schema_history", Integer.class);
+        String oldHistory = tableDigest(database, "flyway_schema_history", "installed_rank", " WHERE installed_rank<=" + historyPrefix);
         var properties = new java.util.LinkedHashMap<String, Object>();
         properties.put("spring.datasource.url", url);
         properties.put("spring.datasource.username", postgres.getUsername());
@@ -631,6 +808,14 @@ class PlatformIT {
         application.addInitializers(context -> context.getEnvironment().getPropertySources().addFirst(
                 new org.springframework.core.env.MapPropertySource("isolated-upgrade-https", properties)));
         try (var runtime = application.run()) {
+            assertThat(database.queryForObject("SELECT count(*) FROM pg_tables WHERE schemaname='logistics'", Long.class)).isEqualTo(30);
+            assertThat(database.queryForList("SELECT version FROM logistics.flyway_schema_history WHERE success AND version IS NOT NULL ORDER BY installed_rank", String.class))
+                    .containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
+            assertThat(runtime.getBean(Flyway.class).validateWithResult().validationSuccessful).isTrue();
+            assertNoExecutionRows(database);
+            v9DomainTableOrders().forEach((table, ordering) -> assertThat(tableDigest(database, table, ordering))
+                    .as("Current runtime's automatic V10 migration preserves every V9 row in %s", table).isEqualTo(beforeRuntime.get(table)));
+            assertThat(tableDigest(database, "flyway_schema_history", "installed_rank", " WHERE installed_rank<=" + historyPrefix)).isEqualTo(oldHistory);
             assertThat(runtime.getBeansOfType(java.time.Clock.class)).containsOnlyKeys("clock");
             assertThat(runtime.getBeansOfType(com.xksystem.logistics.support.MutableTestClock.class)).isEmpty();
             assertThat(runtime.getBeansWithAnnotation(org.springframework.boot.test.context.TestConfiguration.class)).isEmpty();
@@ -698,20 +883,7 @@ class PlatformIT {
                 assertThat(assignment.get("reservations")).hasSize(2);
                 assertThat(assignment.get("events")).hasSize(1);
                 assertThat(assignment.get("events").get(0).get("actorId").asString()).isEqualTo(actor.toString());
-                var expectedSource = json.createObjectNode();
-                expectedSource.set("taskId", first.get("id"));
-                expectedSource.set("orderId", accepted.get("id"));
-                expectedSource.set("orderNo", accepted.get("orderNo"));
-                expectedSource.set("orderType", accepted.get("type"));
-                expectedSource.set("orderVersion", accepted.get("version"));
-                for (String field : java.util.List.of("taskNo", "taskKind", "pickupName", "pickupAddress", "deliveryName", "deliveryAddress",
-                        "siteContact", "plannedStartAt", "plannedEndAt", "requiredTask")) expectedSource.set(field, first.get(field));
-                var expectedItem = json.createObjectNode();
-                for (JsonNode item : accepted.get("items")) if (item.get("id").equals(first.get("itemId")))
-                    for (String field : java.util.List.of("itemKind", "containerType", "containerNo", "packageQty", "grossWeight", "cbm"))
-                        expectedItem.set(field, item.get(field));
-                expectedSource.set("item", expectedItem);
-                assertThat(assignment.get("source")).isEqualTo(expectedSource);
+                assertThat(assignment.get("source")).isEqualTo(upgradeSource(accepted, first));
                 assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_assignment", Long.class)).isEqualTo(1);
                 assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_resource_reservation WHERE released_at IS NULL", Long.class)).isEqualTo(2);
                 assertThat(database.queryForObject("SELECT count(*) FROM logistics.tms_dispatch_event", Long.class)).isEqualTo(1);
@@ -744,8 +916,27 @@ class PlatformIT {
                         "order_draft_revision", "api_idempotency", "order_acceptance_event", "crm_customer", "crm_contact", "crm_address"))
                     assertThat(tableDigest(database, table, tableOrders.get(table)))
                             .as("Real migrated-task HTTP dispatch preserves all original TOM/CRM bytes in %s", table).isEqualTo(beforeMigration.get(table));
+                assertNoExecutionRows(database);
             }
         }
+    }
+
+    private JsonNode upgradeSource(JsonNode accepted, JsonNode first) {
+        var source = json.createObjectNode();
+        source.set("taskId", first.get("id"));
+        source.set("orderId", accepted.get("id"));
+        source.set("orderNo", accepted.get("orderNo"));
+        source.set("orderType", accepted.get("type"));
+        source.set("orderVersion", accepted.get("version"));
+        for (String field : java.util.List.of("taskNo", "taskKind", "pickupName", "pickupAddress", "deliveryName", "deliveryAddress",
+                "siteContact", "plannedStartAt", "plannedEndAt", "requiredTask")) source.set(field, first.get(field));
+        var item = json.createObjectNode();
+        for (JsonNode cargo : accepted.get("items")) if (cargo.get("id").equals(first.get("itemId")))
+            for (String field : java.util.List.of("itemKind", "containerType", "containerNo", "packageQty", "grossWeight", "cbm"))
+                item.set(field, cargo.get(field));
+        assertThat(item).hasSize(6);
+        source.set("item", item);
+        return source;
     }
 
     private JsonNode upgradeData(HttpResponse<String> reply, int status, String code) {

@@ -4,7 +4,7 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — M3 工程實作與整合驗收完成（逐包交付收據見下方） |
+| 狀態 | development — LG-M4-01 本人詳情與出發本機驗收完成（逐包 CI 收據見下方） |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
@@ -13,6 +13,8 @@
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [M4 七包交接](docs/08_development/m4-execution-handoff.md) · [M4-01 交接](docs/08_development/m4-01-driver-departure-handoff.md) · [M4-01 驗證](docs/09_testing/m4-01-validation.md)
+- [M4 工程定義](docs/98_decisions/2026-11-26-m4-01-engineering.md) · [M4 API](docs/06_api/tms-execution.md)
 - [M3 整合驗收報告](docs/09_testing/m3-integration-acceptance.md) · [M3-06 驗證](docs/09_testing/m3-06-validation.md)
 - [調度工作台交接](docs/08_development/m3-05-dispatch-ui-handoff.md) · [M3-05 驗證](docs/09_testing/m3-05-validation.md)
 - [TMS 派工交接](docs/08_development/m3-04-dispatch-handoff.md) · [TMS API／OpenAPI](docs/06_api/tms-dispatch.md)
@@ -58,7 +60,7 @@ cp .env.example .env
 docker compose -f compose.yaml -f compose.dev.yaml up -d --build --wait
 ```
 
-開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件及 V9 TMS 派工／占用結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
+開啟 **https://localhost:8443**。DEV 憑證由本機生成、有效 30 天，只用於本機驗收；瀏覽器首次需要信任該本機憑證。登入使用同源 HTTPS，Session Cookie 強制 Secure／HttpOnly／SameSite=Lax；HTTP 5173 僅保留工程檢查，不作帳號操作。後端 http://localhost:8084/actuator/health 僅回報健康狀態，`/api/v1/status` 為同源前端整合端點。資料庫容器就緒後，後端啟動時由 Flyway 建立 `logistics` schema、V1 工程基線、V2 UPMS 帳號／稽核、V3 ADM、V4 CRM、V5 OrderCore／TOM、V6 FMS 車輛、V7 FMS 司機、V8 TOM 不可變受理事件、V9 TMS 派工／占用及 V10 獨立執行／事件／成功收據結構，再由 Hibernate validate；沒有預設帳號、固定密碼或客戶種子資料。
 
 以下主機執行方式只供工程偵錯。完整登入仍使用上述 HTTPS Compose；若自行組合主機前後端，須另接同源 TLS 代理，不可降低 Cookie 安全設定：
 
@@ -198,7 +200,7 @@ DRIVER 由「本人司機資料」唯讀查詢目前帳號綁定的必要資料�
 
 ## 範圍與部署
 
-UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。TMS 依 Q36–Q40 交付出發前分段派工、原子占用、撤改與工作台／本人唯讀，M3-06 完成整合驗收；正式資格維持未核准。司機回報、照片、結案及其他 FMS 功能未開發，後續工作包須獨立交辦。
+UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、合成案例、欄位字典與產品決議保持原樣。ADM 依 Q11–Q15、CRM 依 Q16–Q20 交付；TOM 依原五 API 草稿契約、M2-05 草稿 UI 與 Q31–Q35 明確正式受理交付；FMS 車輛依 Q21–Q25、司機主檔依 Q26–Q30 交付。TMS 依 Q36–Q40 交付出發前分段派工、原子占用、撤改與工作台／本人唯讀，M3-06 完成整合驗收；正式資格維持未核准。司機回報、照片、完成與結案已列入本次授權的 M4-02～07，依序獨立交付；其他未授權 FMS 功能仍待另行交辦。
 
 `compose.prod.yaml` 為禁止啟動的佔位設定；M1 無自動部署。正式環境仍需獨立核准 HTTPS、機密、備份還原、權限與驗收。不使用真實客戶資料、不提交秘密、不更動舊庫。
 
@@ -206,15 +208,15 @@ UPMS 沿 Q06–Q10 與新契約交付；既有訂單 OpenAPI、角色矩陣、�
 
 ADMIN／DISPATCHER 可查詢已受理任務、伺服器資源候選、目前派工與有界歷史，並透過獨立 API 指派、撤派及改派。每段以獨立 generation 控制版本，司機與所有車輛位置使用資料庫排他占用；撤改、釋放／取得、版本、事件及成功重播結果同交易，失敗保留原派工。M3-04 API 已以 PR #19 交付；M3-05 整合完整工作台。
 
-只接受 OPEN＋ACCEPTED 的同單任務，後段須有可驗證的前置完成／交接證據；本階段沒有 M4 證據，不能以撤派、到時或無占用放行後段。DRIVER 本人端點每次依目前有效帳號與綁定，只回目前當段必要路線、聯絡及標的，不回整單、其他資源或歷史。
+只接受 OPEN＋ACCEPTED 的同單任務，後段須有可驗證的前置完成／交接證據；M3-04 交付時尚無 M4 完成證據，不能以撤派、到時或無占用放行後段；後續只採獨立 M4 合法完成證據。DRIVER 本人端點每次依目前有效帳號與綁定，只回目前當段必要路線、聯絡及標的，不回整單、其他資源或歷史。
 
 **正式適格政策尚未核准，一般 DEV／正式 JAR 的新派工與改派預設拒絕。** FMS 行政可用不保證車種、配對、駕照、載重、檢驗或工時適格。正向工程驗收僅在 `xk_logistics_e2e` 載入另外編譯、明確合成的 test-only 政策，回應及快照標示 `SYNTHETIC_TEST_ONLY`；正式 JAR 沒有 override、launcher 或可開放資格的環境參數。隔離啟動依 [E2E README](tests/e2e/README.md) 加 `compose.e2e.yaml`，一般 DEV 不加該檔。
 
-占用中的 FMS 資源不能失去行政可用或直接修改配置依據，須先撤派／改派；名稱／聯絡校正仍保留歷史快照。V9 只為既有已受理任務衍生派工索引，沒有派工／占用／業務種子。D04／D05／D10 及正式政策仍待核准，沒有出發、完成、回報、照片、自動釋放或正式部署。
+占用中的 FMS 資源不能失去行政可用或直接修改配置依據；未出發任務須先合法撤派／改派，已出發不得沿舊流程解除占用；名稱／聯絡校正仍保留歷史快照。V9 只為既有已受理任務衍生派工索引，沒有派工／占用／業務種子。D04／D05／D10 及正式政策仍待核准。M3-04 當時未包含出發、完成、回報或照片；本次依後續 M4 授權逐包交付，沒有正式部署。
 
 ## 調度工作台與本人任務（M3-05）
 
-ADMIN／DISPATCHER 登入後進入「調度工作台」，查詢已受理任務的待派／已派狀態，查看當前派工、資源占用與分頁歷史；選定司機、主車及選用拖板後明確確認指派。改派／撤派需填寫原因，資源候選與阻擋理由由後端提供。一般 DEV 的正式資格未核准，新指派／改派維持關閉；既有有效派工仍可撤派。
+ADMIN／DISPATCHER 登入後進入「調度工作台」，查詢已受理任務的待派／已派狀態，查看當前派工、資源占用與分頁歷史；選定司機、主車及選用拖板後明確確認指派。改派／撤派需填寫原因，資源候選與阻擋理由由後端提供。一般 DEV 的正式資格未核准，新指派／改派維持關閉；未出發的有效派工仍可合法撤派；已出發的新撤改由後端拒絕。
 
 寫入結果未知時保留原次操作、內容、版本與 key，僅由使用者明確重試。CSRF 更新不會自動重送；確認成功的歷史收據與目前派工分開，必須重新讀取目前狀態才進行下一操作。衝突不自動覆寫，離開／登出須確認捨棄本機未決內容，請求傳送中無法離開。
 
@@ -222,6 +224,12 @@ DRIVER 登入後可進入「本人運輸任務」唯讀頁；原「本人司機�
 
 ## M3 整合驗收（M3-06）
 
-M3-01 車輛、M3-02 司機、M3-03 正式受理、M3-04 原子派工占用及 M3-05 調度／本人任務介面已分包交付。本包對最終版本重跑前後端、PostgreSQL、五份 HTTP 契約與桌面／手機全量回歸，並補驗 V8 舊已受理資料升級至 V9 後的真 HTTPS 派工與重播。本包實測前端 590、後端 369、桌面／手機 E2E 28 與五份契約 1,244 筆 HTTP 回應全過，空庫／重啟及 V8→V9 真 HTTPS 流程通過。各包 PR／SHA／CI、畫面證據與剩餘限制見上述報告及交付收據；M3 完成後停在後續規格決議，不自動實作 M4 或部署。
+M3-01 車輛、M3-02 司機、M3-03 正式受理、M3-04 原子派工占用及 M3-05 調度／本人任務介面已分包交付。本包對最終版本重跑前後端、PostgreSQL、五份 HTTP 契約與桌面／手機全量回歸，並補驗 V8 舊已受理資料升級至 V9 後的真 HTTPS 派工與重播。本包實測前端 590、後端 369、桌面／手機 E2E 28 與五份契約 1,244 筆 HTTP 回應全過，空庫／重啟及 V8→V9 真 HTTPS 流程通過。各包 PR／SHA／CI、畫面證據與剩餘限制見上述報告及交付收據；M3 完成時停在後續規格決議；現依新核准 Q41–Q47 與 M4 七包逐包交付，不部署。
 
-驗收邊界為出發前工程流程；正式車種／駕照／配對及法規適格仍待核准，一般服務的新指派／改派預設拒絕。M3-06 完成後停在 M4 規格決議，不自動開發出發、回報、照片、完成或正式部署。
+驗收邊界為出發前工程流程；正式車種／駕照／配對及法規適格仍待核准，一般服務的新指派／改派預設拒絕。M3-06 當時停在 M4 規格決議；現有 M4 明確授權涵蓋後續出發、回報、照片與完成，仍不部署。
+
+## M4 運輸執行
+
+Q41–Q47 與 M4-01～07 已獲使用者授權，依七包交接逐包獨立 PR／CI／合併／main CI 驗收。本包 M4-01 新增本人有效任務詳情與出發 API、獨立執行版本及 V10，不修改原 M3 十四欄本人摘要。完整手機操作 UI 在 M4-06 交付；精確契約、未核准政策拒絕與目前實測狀態見上述文件。
+
+M4-01 本機 frontend 590／backend 418／desktop＋Pixel 7 E2E 30 與六份實際 HTTP 契約 1,489 筆全過；V1–V10／30 表與升級、重啟、本人隔離及登出／撤改競爭已驗證。遠端交付以 [M4-01 PR 收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)及其 PR／main 四項 CI 為準，main 四過才進入 M4-02。

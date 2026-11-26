@@ -10,3 +10,7 @@
 | Completion / Closure | 安全釋放條件、已驗證證據、確認者與時間；結案歸 TOM。 |
 
 名稱與精確欄位依程式現況定義。既有 assignment version、generation、reservation 語意及 API 保持相容，執行版本獨立。沿用 UPMS→排序 FMS→TOM→TMS 鎖順序與來源重讀；以交易、約束、版本及重送一致性防止重複事件與早退占用。儲存與 DB 失敗需可恢復，不得讓未驗證檔案滿足完成條件。未核准正式 provider／保存／清除策略，不執行真實資料刪除。
+
+## M4-01 精確基線
+
+V10 新增 tms_execution、tms_execution_event、tms_execution_command，並對既有 assignment 身分配對加一致性唯一約束；不回填、不改原 V1–V9／派工／占用資料。首次出發建立 DEPARTED/version1，未出發 GET 為虛擬 WAITING/version0，不寫資料。執行、不可變事件與原成功收據同交易，獨立版本；詳見[本包工程定義](../98_decisions/2026-11-26-m4-01-engineering.md)及 migration 唯一來源。後續進度、證據、釋放及結案各包再增量 migration，不預建業務紀錄。

@@ -10,3 +10,7 @@
 - 正式派工資格維持 UNCONFIRMED；僅隔離合成策略可走正向整合流程，正常環境仍拒絕未核准派工及改派。FMS AVAILABLE 不代表可合法派工。
 
 詳細狀態、資料及 API 精確契約應在各工作包先核對既有程式後記錄；不破壞原 API 或舊資料。
+
+## M4-01 可執行轉移
+
+本包列舉 WAITING／DEPARTED／IN_PROGRESS／AWAITING_COMPLETION／COMPLETED，只開放 WAITING→DEPARTED；沒有列舉以外的自訂狀態、任意 PATCH 或跳步 API。出發後新 M3 撤改拒絕、占用保持；原成功管理命令重播仍回歷史收據。新 DRIVER 命令先重驗本人及目前有效指派，再取得歷史收據；出發不解前置任務。[精確定義](../98_decisions/2026-11-26-m4-01-engineering.md)。

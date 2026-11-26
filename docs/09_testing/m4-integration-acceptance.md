@@ -7,3 +7,17 @@
 - 競爭：撤改與出發、重送、證據驗證與完成、重複釋放、結案與回報；原子失敗回滾、無重複事件／占用。
 - 前端 lint、typecheck、build、全量測試；Maven clean verify；桌面／手機 HTTPS E2E；實際 HTTP 與 OpenAPI 契約驗證；每包 PR/main 四項 CI；保存測試數量、SHA、紀錄及合成截圖。
 - 不將正式業務政策未核准、未部署或未執行的驗收標記為通過。
+
+## 分包交付追蹤
+
+完整 M4 整合驗收於 M4-07 執行；各包實測獨立記錄，不以前包替代。前置規格 PR #22 及 main CI 已四過。
+
+| 工作包 | 目前狀態 | 驗證與收據 |
+| --- | --- | --- |
+| M4-01 | 本機 590／418／30、六 HTTP 1,489 全過 | [M4-01 驗證](m4-01-validation.md)及[PR／main CI 收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m4-01-driver-departure+base%3Amain)；main 四過才進入 M4-02 |
+| M4-02 | 未開始；需前包 main CI 四過 | 進度及照片 |
+| M4-03 | 未開始；需前包 main CI 四過 | 異常與補件 |
+| M4-04 | 未開始；需前包 main CI 四過 | 完成及安全釋放 |
+| M4-05 | 未開始；需前包 main CI 四過 | 管理確認及結案 |
+| M4-06 | 未開始；需前包 main CI 四過 | 手機完整操作 |
+| M4-07 | 未開始；需前包 main CI 四過 | 最終全量回歸 |

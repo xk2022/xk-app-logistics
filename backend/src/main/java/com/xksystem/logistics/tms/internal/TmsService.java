@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.*;
 
 @Service
 public class TmsService {
-    private final TmsStore store;private final TaskQueries tasks;private final DriverQueries drivers;private final VehicleQueries vehicles;
+    private final TmsStore store;private final ExecutionStore execution;private final TaskQueries tasks;private final DriverQueries drivers;private final VehicleQueries vehicles;
     private final UpmsAuthorization authorization;private final DispatchEligibilityPolicy policy;private final Clock clock;
-    public TmsService(TmsStore store,TaskQueries tasks,DriverQueries drivers,VehicleQueries vehicles,UpmsAuthorization authorization,DispatchEligibilityPolicy policy,Clock clock){this.store=store;this.tasks=tasks;this.drivers=drivers;this.vehicles=vehicles;this.authorization=authorization;this.policy=policy;this.clock=clock;}
+    public TmsService(TmsStore store,ExecutionStore execution,TaskQueries tasks,DriverQueries drivers,VehicleQueries vehicles,UpmsAuthorization authorization,DispatchEligibilityPolicy policy,Clock clock){this.store=store;this.execution=execution;this.tasks=tasks;this.drivers=drivers;this.vehicles=vehicles;this.authorization=authorization;this.policy=policy;this.clock=clock;}
     public record Written(TmsDtos.CommandResult data,boolean replayed) {}
     @Transactional
     public Written write(SessionPrincipal principal,UUID target,byte[] raw,String submittedKey,TmsValidation.Action action){
@@ -48,6 +48,9 @@ public class TmsService {
         TmsDtos.Assignment old=null;
         if(hint!=null){old=store.assignment(target,true);if(!sameIdentity(hint,old)||!old.status().equals("ASSIGNED")||store.current(taskId).filter(a->a.id().equals(target)).isEmpty())throw TmsFailure.conflict("INVALID_STATE","目前派工不能撤派或改派");}
         else if(store.current(taskId).isPresent())throw TmsFailure.conflict("INVALID_STATE","此任務已有有效派工");
+        // Historical successful manager receipts are handled above. Only a new terminal mutation
+        // must reject an execution that has departed; never release or exchange its resources.
+        if(old!=null&&execution.started(old.id()))throw TmsFailure.conflict("INVALID_STATE","任務已出發，尚無核准的撤改處理流程");
         if(action==TmsValidation.Action.REASSIGN&&sameResources(old,input))throw TmsFailure.invalid("resources","改派必須至少變更一項資源");
         if(action!=TmsValidation.Action.REVOKE){
             requireSource(anchor,source);

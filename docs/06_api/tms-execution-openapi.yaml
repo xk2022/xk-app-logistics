@@ -1,0 +1,669 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: XK Logistics TMS Driver Execution / Departure API
+  version: 0.1.0
+  description: LG-M4-01獨立契約，依Q41–Q47及工程freeze。只本人詳情與出發；未批准正式派工/證據/安全解除/結案策略保持fail closed。後續工作包以新增獨立契約擴充，不改本包shape；原M1–M3及/tms/my-tasks十四欄列表bytes不變。沒有進度/照片/例外/補件/完成/釋放/結案/離線或部署操作。本文件不是實測證據。
+servers:
+- url: /api/v1
+tags:
+- name: TMSExecution
+security:
+- sessionCookie: []
+paths:
+  /tms/my-tasks/{assignmentId}:
+    get:
+      operationId: getMyTaskExecution
+      tags:
+      - TMSExecution
+      summary: 本人有效指派執行詳情
+      description: 先 fresh normal DRIVER／目前 FMS 綁定／同一 current ASSIGNED／當前 TOM 來源版本／完整有效占用，再讀資料或 receipt。失效或跨人404，管理角色403；不重定向到同
+        task 的新版指派。 無execution row時只投影WAITING/0/null，不落DB；不要求當前政策批准才可讀。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      responses:
+        '200':
+          description: 成功；GET目前狀態或POST原次出發收據。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTaskExecutionEnvelope'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+  /tms/my-tasks/{assignmentId}/depart:
+    post:
+      operationId: departMyTask
+      tags:
+      - TMSExecution
+      summary: 本人有效指派出發
+      description: 先 fresh normal DRIVER／目前 FMS 綁定／同一 current ASSIGNED／當前 TOM 來源版本／完整有效占用，再讀資料或 receipt。失效或跨人404，管理角色403；不重定向到同
+        task 的新版指派。 新departure僅recorded/current dispatch policy皆SYNTHETIC_TEST_ONLY；其他POLICY_NOT_CONFIRMED，不宣稱免照片／正式適格。首次原子保存DEPARTED/1、事件與receipt；完全不改M3assignment/version/generation/reservations。
+      x-allowedRoles:
+      - DRIVER
+      x-deniedRoles:
+      - ADMIN
+      - DISPATCHER
+      x-rejectUnknownQueryParameters: true
+      x-rejectDuplicateQueryParameters: true
+      security:
+      - sessionCookie: []
+        csrfToken: []
+      parameters:
+      - $ref: '#/components/parameters/AssignmentId'
+      - $ref: '#/components/parameters/CsrfToken'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: 成功；GET目前狀態或POST原次出發收據。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartMyTaskEnvelope'
+          headers:
+            Idempotency-Replayed:
+              required: true
+              description: true 原次成功收據；false 新提交。
+              schema:
+                $ref: '#/components/schemas/IdempotencyReplayed'
+        '400':
+          $ref: '#/components/responses/Error400'
+        '401':
+          $ref: '#/components/responses/Error401'
+        '403':
+          $ref: '#/components/responses/Error403'
+        '404':
+          $ref: '#/components/responses/Error404'
+        '405':
+          $ref: '#/components/responses/Error405'
+        '409':
+          $ref: '#/components/responses/Error409'
+        '415':
+          $ref: '#/components/responses/Error415'
+        '500':
+          $ref: '#/components/responses/Error500'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartRequest'
+      x-replayRule: 目前本人/current assignment/source/完整occupation守衛先於receipt；合法同key/body成功重播先於當前phase/version/policy，不增加execution/event/receipt或碰占用。
+      x-versionRule: receipt execution.version == original expectedVersion + 1，固定 DEPARTED/1，assignment/task identity
+        與HTTP200/replay header由IT/E2E直接驗。
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: XKSESSION
+      description: 與JSESSIONID為同一受保護HttpSession別名；Secure/HttpOnly/SameSite=Lax，正常帳號與首次改密限制保持。
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+  parameters:
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+      description: 目前本人有效 assignment UUID，不是可指定的 driver/account 身份；ledger path使用 canonical lower-case UUID。
+    CsrfToken:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9._:-]{1,128}$
+        not:
+          pattern: '[^A-Za-z0-9._:-]'
+      description: 恰一個 case-sensitive header；未知結果固定原 key/body/path，不自動重送或換 key。
+  responses:
+    Error400:
+      description: shape／query／strict JSON 驗證，reason VALIDATION_ERROR＋fields
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error401:
+      description: 未登入或匿名 CSRF 拒絕，data null
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error403:
+      description: 已驗證但無權或 CSRF；以 reason FORBIDDEN／CSRF_INVALID 區分，保留 nullable data 相容性
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          examples:
+            csrfInvalid:
+              summary: 安全驗證已失效，請重新確認
+              value:
+                code: E0403
+                message: 安全驗證已失效，請重新確認
+                data:
+                  reason: CSRF_INVALID
+                timestamp: '2026-11-26T10:00:00+08:00'
+            forbidden:
+              summary: 無權執行此本人操作
+              value:
+                code: E0403
+                message: 無權執行此本人操作
+                data:
+                  reason: FORBIDDEN
+                timestamp: '2026-11-26T10:00:00+08:00'
+    Error404:
+      description: 本人目前指派、來源或完整占用無效／不存在；opaque null data，不回歷史 receipt 或其他人資料
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error405:
+      description: 不允許的 method
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error409:
+      description: 獨立 E17xx：版本／前態／政策／idempotency／受保護關聯
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error415:
+      description: 不支援的 media type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Error500:
+      description: 安全內部錯誤摘要，無 SQL/cause/body/秘密
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Version:
+      type: integer
+      minimum: 0
+      maximum: 9007199254740991
+      description: 本文件 version、expectedVersion、actualVersion 只屬 execution，與 assignment.version／task generation／來源版本分開。
+    Timestamp:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,9})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+    CompanyTimestamp:
+      type: string
+      format: date-time
+      pattern: \+08:00$
+    SourceDateTime:
+      type: string
+      format: date-time
+      pattern: ^(?!0000)[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]{1,6})?([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$
+      description: 保留原 TOM offset 與微秒字面，不改時區／trim／新增時窗或期限政策。
+    NullableSourceDateTime:
+      anyOf:
+      - $ref: '#/components/schemas/SourceDateTime'
+      - type: 'null'
+    NullableText:
+      anyOf:
+      - type: string
+        maxLength: 200
+        description: 原 TOM 文字，保留有效 NUL／NFD／空白／空字串，不修剪或正規化。
+      - type: 'null'
+    NullableAddress:
+      anyOf:
+      - type: string
+        maxLength: 1000
+      - type: 'null'
+    NullableDecimal:
+      anyOf:
+      - type: string
+        maxLength: 32
+        pattern: ^(0|[1-9][0-9]*)(\.[0-9]+)?$
+        not:
+          pattern: '[^0-9.]'
+        description: 原 TOM 非負 decimal 字串與 scale，null 不同於已知0；不轉 JSON number。
+      - type: 'null'
+    PolicyMode:
+      type: string
+      enum:
+      - UNCONFIRMED
+      - SYNTHETIC_TEST_ONLY
+    ItemSnapshot:
+      type: object
+      additionalProperties: false
+      properties:
+        itemKind:
+          type: string
+          enum:
+          - CONTAINER
+          - CARGO
+        containerType:
+          $ref: '#/components/schemas/NullableText'
+        containerNo:
+          $ref: '#/components/schemas/NullableText'
+        packageQty:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        grossWeight:
+          $ref: '#/components/schemas/NullableDecimal'
+        cbm:
+          $ref: '#/components/schemas/NullableDecimal'
+      required:
+      - itemKind
+      - containerType
+      - containerNo
+      - packageQty
+      - grossWeight
+      - cbm
+    SiteContact:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/components/schemas/NullableText'
+        phone:
+          $ref: '#/components/schemas/NullableText'
+      required:
+      - name
+      - phone
+      description: 整組 null 與存在且兩欄 null 的聯絡物件不合併。
+    ExecutionPhase:
+      type: string
+      enum:
+      - WAITING
+      - DEPARTED
+      - IN_PROGRESS
+      - AWAITING_COMPLETION
+      - COMPLETED
+      description: M4-01 只可 WAITING→DEPARTED；其餘為後續已授權工作包的讀取 enum 預留，本包不提供其命令或宣稱其政策已核准。
+    ExecutionView:
+      type: object
+      additionalProperties: false
+      properties:
+        phase:
+          $ref: '#/components/schemas/ExecutionPhase'
+        version:
+          $ref: '#/components/schemas/Version'
+        departedAt:
+          anyOf:
+          - $ref: '#/components/schemas/Timestamp'
+          - type: 'null'
+      required:
+      - phase
+      - version
+      - departedAt
+      allOf:
+      - if:
+          properties:
+            phase:
+              const: WAITING
+        then:
+          properties:
+            version:
+              const: 0
+            departedAt:
+              type: 'null'
+        else:
+          properties:
+            version:
+              type: integer
+              minimum: 1
+              maximum: 9007199254740991
+            departedAt:
+              $ref: '#/components/schemas/Timestamp'
+      description: 無 execution row 的本人 GET 虛擬 WAITING/0/null，無 DB／event／receipt 寫入；首次出發才保存 DEPARTED/1。
+    MyTaskExecutionDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/Uuid'
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        taskNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+        item:
+          $ref: '#/components/schemas/ItemSnapshot'
+        taskKind:
+          $ref: '#/components/schemas/NullableText'
+        pickupName:
+          $ref: '#/components/schemas/NullableText'
+        pickupAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        deliveryName:
+          $ref: '#/components/schemas/NullableText'
+        deliveryAddress:
+          $ref: '#/components/schemas/NullableAddress'
+        siteContact:
+          anyOf:
+          - $ref: '#/components/schemas/SiteContact'
+          - type: 'null'
+        plannedStartAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        plannedEndAt:
+          $ref: '#/components/schemas/NullableSourceDateTime'
+        assignedAt:
+          $ref: '#/components/schemas/Timestamp'
+        policyMode:
+          $ref: '#/components/schemas/PolicyMode'
+        execution:
+          $ref: '#/components/schemas/ExecutionView'
+      required:
+      - assignmentId
+      - taskId
+      - taskNo
+      - item
+      - taskKind
+      - pickupName
+      - pickupAddress
+      - deliveryName
+      - deliveryAddress
+      - siteContact
+      - plannedStartAt
+      - plannedEndAt
+      - assignedAt
+      - policyMode
+      - execution
+      description: 原 MyTask 十四欄值語意加獨立 execution 三欄物件，十五個 top-level 欄位。沒有 order/customer/person/account/resource
+        IDs、車牌、actor/event/history、照片或儲存資訊。原 /tms/my-tasks 列表仍精確十四欄，完全不修改。
+    DepartRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersion:
+          $ref: '#/components/schemas/Version'
+      required:
+      - expectedVersion
+      description: 只屬 execution version，不接受 caller timestamp、driver/actor 身份、任務 generation、assignment version、reason、證據或
+        policy。數學整數1/1.0/1e0同義；本包只有實際WAITING/0可成功。
+    DepartureResult:
+      type: object
+      additionalProperties: false
+      properties:
+        assignmentId:
+          $ref: '#/components/schemas/Uuid'
+        taskId:
+          $ref: '#/components/schemas/Uuid'
+        execution:
+          allOf:
+          - $ref: '#/components/schemas/ExecutionView'
+          - properties:
+              phase:
+                const: DEPARTED
+              version:
+                const: 1
+              departedAt:
+                $ref: '#/components/schemas/Timestamp'
+      required:
+      - assignmentId
+      - taskId
+      - execution
+      x-versionRule: execution.version == 原請求 expectedVersion + 1；本包首次出發固定1，path identity／HTTP／header及跨請求關係由 IT/E2E
+        直接驗證。
+      description: 最小不可變原次出發收據；歷史重播不是目前 GET 執行狀態，不回 actor／事件／完整任務。
+    IdempotencyReplayed:
+      type: string
+      enum:
+      - 'true'
+      - 'false'
+    ErrorData:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        reason:
+          type: string
+          minLength: 1
+        actualVersion:
+          $ref: '#/components/schemas/Version'
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+          minProperties: 1
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - E0400
+          - E0401
+          - E0403
+          - E0404
+          - E0405
+          - E0415
+          - E0500
+          - E1701
+          - E1702
+          - E1703
+          - E1704
+          - E1705
+          - E1706
+        message:
+          type: string
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ErrorData'
+          - type: 'null'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+      allOf:
+      - if:
+          properties:
+            code:
+              const: E1701
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VERSION_CONFLICT
+                required:
+                - reason
+                - actualVersion
+      - if:
+          properties:
+            code:
+              const: E1702
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: INVALID_STATE
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1703
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: POLICY_NOT_CONFIRMED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1704
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_KEY_REUSED
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1705
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: IDEMPOTENCY_IN_PROGRESS
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E1706
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: PROTECTED_RELATION
+                required:
+                - reason
+      - if:
+          properties:
+            code:
+              const: E0400
+        then:
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/ErrorData'
+              - properties:
+                  reason:
+                    const: VALIDATION_ERROR
+                required:
+                - reason
+                - fields
+      - if:
+          properties:
+            code:
+              type: string
+              enum:
+              - E0401
+              - E0404
+              - E0405
+              - E0415
+              - E0500
+        then:
+          properties:
+            data:
+              type: 'null'
+      - if:
+          properties:
+            code:
+              const: E0403
+        then:
+          properties:
+            data:
+              anyOf:
+              - type: object
+                additionalProperties: false
+                properties:
+                  reason:
+                    type: string
+                    enum:
+                    - CSRF_INVALID
+                    - FORBIDDEN
+                required:
+                - reason
+              - type: 'null'
+      description: 獨立 E17xx 執行業務錯誤，並非舊 TMS E16 或 TOM envelope。actualVersion只屬execution；無actualGeneration、身份、SQL/cause/body/key/私有儲存資料。
+    MyTaskExecutionEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MyTaskExecutionDetail'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp
+    DepartMyTaskEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          const: '0000'
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DepartureResult'
+        timestamp:
+          $ref: '#/components/schemas/CompanyTimestamp'
+      required:
+      - code
+      - message
+      - data
+      - timestamp

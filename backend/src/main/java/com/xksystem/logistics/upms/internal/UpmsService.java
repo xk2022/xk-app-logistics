@@ -108,6 +108,12 @@ public class UpmsService {
         return authorizeCustomerManager(principal, write);
     }
     @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public AccountDto authorizeDriverSelf(SessionPrincipal principal) {
+        var actor=active(principal,false);
+        if(actor.mustChangePassword||actor.role!=AccountRole.DRIVER)throw UpmsException.forbidden();
+        return actor.dto();
+    }
+    @Transactional(propagation=org.springframework.transaction.annotation.Propagation.MANDATORY)
     public AccountDto authorizeDriverSelfWithLocks(SessionPrincipal principal) {
         if(TransactionSynchronizationManager.isCurrentTransactionReadOnly())
             throw new org.springframework.transaction.IllegalTransactionStateException("Driver self reads require a lock-capable caller transaction");
@@ -200,10 +206,16 @@ public class UpmsService {
     }
 
     @Transactional
-    public void logout(SessionPrincipal principal) {
-        // Logout has no business writes; auth version is checked but other sessions remain usable.
-        var account=active(principal, false);
+    public void logout(SessionPrincipal principal,jakarta.servlet.http.HttpSession originalSession) {
+        // Serialize current-session termination with execution authorization, without revoking
+        // any other session or incrementing the whole account's authentication version.
+        lock();var account=active(principal,true);
+        UpmsSessions.requireCurrent(originalSession,principal,clock);
         record(account.username, account.id, "LOGOUT", "本人登出");
+        audit.flush();
+        // HttpSession cannot be rolled back. A rare deferred commit failure after this point
+        // therefore fails closed with the current session already terminated.
+        UpmsSessions.invalidate(originalSession);
     }
 
     private AccountEntity active(SessionPrincipal principal, boolean write) {

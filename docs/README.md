@@ -30,3 +30,9 @@
 - [driver-execution-workspace.md](07_ui-ux/driver-execution-workspace.md)
 - [m4-execution-handoff.md](08_development/m4-execution-handoff.md)
 - [m4-integration-acceptance.md](09_testing/m4-integration-acceptance.md)
+
+### M4-01 工程與實測
+
+- [本人詳情／出發交接](08_development/m4-01-driver-departure-handoff.md)
+- [M4-01 工程採用](98_decisions/2026-11-26-m4-01-engineering.md)
+- [M4-01 驗證](09_testing/m4-01-validation.md)

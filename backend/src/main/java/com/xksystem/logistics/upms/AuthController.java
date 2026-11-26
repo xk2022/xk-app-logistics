@@ -62,7 +62,7 @@ public class AuthController {
     }
     @PostMapping("/logout")
     public ApiEnvelope<Void> logout(Authentication authentication, HttpServletRequest request, HttpServletResponse response) {
-        service.logout(principal(authentication));
+        service.logout(principal(authentication),request.getSession(false));
         freshAnonymousSession(request, response);
         return ApiEnvelope.success(null);
     }
