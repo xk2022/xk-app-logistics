@@ -12,3 +12,8 @@ M4 完成基線 main a69a995c54229cefe10a67a970af953945dabe05（PR #30）。依 
 | LG-M5-07 | 全量回歸、交付證據、版本與 changelog、MVP v1.0.0 發布準備；實際發布須符合 gate，未滿足則標記候選版本，不宣稱正式營運。 |
 
 依 01→07，每包最新 main 開分支，遵循 AGENTS 與中央最新工程／部署／維運規範。每包本機驗收、PR 四項 CI 全過、合併及精確 main 四項 CI 全過後才開始下一包；更新 README、規格、進度、實測報告，記錄 source／merge SHA、CI run／attempt、部署環境與結果。若外部帳號、授權、費用、持久化、合規用途等未滿足，先回報阻擋，不以本機驗證冒充遠端部署或跳過 gate。只使用合成資料，不更動舊庫，不修改原 API 業務語意，不新增未核准業務或正式部署。
+
+
+## 2026-11-27 最新執行範圍
+
+使用者於本次執行補充「先不建立 Render 資源」及「暫時只完成showcase demo部署」。上述七包採用規格保留，完整實作暫緩；目前只交付既有Hub的離線合成互動展示，來源及Hub各自PR／CI，依[Showcase採用紀錄](../98_decisions/2026-11-27-showcase-demo.md)、[手冊](../07_ui-ux/showcase-demo.md)與[實測](../09_testing/showcase-demo-validation.md)驗證。不得把這項先行展示標成M5七包、真後端／Neon／Render部署、客戶UAT或MVP v1.0.0已完成；不建立新雲端或付費資源，正常策略與正式部署封鎖維持。

@@ -13,3 +13,4 @@ artifacts/
 infrastructure/dev-tls/
 __pycache__/
 *.py[cod]
+dist-showcase/

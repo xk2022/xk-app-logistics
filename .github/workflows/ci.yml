@@ -30,8 +30,10 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
-      - run: npm run lint && npm run typecheck && npm test && npm run build
+      - run: npm run lint && npm run typecheck && npm test && npm run build && npm run build:showcase
         working-directory: frontend
+      - name: Verify production and offline Showcase build separation
+        run: node tests/showcase/assert-build-separation.mjs
 
   backend:
     name: Backend verify
@@ -291,6 +293,11 @@ jobs:
           --fixture "$E2E_FIXTURE_PATH" --secret-inventory "$M4_SECRET_INVENTORY_PATH"
           --state-file "$M407_STATE_FILE" --work-dir "$M407_WORK_DIR"
           --restore-port 8445
+      - name: Verify isolated offline Showcase on desktop and mobile
+        run: |
+          npm --prefix frontend ci --ignore-scripts
+          npm --prefix frontend run build:showcase
+          npm run test:showcase
       - name: Validate original order schemas and actual HTTP response artifacts
         if: ${{ !cancelled() }}
         run: >-

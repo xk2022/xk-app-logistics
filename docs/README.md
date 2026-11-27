@@ -87,3 +87,12 @@
 - [m5-deployment.md](10_deployment/m5-deployment.md)
 - [m5-runbook.md](11_operations/m5-runbook.md)
 - [m5-acceptance.md](09_testing/m5-acceptance.md)
+
+
+## Showcase Demo 先行交付
+
+使用者最新範圍先完成既有 Hub 離線合成 Demo，完整 M5 七包暫緩；不建立 Render 資源。
+
+- [展示操作手冊](07_ui-ux/showcase-demo.md)
+- [採用與範圍](98_decisions/2026-11-27-showcase-demo.md)
+- [實測與交付收據](09_testing/showcase-demo-validation.md)
