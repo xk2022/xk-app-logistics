@@ -34,3 +34,5 @@
 
 - 最新使用者範圍：先不建立 Render 資源，暫時只完成 Showcase Demo 部署。完整 LG-M5-01～07 暫緩；本次為[獨立離線合成展示](../98_decisions/2026-11-27-showcase-demo.md)，不算 MVP v1.0.0 或正式營運。
 - 規格 PR #31 source `c03e8cc404cb6ae0aeff26359596bdf126164761`／merge `14697495e9bded2661d6457dc845cb3cff56d68d`，PR45918607908及精確main45919744208 attempt1四項成功後開始 Demo。前端1159／後端613／工具12、Hub201、離線桌面手機8案已實測通過；舊真後端40／PG還原／十HTTP3246與原始150隱私亦通過；來源／Hub PR/main/live各按[實際驗收](../09_testing/showcase-demo-validation.md)記錄，未完成前不宣稱部署成功。
+
+- Showcase首版source PR #32／Hub PR #31已完成精確main CI與Pages；公開核心8案全過，額外手機返回Hub發現隱藏連結，正以獨立source／Hub修正PR補齊並重新驗證。詳[公開與修正收據](../09_testing/showcase-demo-validation.md#首次公開發布與手機導覽修正)，不以首版成功冒稱新版本完成。

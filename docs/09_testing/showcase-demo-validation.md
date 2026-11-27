@@ -1,6 +1,6 @@
 # Showcase Demo｜實測與交付
 
-狀態：全部本機品質門檻通過；來源／Hub PR、精確 main 與 live 發布仍依遠端收據逐步完成，尚未宣稱新互動展示已公開發布。最新使用者範圍為「暫時只完成showcase demo部署」、不建立 Render 資源；完整 M5 七包暫緩。依[採用紀錄](../98_decisions/2026-11-27-showcase-demo.md)及[操作手冊](../07_ui-ux/showcase-demo.md)執行。
+狀態：首版來源 PR #32 與 Hub PR #31 已通過各自 PR／精確 main CI 並公開發布，公開核心8案全過；額外手機導覽發現返回 Hub 連結被既有小螢幕樣式隱藏，現以獨立修正 PR 補齊可見入口與回歸斷言。最終公開桌面／手機導覽收據依下節記錄，未完成修正驗收前不宣稱全部導覽已通過。最新使用者範圍仍僅 Showcase Demo、不建立 Render，完整 M5 暫緩。
 
 ## 基準與來源
 
@@ -45,3 +45,16 @@
 - 本機安全檢查npm三範圍0漏洞；OSV四實際輸入3＋255＋7＋144＝409packages零finding；actionlint／文件相對links／diffcheck及提交前gitleaks另按最終收據記錄。來源PR四項成功後才合併；精確merge main四項成功後才更新Hub pin。
 
 完整本機證據workspace `/workspace/artifacts/logistics-showcase-demo/`；公開展示圖與實際HTTPS URL必須待Hub正常部署後另驗。source／Hub各輪遠端HTTP、DR、照片與耗時採各輪實數，不拿上述本機數字代填。
+
+
+## 首次公開發布與手機導覽修正
+
+- 首版來源 PR #32 source `278b8040ba0b3422ffeb189587c30bd311792665`／merge `9b226ada240f3fb964b2f568bdbff76c690ef8ec`，tree相同；PR45925506062及精確push/main45926373215 attempt1四項全成功、無rerun。main實數frontend1159／backend613（161＋452、0failure/error/skip）／工具12／真後端40（3.0m）／離線8（17.3s）／HTTP3252、125份family回應；PR輪HTTP3244，與本機3246分開。
+- Hub同步最新06100f0e的Rotaract治理後，以完整209tests／0skip、無憑證全22站、其他21完整registry／manifest objects相同、transport51runtimefiles相同＋fresh smoke通過。歷史transport source suite45564113822為REUSED_NOT_RERUN。實際本機Hub輸出22sites／69pages／276assets／370requests＋source8（20.6s）全過，初始縮圖80,679bytes已檢視。
+- Hub PR #31 source `e6867d0310c891787957033ac3ad171695b6fca8`／merge `6af6967dc1657b69a6a0b90dc663423340e6d899`，tree相同；PR45927603296與main45927903981 attempt1必要resolve/build成功，main另含freshness／Pages／公開verifier成功，22sites／69pages／276assets。PR deploy與兩個opt-in publisher的條件skip均依設計，不當作部署成功。
+- 首版實際HTTPS核心8案22.1秒全過；獨立Hub卡片→Demo→角色→返回Hub導覽，桌面通過，手機因`.sidebar-foot`受共用640px規則隱藏而找不到可見返回連結。保留原始失敗log與畫面，不以核心8成功替代此失敗。修正僅針對獨立展示入口，不改正常產品CSS／API／後端。
+- 修正保留全部8案原劇本，再增加返回連結可見／精確href／手機44px檢查；公開後另實跑桌面與手機完整返回導覽。新的[source修正收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afix%2Fshowcase-mobile-hub-navigation+base%3Amain)與[Hub重新發布收據](https://github.com/xk2022/xk-website-showcase/pulls?q=is%3Apr+head%3Afix%2Flogistics-mobile-hub-navigation+base%3Amain)記錄精確SHA、各輪CI、實際測試與最終畫面；不借用首輪成功當新版本交付。
+
+修正本機全量前端首輪1158／1159通過，既有 `DriverExecution.test.tsx` CSRF恢復案等待收據失敗。根因為pending標題在resume microtask前已存在、retry仍disabled，測試先點擊而被原生按鈕忽略；未改案例單獨選跑1案通過（另28未選，不當全量成功）。經獨立複核，只在原explicit retry前等待按鈕enabled，保留原兩次fetch0／收據／恰1POST全部斷言，不加timeout／sleep／重試或skip，正常產品code不改。最終原frontend144輸入中140 byte-identical；原3份metadata外只多這項測試等待條件，原291 backend／API全部不變。先前141不變紀錄屬首版，不套用到此修正。
+
+手機修正最終本機 lint／typecheck／全量1159tests／41files（25.95s）／正常與獨立build全過，正常5檔byte-exact，31modules／7展示檔、JS284.95kB／CSS41.01kB。新入口可見／href／44px回歸加在原8案及每次role切換，桌面＋Pixel7共8全過20.8s、0retry；新手機圖已檢視。backend／API291份byte-identical，本輪本機不重跑相同後端，保留此前613真PG結果；新PR及精確main仍須完整四項CI、613及全部回歸另實跑，通過後才Hub新pin。

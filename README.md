@@ -284,3 +284,5 @@ M4-06 PR #29已完成PR及精確main四CI。M4-07最終本機 lint／typecheck�
 來源與 Hub 分別透過 PR／CI／合併／精確 main 驗證後，才更新不可變 source SHA 並公開驗證。來源交付由[Demo source PR](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m5-showcase-demo+base%3Amain)，Hub 交付由[整合 PR](https://github.com/xk2022/xk-website-showcase/pulls?q=is%3Apr+head%3Afeat%2Flogistics-interactive-demo+base%3Amain)記錄，不以本機結果冒稱已更新公開站點。
 
 完整 LG-M5-01～07、Vercel／Render／Neon 產品部署、正式人車資格／照片政策與客戶 UAT 仍未完成或核准；本次不建立這些雲端資源，不發布 MVP v1.0.0，不進行正式營運部署。
+
+Showcase首版核心桌面／手機流程已公開驗證，手機返回Hub入口另由[導覽修正PR](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afix%2Fshowcase-mobile-hub-navigation+base%3Amain)及[重新發布PR](https://github.com/xk2022/xk-website-showcase/pulls?q=is%3Apr+head%3Afix%2Flogistics-mobile-hub-navigation+base%3Amain)保存最終收據；完整發布與失敗修正見[展示驗收](docs/09_testing/showcase-demo-validation.md)。
