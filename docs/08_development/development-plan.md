@@ -52,3 +52,8 @@ Q41–Q47及全部七包已授權；前置規格PR #22與main四項CI成功後�
 | LG-M4-07 | [全量交接](m4-07-integration-handoff.md)；最終本機1,083／613／12工具units／40 E2E、HTTP3,242、150原始隱私及真47表還原／Console全部通過；最後PR／精確main四CI由[實際收據](../09_testing/m4-07-validation.md)記錄 |
 
 各包source／merge／CI run／attempt、測試數量與剩餘風險見[M4完整驗收報告](../09_testing/m4-integration-acceptance.md)。M4-07只修驗收發現的既有手機單欄要求，保留舊流程與API／Migration；沒有新業務政策核准。正常策略維持拒絕，不開M5、不動舊repo、不部署正式環境。
+
+
+## M5 七工作包
+
+Q48–Q54 及 M5-01～07 已採用。依 [M5 交接](m5-release-handoff.md) 與 [驗收計畫](../09_testing/m5-acceptance.md) 逐包交付。目前僅規格；正式營運仍不核准。
