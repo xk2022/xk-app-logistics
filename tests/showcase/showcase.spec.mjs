@@ -39,6 +39,19 @@ async function auditPage(page, audit) {
   })
 }
 
+async function assertHubReturn(page) {
+  const back = page.getByRole('link', { name: '返回展示中心', exact: true })
+  await expect(back).toHaveCount(1)
+  await expect(back).toBeVisible()
+  await expect(back).toHaveAttribute('href', 'https://showcase.xplorekaleidoscope.com/')
+  if (test.info().project.use.isMobile) {
+    const box = await back.boundingBox()
+    expect(box, 'The mobile Hub return link must have a real tap target').not.toBeNull()
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+  }
+}
+
 test.beforeEach(async ({ page, context, baseURL }) => {
   const audit = { baseURL, pages: new Set(), requests: [], failed: [], errors: [], foreign: false }
   audits.set(context, audit)
@@ -48,6 +61,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   await expect(page.locator('.app-shell[data-showcase-demo="logistics"]')).toBeVisible()
   await expect(page.getByRole('note')).toContainText('合成互動展示，不連線後端／非正式操作')
   await expect(page.locator('input[type="password"], input[type="file"]')).toHaveCount(0)
+  await assertHubReturn(page)
 })
 
 test.afterEach(async ({ context }) => {
@@ -88,7 +102,7 @@ const order = (page, no = orderNo) => article(page, `展示訂單 ${no}`)
 const dispatch = (page, no = taskNo) => article(page, `展示派工 ${no}`)
 const personal = (page, no = taskNo) => article(page, `本人任務 ${no}`)
 async function nav(page, name) { await page.getByRole('navigation', { name: '主要導覽', exact: true }).getByRole('button', { name, exact: true }).click() }
-async function role(page, value) { await page.getByLabel('展示角色', { exact: true }).selectOption(value) }
+async function role(page, value) { await page.getByLabel('展示角色', { exact: true }).selectOption(value); await assertHubReturn(page) }
 async function confirm(page, action, reason) {
   await action.click()
   const dialog = page.getByRole('dialog', { name: '確認展示操作', exact: true })
@@ -296,4 +310,5 @@ test('memory reset, refresh and new tabs preserve unrelated origin storage and n
   await expect(order(page).getByRole('button', { name: '展示受理', exact: true })).toBeVisible()
   expect(await page.evaluate(key => ({ local: localStorage.getItem(key), session: sessionStorage.getItem(key) }), foreignKey)).toEqual({ local: foreignValue, session: foreignValue })
   await expect(page.locator('input[type="password"], input[type="file"]')).toHaveCount(0)
+  await assertHubReturn(page)
 })

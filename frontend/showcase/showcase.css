@@ -1,5 +1,5 @@
 .demo-shell .sidebar { position: sticky; top: 0; align-self: flex-start; min-height: 100vh; }
-.demo-shell .sidebar-foot a { display: block; margin-top: 18px; text-decoration: underline; }
+.demo-shell .demo-hub-link { min-width: 44px; min-height: 44px; flex-shrink: 0; }
 .demo-shell .topbar { flex-wrap: wrap; }
 .demo-banner { padding: 18px 44px; background: #eff6ff; border-bottom: 1px solid #bfdbfe; color: #1e3a8a; font-size: 13px; }
 .demo-banner strong,.demo-banner span { display: block; }
