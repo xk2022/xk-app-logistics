@@ -1,6 +1,6 @@
-# 文件索引｜M0 / M1 / M2 / M3 / M4
+# 文件索引｜M0 / M1 / M2 / M3 / M4 / M5
 
-日期：2026-11-27（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q47 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
+日期：2026-11-27（Asia/Taipei）。依 APP 規範使用 docs/；數字前綴分類。文件狀態：Draft、In Review、Approved、Deprecated。Q01–Q54 已核准；本批細化規格保留歷史決策的效力，未決例外另列。
 
 | 分類 | 文件 |
 | --- | --- |
@@ -79,3 +79,11 @@
 - [工程採用](98_decisions/2026-11-26-m4-07-engineering.md)
 - [本包驗證](09_testing/m4-07-validation.md)
 - [M4完整報告](09_testing/m4-integration-acceptance.md)
+
+
+## M5 採用規格
+- [2026-11-27-m5-release.md](98_decisions/2026-11-27-m5-release.md)
+- [m5-release-handoff.md](08_development/m5-release-handoff.md)
+- [m5-deployment.md](10_deployment/m5-deployment.md)
+- [m5-runbook.md](11_operations/m5-runbook.md)
+- [m5-acceptance.md](09_testing/m5-acceptance.md)
