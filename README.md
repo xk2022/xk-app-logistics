@@ -4,15 +4,17 @@
 | --- | --- |
 | Repository | xk2022/xk-app-logistics |
 | 類型 | xk-app（Web 應用系統） |
-| 狀態 | development — M4 七包工程實作與全量本機驗收完成；遠端交付以逐包 PR／main CI 收據為準 |
+| 狀態 | development — M4 已交付；目前先交付離線 Showcase Demo，完整 M5 暫緩 |
 | 主要使用者 | 貨運公司管理員、調度員、司機 |
 | 核心用途 | 貨運訂單、貨櫃、分段任務、派工、回報與結案 |
 | 技術基準 | React / TypeScript / Vite、Java 21、Spring Boot、PostgreSQL 17、Flyway |
 | 正式網址 | 尚未部署 |
+| Showcase 入口 | [XK Logistics Demo](https://showcase.xplorekaleidoscope.com/logistics/)（既有入口；互動版本發布以交付收據為準） |
 
 ## 文件與開發
 
 - [文件總索引](docs/README.md)
+- [Showcase 操作手冊](docs/07_ui-ux/showcase-demo.md) · [採用範圍](docs/98_decisions/2026-11-27-showcase-demo.md) · [實測與交付收據](docs/09_testing/showcase-demo-validation.md)
 - [M4-07 整合交接](docs/08_development/m4-07-integration-handoff.md) · [驗證](docs/09_testing/m4-07-validation.md) · [M4 整合報告](docs/09_testing/m4-integration-acceptance.md)
 - [司機執行工作台](docs/08_development/m4-06-driver-ui-handoff.md) · [工程採用](docs/98_decisions/2026-11-26-m4-06-engineering.md) · [驗證](docs/09_testing/m4-06-validation.md)
 - [管理確認及結案](docs/08_development/m4-05-management-closure-handoff.md) · [API](docs/06_api/tom-closure.md) · [驗證](docs/09_testing/m4-05-validation.md)
@@ -271,3 +273,14 @@ LG-M4-05本機驗收：前端883／後端612／真TLS桌面與Pixel7 E2E38（0 r
 DRIVER「本人運輸任務」支援出發、私有照片、進度、異常與補件、完成並安全釋放；管理端另有異常處置、完成確認與整單結案。手機五項任務操作為全寬單欄且觸控高度至少44px。未知結果保留原body／bytes／版本／key，由本人明確重試；衝突不覆寫，登出／撤權／背景切換會清私有資料與預覽。正常資格、照片provider／保存、現場例外、安全及管理責任未核准，維持UNCONFIRMED拒絕；正向只在actual-DB-gated隔離合成環境。
 
 M4-06 PR #29已完成PR及精確main四CI。M4-07最終本機 lint／typecheck／1,083 frontend tests／build、613 backend tests、12工具units、40桌面／Pixel7 HTTPS E2E（0 retries）、十HTTP3,242筆／125檔及原始150secret patterns隱私全過。真V9→V14升級、47表／67照片完整重啟與不同DB還原、普通production Jar預設拒絕／歷史重播、真Console init／recover與隔離清理全過。所有原契約／Migration保留。逐包SHA、PR、CI、失敗修正及限制見[M4完整驗收報告](docs/09_testing/m4-integration-acceptance.md)；最後一包遠端交付由[唯一head PR收據](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Atest%2Flg-m4-07-integration-acceptance+base%3Amain)記錄，不以本機代遠端。未開發M5或正式部署。
+
+
+## Showcase Demo 先行
+
+使用者最新範圍為「暫時只完成showcase demo部署」，先不建立 Render 資源。展示使用既有 XK Showcase Hub `/logistics/`，提供 ADMIN／DISPATCHER／DRIVER 三種合成 persona，以及草稿、受理、派工、本人出發／照片標記／進度、異常補件、完成、管理確認與結案。所有操作只存在當前分頁記憶體，無真實登入、API、付款、照片上傳或持久化；請勿輸入真實資料。刷新或明確重置會還原種子，重置不清除其他展示的儲存資料。
+
+正常產品入口及 build 不載入展示程式。展示採獨立 `frontend/showcase/`、`npm --prefix frontend run build:showcase` 與 `dist-showcase/`；正常 Docker／API／Session／CSRF 與正式拒絕策略保留。`npm run test:showcase` 以實際建置執行桌面／手機劇本及網路／儲存隔離檢查。具體操作與本機指令見展示手冊。
+
+來源與 Hub 分別透過 PR／CI／合併／精確 main 驗證後，才更新不可變 source SHA 並公開驗證。來源交付由[Demo source PR](https://github.com/xk2022/xk-app-logistics/pulls?q=is%3Apr+head%3Afeat%2Flg-m5-showcase-demo+base%3Amain)，Hub 交付由[整合 PR](https://github.com/xk2022/xk-website-showcase/pulls?q=is%3Apr+head%3Afeat%2Flogistics-interactive-demo+base%3Amain)記錄，不以本機結果冒稱已更新公開站點。
+
+完整 LG-M5-01～07、Vercel／Render／Neon 產品部署、正式人車資格／照片政策與客戶 UAT 仍未完成或核准；本次不建立這些雲端資源，不發布 MVP v1.0.0，不進行正式營運部署。

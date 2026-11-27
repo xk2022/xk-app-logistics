@@ -25,8 +25,12 @@
 - M4授權與前置：Q41–Q47與全部七包已核准；規格PR #22／merge `6e83663eac50256592e35713467d496cc5765235`，PR45759432687及main45760194712 attempt1四項成功。
 - M4-01～06已依序完成獨立分支／PR／CI／合併／精確main四項CI；PR #23、#24、#25、#26、#27＋補正#28、#29。完整source／merge與run／attempt見[M4驗收報告](../09_testing/m4-integration-acceptance.md)，含原M4-05 main失敗及補正後成功收據，不覆蓋失敗歷史。
 - M4-07由前包main `e7c8acf1351caf379b7871c8078646671b307745` 四過後開始；最終前端四項／1,083 tests、後端613、工具12、桌面與手機E2E40（0 retries）、HTTP3,242／125檔、150原始secret patterns隱私全部通過。PG17.12／V9→V14、47表／67照片完整重啟還原、普通Jar預設拒絕與真Console init／recover全過；owned隔離資源清理且普通DEV保留。最後遠端PR／合併／精確main四項由[本包收據](../09_testing/m4-07-validation.md)記錄，完成才算全部交付。
-- 正式派工資格、照片provider／保存、現場例外、安全解除及管理責任仍未核准，正常UNCONFIRMED拒絕；正向僅隔離合成。無舊repo修改、M5或正式部署。
+- 正式派工資格、照片provider／保存、現場例外、安全解除及管理責任仍未核准，正常UNCONFIRMED拒絕；正向僅隔離合成。M4交付時未實作M5；後續新範圍見下，仍無舊repo修改或正式部署。
 
 
 - M4 最終 main `a69a995c54229cefe10a67a970af953945dabe05`（PR #30）；使用者確認各包最終 PR／main 四項 CI 通過。
 - M5：Q48–Q54 及全部七包已採用；[決策](../98_decisions/2026-11-27-m5-release.md)、[交接](../08_development/m5-release-handoff.md)。尚未執行 M5 實作、部署與外部 UAT；正式營運仍待核准。
+
+
+- 最新使用者範圍：先不建立 Render 資源，暫時只完成 Showcase Demo 部署。完整 LG-M5-01～07 暫緩；本次為[獨立離線合成展示](../98_decisions/2026-11-27-showcase-demo.md)，不算 MVP v1.0.0 或正式營運。
+- 規格 PR #31 source `c03e8cc404cb6ae0aeff26359596bdf126164761`／merge `14697495e9bded2661d6457dc845cb3cff56d68d`，PR45918607908及精確main45919744208 attempt1四項成功後開始 Demo。前端1159／後端613／工具12、Hub201、離線桌面手機8案已實測通過；舊真後端40／PG還原／十HTTP3246與原始150隱私亦通過；來源／Hub PR/main/live各按[實際驗收](../09_testing/showcase-demo-validation.md)記錄，未完成前不宣稱部署成功。

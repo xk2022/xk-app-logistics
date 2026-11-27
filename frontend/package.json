@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "build:showcase": "tsc --noEmit -p tsconfig.showcase.json && vite build --config vite.showcase.config.ts",
+    "test:showcase": "vitest run showcase"
   },
   "dependencies": {
     "react": "19.3.1",
